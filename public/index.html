@@ -106,18 +106,26 @@
             // We're on verify page, verify the token
             verifyToken(token);
         } else {
-            // We're on start page, show continue button step 1/3
-            btnContinue.textContent = 'Complete the step';
-            output.textContent = 'Complete verification steps to get your API key';
-            
-            btnContinue.addEventListener('click', () => {
-                // Link vertise pertama akan diisi user nanti
-                // const vertiseLink1 = 'YOUR_VERTISE_LINK_1_HERE';
-                // window.location.href = vertiseLink1;
-                
-                // Untuk testing sementara, langsung ke /verify
-                window.location.href = '/verify';
-            });
+            // We're on start page, langsung redirect ke step1 dengan token baru
+            initializeFirstStep();
+        }
+
+        async function initializeFirstStep() {
+            try {
+                // Request token baru dari server
+                const response = await fetch('/verify');
+                if (response.redirected) {
+                    // Server akan redirect ke /step1?token=xxx
+                    window.location.href = response.url;
+                } else {
+                    const data = await response.json();
+                    if (data.error) {
+                        output.textContent = `Error: ${data.error}`;
+                    }
+                }
+            } catch (error) {
+                output.textContent = 'Error: Unable to initialize verification process.';
+            }
         }
 
         function handleStep1() {
@@ -127,15 +135,26 @@
             }
             
             btnContinue.textContent = 'Continue 1/3';
-            output.textContent = 'Complete verification step 1 of 3';
+            output.textContent = 'Complete verification step 1 of 3\n\nClick "Continue 1/3" to proceed to the first verification link.';
             
             btnContinue.addEventListener('click', () => {
-                // Link vertise pertama akan diisi user nanti
-                // const vertiseLink1 = 'YOUR_VERTISE_LINK_1_HERE';
-                // window.location.href = vertiseLink1;
+                // Simpan token di localStorage untuk tracking
+                localStorage.setItem('verificationToken', token);
+                localStorage.setItem('currentStep', '1');
+                localStorage.setItem('stepStartTime', Date.now());
                 
-                // Untuk testing sementara
-                window.location.href = `/verify?token=${token}&step=1&bypass=dac4c4fd65791af6212f7b69f1a28f97259082835ee9d0eddca7f95732275509`;
+                // Redirect ke link vertise pertama dengan token di URL
+                const vertiseURL = `https://link-hub.net/1385845/0Tpockg8i7RS?ref=${token}`;
+                window.open(vertiseURL, '_blank');
+                
+                // Update instruksi untuk user
+                output.textContent = 'Please complete the verification on the opened link.\n\nAfter completing the verification, click "Check Progress" to continue.';
+                btnContinue.textContent = 'Check Progress';
+                btnContinue.disabled = false;
+                
+                // Ganti event listener untuk check progress
+                btnContinue.removeEventListener('click', arguments.callee);
+                btnContinue.addEventListener('click', () => checkStepProgress(1));
             });
         }
 
@@ -146,15 +165,20 @@
             }
             
             btnContinue.textContent = 'Continue 2/3';
-            output.textContent = 'Complete verification step 2 of 3';
+            output.textContent = 'Step 1 completed successfully!\n\nComplete verification step 2 of 3\n\nClick "Continue 2/3" to proceed to the second verification link.';
             
             btnContinue.addEventListener('click', () => {
-                // Link vertise kedua akan diisi user nanti
-                // const vertiseLink2 = 'YOUR_VERTISE_LINK_2_HERE';
-                // window.location.href = vertiseLink2;
+                // Token Vertise Anda
+                const vertiseToken = '6457aac2196b55786323be0f9d8580cc1dd63627c32d6d5e34fc74cfaee18c88';
                 
-                // Untuk testing sementara
-                window.location.href = `/verify?token=${token}&step=2&bypass=dac4c4fd65791af6212f7b69f1a28f97259082835ee9d0eddca7f95732275509`;
+                // Gabungkan dengan token website untuk tracking user
+                const fullURL = `https://link-target.net/1385845/sCCiJeLQ3BfA?token=${vertiseToken}&user_ref=${token}`;
+                window.open(fullURL, '_blank');
+                
+                // Update instruksi untuk user
+                output.textContent = 'Please complete the verification on the opened link.\n\nAfter completing the verification, you will be automatically redirected back to continue with step 3.';
+                btnContinue.textContent = 'Verification in Progress...';
+                btnContinue.disabled = true;
             });
         }
 
@@ -165,15 +189,20 @@
             }
             
             btnContinue.textContent = 'Continue 3/3';
-            output.textContent = 'Complete final verification step 3 of 3';
+            output.textContent = 'Step 2 completed successfully!\n\nComplete final verification step 3 of 3\n\nClick "Continue 3/3" to proceed to the final verification link.';
             
             btnContinue.addEventListener('click', () => {
-                // Link vertise ketiga akan diisi user nanti
-                // const vertiseLink3 = 'YOUR_VERTISE_LINK_3_HERE';
-                // window.location.href = vertiseLink3;
+                // Token Vertise Anda
+                const vertiseToken = '6457aac2196b55786323be0f9d8580cc1dd63627c32d6d5e34fc74cfaee18c88';
                 
-                // Untuk testing sementara
-                window.location.href = `/verify?token=${token}&step=3&bypass=dac4c4fd65791af6212f7b69f1a28f97259082835ee9d0eddca7f95732275509`;
+                // Gabungkan dengan token website untuk tracking user
+                const fullURL = `https://link-target.net/1385845/1NJw6vONwDd5?token=${vertiseToken}&user_ref=${token}`;
+                window.open(fullURL, '_blank');
+                
+                // Update instruksi untuk user
+                output.textContent = 'Please complete the final verification on the opened link.\n\nAfter completing the verification, you will be automatically redirected to generate your API key.';
+                btnContinue.textContent = 'Final Verification in Progress...';
+                btnContinue.disabled = true;
             });
         }
 
@@ -185,7 +214,7 @@
             
             btnContinue.textContent = 'Generate Key';
             btnContinue.id = 'btnGen';
-            output.textContent = 'All verification steps completed! Click "Generate Key" to get your API key.';
+            output.textContent = 'Congratulations! All verification steps completed successfully!\n\nClick "Generate Key" to get your API key.';
             
             btnContinue.addEventListener('click', async () => {
                 await generateKey(token);
@@ -219,11 +248,11 @@
                 } else {
                     // Token is invalid
                     btnContinue.style.display = 'none';
-                    output.textContent = 'Error: Invalid or expired verification token. Please start again.';
+                    output.textContent = 'Error: Invalid or expired verification token.\n\nPlease refresh the page to start a new verification process.';
                 }
             } catch (error) {
                 btnContinue.style.display = 'none';
-                output.textContent = 'Error: Unable to verify token. Please try again.';
+                output.textContent = 'Error: Unable to verify token.\n\nPlease refresh the page and try again.';
             }
         }
 
@@ -240,14 +269,14 @@
                 if (response.ok) {
                     currentKey = data.key;
                     const expiry = new Date(data.expires);
-                    output.textContent = `Key: ${data.key}\n\nExpires: ${expiry.toLocaleString()}\n\nValid for 24 hours from generation.`;
+                    output.textContent = `SUCCESS!\n\nYour API Key: ${data.key}\n\nExpires: ${expiry.toLocaleString()}\n\nKey is valid for 24 hours from generation.\n\nPlease copy and save your key securely.`;
                     btnCopy.style.display = 'block';
                 } else {
-                    output.textContent = `Error: ${data.error || 'Failed to generate key'}`;
+                    output.textContent = `Error: ${data.error || 'Failed to generate key'}\n\nPlease make sure you have completed all verification steps properly.`;
                     btnCopy.style.display = 'none';
                 }
             } catch (error) {
-                output.textContent = `Error: Unable to connect to server. Please try again.`;
+                output.textContent = `Error: Unable to connect to server.\n\nPlease check your internet connection and try again.`;
                 btnCopy.style.display = 'none';
             }
             
