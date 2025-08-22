@@ -239,6 +239,23 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
+// NEW ROUTES FOR DIFFERENT STEPS
+app.get('/step1', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/index.html'));
+});
+
+app.get('/step2', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/index.html'));
+});
+
+app.get('/step3', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/index.html'));
+});
+
+app.get('/generate', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/index.html'));
+});
+
 // Verify endpoint - handles token validation and step progression
 app.get('/verify', (req, res) => {
   try {
@@ -266,8 +283,8 @@ app.get('/verify', (req, res) => {
         step: 0
       };
       
-      // Redirect to home page with token parameter
-      return res.redirect(`/?token=${newToken}`);
+      // Redirect to step1 with token parameter
+      return res.redirect(`/step1?token=${newToken}`);
     }
     
     // If step parameter is provided, this means user completed a vertise step
@@ -294,8 +311,15 @@ app.get('/verify', (req, res) => {
         tokenStorage[userIP].step = stepNumber;
         tokenStorage[userIP].expires = new Date(now.getTime() + 60 * 60 * 1000); // Extend expiry
         
-        // Redirect back to home page with updated token
-        return res.redirect(`/?token=${token}`);
+        // Redirect to different URLs based on step completed
+        if (stepNumber === 1) {
+          return res.redirect(`/step2?token=${token}`);
+        } else if (stepNumber === 2) {
+          return res.redirect(`/step3?token=${token}`);
+        } else if (stepNumber === 3) {
+          return res.redirect(`/generate?token=${token}`);
+        }
+        
       } else {
         return res.status(403).json({
           error: 'Invalid user token'
@@ -359,7 +383,7 @@ app.get('/stats', (req, res) => {
 app.use('*', (req, res) => {
   res.status(404).json({
     error: 'Endpoint not found',
-    available_endpoints: ['/getkey', '/validate', '/verify', '/', '/stats', '/status']
+    available_endpoints: ['/getkey', '/validate', '/verify', '/', '/step1', '/step2', '/step3', '/generate', '/stats', '/status']
   });
 });
 
