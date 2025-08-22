@@ -81,6 +81,16 @@
             font-size: 14px;
             color: #cccccc;
         }
+        .debug-info {
+            background: #0a0a0a;
+            border: 1px solid #222222;
+            border-radius: 3px;
+            padding: 8px;
+            margin-bottom: 10px;
+            font-size: 11px;
+            color: #888888;
+            font-family: 'Courier New', monospace;
+        }
         @media (max-width: 600px) {
             body { padding: 10px; }
             .container { padding: 20px; }
@@ -93,6 +103,9 @@
         <div class="step-info" id="stepInfo">
             Loading verification system...
         </div>
+        <div class="debug-info" id="debugInfo">
+            Initializing...
+        </div>
         <button id="btnContinue">Complete the step</button>
         <div id="out">Click "Complete the step" to proceed through verification steps</div>
         <button id="btnCopy" style="display: none;">Copy Key</button>
@@ -103,23 +116,38 @@
         const btnCopy = document.getElementById('btnCopy');
         const output = document.getElementById('out');
         const stepInfo = document.getElementById('stepInfo');
+        const debugInfo = document.getElementById('debugInfo');
         let currentKey = '';
+        let retryCount = 0;
+        const MAX_RETRIES = 3;
+
+        // Debug function
+        function updateDebugInfo(info) {
+            const timestamp = new Date().toLocaleTimeString();
+            debugInfo.textContent = `[${timestamp}] ${info}`;
+            console.log(`[DEBUG] ${info}`);
+        }
 
         // Check if we're on verify page (has token parameter)
         const urlParams = new URLSearchParams(window.location.search);
         const token = urlParams.get('token');
         const currentStep = urlParams.get('currentstep');
         
+        updateDebugInfo(`Token: ${token ? 'Present' : 'Missing'}, Step: ${currentStep || 'None'}`);
+        
         if (token) {
             // We're on verify page, verify the token
+            updateDebugInfo('Verifying token...');
             verifyToken(token, currentStep);
         } else {
             // We're on start page, show initial step
             btnContinue.textContent = 'Complete the step';
             stepInfo.textContent = 'Step 0/3: Initialize verification process';
             output.textContent = 'Click "Complete the step" to start the 3-step verification process';
+            updateDebugInfo('Ready to start verification');
             
             btnContinue.addEventListener('click', () => {
+                updateDebugInfo('Starting verification process...');
                 // Start verification process - redirect to /verify to get a new token
                 window.location.href = '/verify';
             });
@@ -127,19 +155,25 @@
 
         async function verifyToken(token, currentStepFromURL) {
             try {
+                updateDebugInfo('Fetching token validation...');
                 const response = await fetch(`/verify?token=${token}`);
                 const data = await response.json();
                 
+                updateDebugInfo(`Server response: ${response.status}, Valid: ${data.valid}, Step: ${data.step}`);
+                
                 if (response.ok && data.valid) {
                     const currentStep = data.step;
+                    retryCount = 0; // Reset retry count on success
                     
                     if (currentStep === 0) {
                         // User belum complete step apapun, show step 1/3
                         btnContinue.textContent = 'Continue 1/3';
                         stepInfo.textContent = 'Step 1/3: First verification step';
                         output.textContent = 'Complete the first verification step to proceed.';
+                        updateDebugInfo('Ready for step 1/3');
                         
                         btnContinue.onclick = () => {
+                            updateDebugInfo('Redirecting to step 1...');
                             // Redirect to Vertise link 1
                             window.location.href = 'https://link-hub.net/1385845/0Tpockg8i7RS';
                         };
@@ -149,8 +183,10 @@
                         btnContinue.textContent = 'Continue 2/3';
                         stepInfo.textContent = 'Step 2/3: Second verification step';
                         output.textContent = 'Great! Step 1 completed.\n\nProceed to the second verification step.';
+                        updateDebugInfo('Ready for step 2/3');
                         
                         btnContinue.onclick = () => {
+                            updateDebugInfo('Redirecting to step 2...');
                             // Redirect to Vertise link 2
                             window.location.href = 'https://link-target.net/1385845/sCCiJeLQ3BfA';
                         };
@@ -160,8 +196,10 @@
                         btnContinue.textContent = 'Continue 3/3';
                         stepInfo.textContent = 'Step 3/3: Final verification step';
                         output.textContent = 'Excellent! Steps 1 & 2 completed.\n\nProceed to the final verification step.';
+                        updateDebugInfo('Ready for step 3/3');
                         
                         btnContinue.onclick = () => {
+                            updateDebugInfo('Redirecting to step 3...');
                             // Redirect to Vertise link 3
                             window.location.href = 'https://link-target.net/1385845/1NJw6vONwDd5';
                         };
@@ -175,6 +213,7 @@
                         stepInfo.style.borderColor = '#28a745';
                         
                         output.textContent = '🎉 Congratulations!\n\nAll 3 verification steps completed successfully!\n\nClick "Generate Key" to get your API key.';
+                        updateDebugInfo('All steps completed, ready to generate key');
                         
                         btnContinue.onclick = async () => {
                             await generateKey(token);
@@ -182,12 +221,24 @@
                     }
                 } else {
                     // Token is invalid, show clean restart
+                    updateDebugInfo(`Token invalid: ${data.message || 'Unknown reason'}`);
                     showInvalidTokenError();
                 }
             } catch (error) {
                 console.error('Fetch error:', error);
-                // Connection error, show retry
-                showConnectionError();
+                updateDebugInfo(`Connection error: ${error.message}`);
+                
+                // Retry logic
+                if (retryCount < MAX_RETRIES) {
+                    retryCount++;
+                    updateDebugInfo(`Retrying... (${retryCount}/${MAX_RETRIES})`);
+                    setTimeout(() => {
+                        verifyToken(token, currentStepFromURL);
+                    }, 2000 * retryCount); // Exponential backoff
+                } else {
+                    // Max retries reached, show connection error
+                    showConnectionError();
+                }
             }
         }
 
@@ -197,12 +248,14 @@
             stepInfo.style.background = '#4f0f0f';
             stepInfo.style.borderColor = '#dc3545';
             output.textContent = 'Error: Invalid or expired verification token.\n\nPlease start the verification process again.';
+            updateDebugInfo('Showing invalid token error');
             
             // Show restart button after 2 seconds
             setTimeout(() => {
                 btnContinue.style.display = 'block';
                 btnContinue.textContent = 'Start Again';
                 btnContinue.onclick = () => {
+                    updateDebugInfo('Restarting verification...');
                     // Clear URL parameters and start fresh
                     window.location.href = window.location.origin;
                 };
@@ -214,16 +267,19 @@
             stepInfo.textContent = 'Error: Connection failed';
             stepInfo.style.background = '#4f0f0f';
             stepInfo.style.borderColor = '#dc3545';
-            output.textContent = 'Error: Unable to verify token. Please check your connection and try again.';
+            output.textContent = 'Error: Unable to verify token. Please check your connection and try again.\n\nThis may be due to server maintenance or network issues.';
+            updateDebugInfo('Showing connection error');
             
-            // Show retry button after 2 seconds
+            // Show retry button after 3 seconds
             setTimeout(() => {
                 btnContinue.style.display = 'block';
                 btnContinue.textContent = 'Retry';
                 btnContinue.onclick = () => {
+                    updateDebugInfo('Manual retry initiated');
+                    retryCount = 0; // Reset retry count
                     window.location.reload();
                 };
-            }, 2000);
+            }, 3000);
         }
 
         async function generateKey(token) {
@@ -231,10 +287,13 @@
             btnGen.disabled = true;
             btnGen.textContent = 'Generating Key...';
             btnGen.classList.add('loading');
+            updateDebugInfo('Generating key...');
             
             try {
                 const response = await fetch(`/getkey?token=${token}`);
                 const data = await response.json();
+                
+                updateDebugInfo(`Key generation response: ${response.status}`);
                 
                 if (response.ok) {
                     currentKey = data.key;
@@ -245,6 +304,7 @@
                     stepInfo.style.borderColor = '#28a745';
                     
                     output.textContent = `🔑 Your API Key:\n${data.key}\n\n⏰ Expires: ${expiry.toLocaleString()}\n\n✅ Valid for 24 hours from generation\n\nKeep this key safe and do not share it!`;
+                    updateDebugInfo('Key generated successfully');
                     
                     btnCopy.style.display = 'block';
                     btnGen.style.display = 'none';
@@ -253,8 +313,16 @@
                     stepInfo.style.background = '#4f0f0f';
                     stepInfo.style.borderColor = '#dc3545';
                     
+                    updateDebugInfo(`Key generation failed: ${data.error}`);
+                    
                     if (data.error && data.error.includes('verification steps must be completed')) {
                         output.textContent = `❌ Generation Failed!\n\nReason: Not all verification steps were completed.\n\nPlease complete all 3 verification steps before generating a key.`;
+                    } else if (data.error && data.error.includes('token')) {
+                        output.textContent = `❌ Generation Failed!\n\nReason: Session expired or invalid.\n\nPlease restart the verification process.`;
+                        // Auto-restart after 3 seconds
+                        setTimeout(() => {
+                            window.location.href = window.location.origin;
+                        }, 3000);
                     } else {
                         output.textContent = `❌ Generation Failed!\n\nError: ${data.error || 'Unknown error occurred'}\n\nPlease try again or contact support.`;
                     }
@@ -266,6 +334,7 @@
                 stepInfo.style.background = '#4f0f0f';
                 stepInfo.style.borderColor = '#dc3545';
                 output.textContent = `❌ Connection Error!\n\nUnable to connect to server for key generation.\n\nPlease check your internet connection and try again.`;
+                updateDebugInfo(`Key generation connection error: ${error.message}`);
                 btnCopy.style.display = 'none';
             }
             
@@ -280,28 +349,85 @@
                     await navigator.clipboard.writeText(currentKey);
                     btnCopy.textContent = '✅ Copied!';
                     btnCopy.style.background = '#155724';
+                    updateDebugInfo('Key copied to clipboard successfully');
                     setTimeout(() => {
                         btnCopy.textContent = 'Copy Key';
                         btnCopy.style.background = '#28a745';
                     }, 2000);
                 } catch (error) {
                     // Fallback for older browsers
-                    const textArea = document.createElement('textarea');
-                    textArea.value = currentKey;
-                    document.body.appendChild(textArea);
-                    textArea.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(textArea);
-                    
-                    btnCopy.textContent = '✅ Copied!';
-                    btnCopy.style.background = '#155724';
-                    setTimeout(() => {
-                        btnCopy.textContent = 'Copy Key';
-                        btnCopy.style.background = '#28a745';
-                    }, 2000);
+                    try {
+                        const textArea = document.createElement('textarea');
+                        textArea.value = currentKey;
+                        textArea.style.position = 'fixed';
+                        textArea.style.left = '-999999px';
+                        textArea.style.top = '-999999px';
+                        document.body.appendChild(textArea);
+                        textArea.focus();
+                        textArea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textArea);
+                        
+                        btnCopy.textContent = '✅ Copied!';
+                        btnCopy.style.background = '#155724';
+                        updateDebugInfo('Key copied using fallback method');
+                        setTimeout(() => {
+                            btnCopy.textContent = 'Copy Key';
+                            btnCopy.style.background = '#28a745';
+                        }, 2000);
+                    } catch (fallbackError) {
+                        updateDebugInfo(`Copy failed: ${fallbackError.message}`);
+                        btnCopy.textContent = '❌ Copy Failed';
+                        btnCopy.style.background = '#dc3545';
+                        setTimeout(() => {
+                            btnCopy.textContent = 'Copy Key';
+                            btnCopy.style.background = '#28a745';
+                        }, 2000);
+                    }
                 }
             }
         });
+
+        // Auto-refresh page if idle for too long (prevent token expiry)
+        let lastActivity = Date.now();
+        const IDLE_TIMEOUT = 2.5 * 60 * 60 * 1000; // 2.5 hours (less than token expiry)
+
+        function resetIdleTimer() {
+            lastActivity = Date.now();
+        }
+
+        // Track user activity
+        document.addEventListener('click', resetIdleTimer);
+        document.addEventListener('keypress', resetIdleTimer);
+        document.addEventListener('scroll', resetIdleTimer);
+
+        // Check for idle timeout every minute
+        setInterval(() => {
+            if (Date.now() - lastActivity > IDLE_TIMEOUT && token) {
+                updateDebugInfo('Session timeout due to inactivity');
+                alert('Session expired due to inactivity. Page will refresh.');
+                window.location.href = window.location.origin;
+            }
+        }, 60000);
+
+        // Prevent accidental page refresh with unsaved progress
+        window.addEventListener('beforeunload', (e) => {
+            if (token && !currentKey) {
+                e.preventDefault();
+                e.returnValue = 'You have an active verification session. Are you sure you want to leave?';
+            }
+        });
+
+        // Handle page visibility change
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                resetIdleTimer();
+                updateDebugInfo('Page became visible');
+            }
+        });
+
+        // Initial setup complete
+        updateDebugInfo('Page initialization complete');
     </script>
 </body>
 </html>
