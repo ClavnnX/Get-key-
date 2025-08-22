@@ -7,9 +7,6 @@ const app = express();
 // Trust proxy for Vercel
 app.set('trust proxy', true);
 
-// Serve static files from public directory
-app.use(express.static(path.join(__dirname, '../public')));
-
 // Middleware to parse JSON and get real IP
 app.use(express.json());
 app.use((req, res, next) => {
@@ -29,15 +26,334 @@ app.use((req, res, next) => {
   next();
 });
 
-// In-memory storage for keys (Note: This will reset on each serverless function cold start)
-// For production, consider using a database or Redis
+// HTML content embedded (since we can't use separate files easily in Vercel functions)
+const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClavnnX Get key</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #000000 !important;
+            color: #ffffff;
+        }
+        .container {
+            background: #222222 !important;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(255,255,255,0.2);
+            border: 2px solid #444444;
+        }
+        h1 {
+            text-align: center;
+            color: #ffffff !important;
+            margin-bottom: 30px;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        #btnContinue, #btnGen {
+            background: #007bff;
+            color: white;
+        }
+        #btnContinue:hover, #btnGen:hover {
+            background: #0056b3;
+        }
+        #btnContinue:disabled, #btnGen:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        #btnCopy {
+            background: #28a745;
+            color: white;
+            display: none;
+        }
+        #btnCopy:hover {
+            background: #1e7e34;
+        }
+        #out {
+            background: #2d2d2d;
+            border: 1px solid #444444;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 100px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+            margin-bottom: 15px;
+            color: #ffffff;
+        }
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .container { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ClavnnX Get key</h1>
+        <button id="btnContinue">Complete the step</button>
+        <div id="out">Click "Complete the step" to proceed through verification steps</div>
+        <button id="btnCopy" style="display: none;">Copy Key</button>
+    </div>
+
+    <script>
+        const btnContinue = document.getElementById('btnContinue');
+        const btnCopy = document.getElementById('btnCopy');
+        const output = document.getElementById('out');
+        let currentKey = '';
+
+        const VERTISE_TOKEN = '6457aac2196b55786323be0f9d8580cc1dd63627c32d6d5e34fc74cfaee18c88';
+
+        function getVertiseToken() {
+            return VERTISE_TOKEN;
+        }
+
+        const currentPath = window.location.pathname;
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        
+        if (currentPath === '/') {
+            handleHomepage();
+        } else if (currentPath === '/step1') {
+            handleStep1();
+        } else if (currentPath === '/step2') {
+            handleStep2();
+        } else if (currentPath === '/step3') {
+            handleStep3();
+        } else if (currentPath === '/generate') {
+            handleGenerate();
+        }
+
+        function handleHomepage() {
+            btnContinue.textContent = 'Complete the step';
+            output.textContent = 'Welcome to ClavnnX Key System!\\n\\nTo get your API key, you need to complete 3 verification steps.\\n\\nClick "Complete the step" to begin the verification process.';
+            
+            btnContinue.addEventListener('click', () => {
+                window.location.href = '/api/start-verification';
+            });
+        }
+
+        function handleStep1() {
+            if (!token) {
+                window.location.href = '/';
+                return;
+            }
+            
+            verifyTokenAndProceed(token, 0, () => {
+                btnContinue.textContent = 'Continue 1/3';
+                output.textContent = 'Verification Step 1 of 3\\n\\nYou are now ready to complete the first verification step.\\n\\nClick "Continue 1/3" to open the first verification link.';
+                
+                btnContinue.addEventListener('click', () => {
+                    const callbackURL = encodeURIComponent(\`\${window.location.origin}/api/callback/step1?user_ref=\${token}&token=\${getVertiseToken()}\`);
+                    const vertiseURL = \`https://link-target.net/1385845/1NJw6vONwDd5?url=\${callbackURL}\`;
+                    
+                    output.textContent = 'Opening verification link...\\n\\nPlease complete the verification on the opened page.\\n\\nAfter completion, you will be automatically redirected to the next step.';
+                    btnContinue.textContent = 'Verification in Progress...';
+                    btnContinue.disabled = true;
+                    
+                    window.location.href = vertiseURL;
+                });
+            });
+        }
+
+        function handleStep2() {
+            if (!token) {
+                window.location.href = '/';
+                return;
+            }
+            
+            verifyTokenAndProceed(token, 1, () => {
+                btnContinue.textContent = 'Continue 2/3';
+                output.textContent = 'Step 1 completed successfully! ✓\\n\\nVerification Step 2 of 3\\n\\nClick "Continue 2/3" to open the second verification link.';
+                
+                btnContinue.addEventListener('click', () => {
+                    const callbackURL = encodeURIComponent(\`\${window.location.origin}/api/callback/step2?user_ref=\${token}&token=\${getVertiseToken()}\`);
+                    const vertiseURL = \`https://link-target.net/1385845/sCCiJeLQ3BfA?url=\${callbackURL}\`;
+                    
+                    output.textContent = 'Opening second verification link...\\n\\nPlease complete the verification on the opened page.\\n\\nAfter completion, you will be automatically redirected to the next step.';
+                    btnContinue.textContent = 'Verification in Progress...';
+                    btnContinue.disabled = true;
+                    
+                    window.location.href = vertiseURL;
+                });
+            });
+        }
+
+        function handleStep3() {
+            if (!token) {
+                window.location.href = '/';
+                return;
+            }
+            
+            verifyTokenAndProceed(token, 2, () => {
+                btnContinue.textContent = 'Continue 3/3';
+                output.textContent = 'Step 2 completed successfully! ✓\\n\\nFinal Verification Step 3 of 3\\n\\nClick "Continue 3/3" to open the final verification link.';
+                
+                btnContinue.addEventListener('click', () => {
+                    const callbackURL = encodeURIComponent(\`\${window.location.origin}/api/callback/step3?user_ref=\${token}&token=\${getVertiseToken()}\`);
+                    const vertiseURL = \`https://link-hub.net/1385845/0Tpockg8i7RS?url=\${callbackURL}\`;
+                    
+                    output.textContent = 'Opening final verification link...\\n\\nPlease complete the verification on the opened page.\\n\\nAfter completion, you will be automatically redirected to generate your API key.';
+                    btnContinue.textContent = 'Final Verification in Progress...';
+                    btnContinue.disabled = true;
+                    
+                    window.location.href = vertiseURL;
+                });
+            });
+        }
+
+        function handleGenerate() {
+            if (!token) {
+                window.location.href = '/';
+                return;
+            }
+            
+            verifyTokenAndProceed(token, 3, () => {
+                btnContinue.textContent = 'Generate Key';
+                btnContinue.id = 'btnGen';
+                output.textContent = 'Congratulations! All verification steps completed successfully! ✓✓✓\\n\\nYou can now generate your API key.\\n\\nClick "Generate Key" to get your key.';
+                
+                btnContinue.addEventListener('click', async () => {
+                    await generateKey(token);
+                });
+            });
+        }
+
+        async function verifyTokenAndProceed(token, requiredStep, callback) {
+            try {
+                const response = await fetch(\`/api/verify?token=\${token}\`);
+                const data = await response.json();
+                
+                if (response.ok && data.valid) {
+                    if (data.step >= requiredStep) {
+                        callback();
+                    } else {
+                        btnContinue.style.display = 'none';
+                        output.textContent = \`❌ Error: Verification incomplete.\\n\\nYou need to complete the previous verification steps properly.\\n\\nCurrent step: \${data.step}, Required: \${requiredStep}\\n\\nPlease start over from the beginning.\\n\\nRedirecting to homepage in 3 seconds...\`;
+                        
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 3000);
+                    }
+                } else {
+                    btnContinue.style.display = 'none';
+                    output.textContent = '❌ Error: Invalid or expired verification token.\\n\\nPlease start the verification process again.\\n\\nRedirecting to homepage in 3 seconds...';
+                    
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 3000);
+                }
+            } catch (error) {
+                btnContinue.style.display = 'none';
+                output.textContent = '❌ Error: Unable to verify token.\\n\\nPlease check your internet connection and try again.\\n\\nRedirecting to homepage in 3 seconds...';
+                
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 3000);
+            }
+        }
+
+        async function generateKey(token) {
+            const btnGen = document.getElementById('btnGen') || btnContinue;
+            btnGen.disabled = true;
+            btnGen.textContent = 'Generating...';
+            btnGen.classList.add('loading');
+            
+            try {
+                const response = await fetch(\`/api/getkey?token=\${token}\`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentKey = data.key;
+                    const expiry = new Date(data.expires);
+                    output.textContent = \`SUCCESS! ✓\\n\\nYour API Key: \${data.key}\\n\\nExpires: \${expiry.toLocaleString()}\\n\\nKey is valid for 24 hours from generation.\\n\\nPlease copy and save your key securely.\`;
+                    btnCopy.style.display = 'block';
+                    btnGen.style.display = 'none';
+                } else {
+                    output.textContent = \`❌ Error: \${data.error || 'Failed to generate key'}\\n\\nPlease try again or contact support if the problem persists.\`;
+                    btnGen.disabled = false;
+                    btnGen.textContent = 'Generate Key';
+                    btnGen.classList.remove('loading');
+                }
+            } catch (error) {
+                output.textContent = '❌ Error: Unable to generate key.\\n\\nPlease check your internet connection and try again.';
+                btnGen.disabled = false;
+                btnGen.textContent = 'Generate Key';
+                btnGen.classList.remove('loading');
+            }
+        }
+
+        btnCopy.addEventListener('click', async () => {
+            if (currentKey) {
+                try {
+                    await navigator.clipboard.writeText(currentKey);
+                    const originalText = btnCopy.textContent;
+                    btnCopy.textContent = 'Copied! ✓';
+                    btnCopy.style.background = '#20c997';
+                    
+                    setTimeout(() => {
+                        btnCopy.textContent = originalText;
+                        btnCopy.style.background = '#28a745';
+                    }, 2000);
+                } catch (err) {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = currentKey;
+                    textArea.style.position = 'fixed';
+                    textArea.style.left = '-999999px';
+                    textArea.style.top = '-999999px';
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    
+                    try {
+                        document.execCommand('copy');
+                        const originalText = btnCopy.textContent;
+                        btnCopy.textContent = 'Copied! ✓';
+                        btnCopy.style.background = '#20c997';
+                        
+                        setTimeout(() => {
+                            btnCopy.textContent = originalText;
+                            btnCopy.style.background = '#28a745';
+                        }, 2000);
+                    } catch (err) {
+                        output.textContent += '\\n\\n⚠️ Copy failed: Please manually select and copy the key above.';
+                    }
+                    
+                    document.body.removeChild(textArea);
+                }
+            }
+        });
+    </script>
+</body>
+</html>`;
+
+// In-memory storage for keys and tokens
 const keyStorage = {};
 const tokenStorage = {};
 
-// Token Vertise Anda
+// Token Vertise
 const VERTISE_TOKEN = '6457aac2196b55786323be0f9d8580cc1dd63627c32d6d5e34fc74cfaee18c88';
 
-// Helper function to generate random 10-character uppercase key
+// Helper functions
 function generateKey() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let result = '';
@@ -51,22 +367,10 @@ function generateKey() {
   return result;
 }
 
-// Helper function to check if key is expired
 function isKeyExpired(keyData) {
   return new Date() > keyData.expires;
 }
 
-// Helper function to clean up expired keys
-function cleanupExpiredKeys() {
-  const now = new Date();
-  Object.keys(keyStorage).forEach(ip => {
-    if (keyStorage[ip] && now > keyStorage[ip].expires) {
-      delete keyStorage[ip];
-    }
-  });
-}
-
-// Helper function to generate verification token
 function generateToken() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let result = '';
@@ -80,12 +384,10 @@ function generateToken() {
   return result;
 }
 
-// Helper function to check if token is expired
 function isTokenExpired(tokenData) {
   return new Date() > tokenData.expires;
 }
 
-// Helper function to validate token for specific step
 function isValidToken(userIP, token, requiredStep = 3) {
   if (!tokenStorage[userIP]) {
     return false;
@@ -98,17 +400,37 @@ function isValidToken(userIP, token, requiredStep = 3) {
          tokenData.step >= requiredStep;
 }
 
-// Helper function to clean up expired tokens
-function cleanupExpiredTokens() {
-  const now = new Date();
-  Object.keys(tokenStorage).forEach(ip => {
-    if (tokenStorage[ip] && now > tokenStorage[ip].expires) {
-      delete tokenStorage[ip];
+function findUserIPByToken(token) {
+  for (const [ip, tokenData] of Object.entries(tokenStorage)) {
+    if (tokenData && tokenData.token === token && !isTokenExpired(tokenData)) {
+      return ip;
     }
-  });
+  }
+  return null;
 }
 
-// Endpoint: /getkey (requires valid token)
+// Routes for serving HTML
+app.get('/', (req, res) => {
+  res.send(htmlContent);
+});
+
+app.get('/step1', (req, res) => {
+  res.send(htmlContent);
+});
+
+app.get('/step2', (req, res) => {
+  res.send(htmlContent);
+});
+
+app.get('/step3', (req, res) => {
+  res.send(htmlContent);
+});
+
+app.get('/generate', (req, res) => {
+  res.send(htmlContent);
+});
+
+// API Routes
 app.get('/api/getkey', (req, res) => {
   try {
     const userIP = req.realIP;
@@ -169,7 +491,6 @@ app.get('/api/getkey', (req, res) => {
   }
 });
 
-// Endpoint: /validate
 app.get('/api/validate', (req, res) => {
   try {
     const { key } = req.query;
@@ -215,45 +536,6 @@ app.get('/api/validate', (req, res) => {
   }
 });
 
-// Homepage - serve HTML UI
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public', 'index.html'));
-});
-
-// STEP ROUTES
-app.get('/step1', (req, res) => {
-  const { token } = req.query;
-  if (!token) {
-    return res.redirect('/');
-  }
-  res.sendFile(path.join(__dirname, '../public', 'index.html'));
-});
-
-app.get('/step2', (req, res) => {
-  const { token } = req.query;
-  if (!token) {
-    return res.redirect('/');
-  }
-  res.sendFile(path.join(__dirname, '../public', 'index.html'));
-});
-
-app.get('/step3', (req, res) => {
-  const { token } = req.query;
-  if (!token) {
-    return res.redirect('/');
-  }
-  res.sendFile(path.join(__dirname, '../public', 'index.html'));
-});
-
-app.get('/generate', (req, res) => {
-  const { token } = req.query;
-  if (!token) {
-    return res.redirect('/');
-  }
-  res.sendFile(path.join(__dirname, '../public', 'index.html'));
-});
-
-// Start verification process
 app.get('/api/start-verification', (req, res) => {
   try {
     const userIP = req.realIP;
@@ -275,7 +557,7 @@ app.get('/api/start-verification', (req, res) => {
       step: 0
     };
     
-    res.redirect(`/step1?token=${newToken}`);
+    res.redirect(\`/step1?token=\${newToken}\`);
     
   } catch (error) {
     console.error('Error in /start-verification:', error);
@@ -285,7 +567,6 @@ app.get('/api/start-verification', (req, res) => {
   }
 });
 
-// Verify endpoint
 app.get('/api/verify', (req, res) => {
   try {
     const userIP = req.realIP;
@@ -326,17 +607,7 @@ app.get('/api/verify', (req, res) => {
   }
 });
 
-// Helper function to find user IP by token
-function findUserIPByToken(token) {
-  for (const [ip, tokenData] of Object.entries(tokenStorage)) {
-    if (tokenData && tokenData.token === token && !isTokenExpired(tokenData)) {
-      return ip;
-    }
-  }
-  return null;
-}
-
-// CALLBACK ENDPOINTS UNTUK VERTISE LINKS
+// Callback endpoints
 app.get('/api/callback/step1', (req, res) => {
   const { user_ref, token } = req.query;
   
@@ -351,7 +622,7 @@ app.get('/api/callback/step1', (req, res) => {
       if (tokenStorage[userIP].step === 0) {
         tokenStorage[userIP].step = 1;
         tokenStorage[userIP].expires = new Date(Date.now() + 2 * 60 * 60 * 1000);
-        res.redirect(`/step2?token=${user_ref}`);
+        res.redirect(\`/step2?token=\${user_ref}\`);
       } else {
         res.status(403).json({ error: 'Invalid step sequence' });
       }
@@ -377,7 +648,7 @@ app.get('/api/callback/step2', (req, res) => {
       if (tokenStorage[userIP].step === 1) {
         tokenStorage[userIP].step = 2;
         tokenStorage[userIP].expires = new Date(Date.now() + 2 * 60 * 60 * 1000);
-        res.redirect(`/step3?token=${user_ref}`);
+        res.redirect(\`/step3?token=\${user_ref}\`);
       } else {
         res.status(403).json({ error: 'Step 1 not completed or invalid sequence' });
       }
@@ -403,7 +674,7 @@ app.get('/api/callback/step3', (req, res) => {
       if (tokenStorage[userIP].step === 2) {
         tokenStorage[userIP].step = 3;
         tokenStorage[userIP].expires = new Date(Date.now() + 2 * 60 * 60 * 1000);
-        res.redirect(`/generate?token=${user_ref}`);
+        res.redirect(\`/generate?token=\${user_ref}\`);
       } else {
         res.status(403).json({ error: 'Step 2 not completed or invalid sequence' });
       }
@@ -415,7 +686,6 @@ app.get('/api/callback/step3', (req, res) => {
   }
 });
 
-// Status endpoint
 app.get('/api/status', (req, res) => {
   res.json({
     status: 'online',
@@ -424,12 +694,8 @@ app.get('/api/status', (req, res) => {
   });
 });
 
-// Stats endpoint
 app.get('/api/stats', (req, res) => {
   try {
-    cleanupExpiredKeys();
-    cleanupExpiredTokens();
-    
     const activeKeys = Object.keys(keyStorage).length;
     const activeTokens = Object.keys(tokenStorage).length;
     const now = new Date();
@@ -437,8 +703,7 @@ app.get('/api/stats', (req, res) => {
     res.json({
       active_keys: activeKeys,
       active_verification_tokens: activeTokens,
-      server_time: now.toISOString(),
-      uptime: process.uptime()
+      server_time: now.toISOString()
     });
   } catch (error) {
     console.error('Error in /stats:', error);
