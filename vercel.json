@@ -2,30 +2,14 @@
   "version": 2,
   "builds": [
     {
-      "src": "server/index.js",
+      "src": "index.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
-      "src": "/verify",
-      "dest": "server/index.js"
-    },
-    {
-      "src": "/getkey", 
-      "dest": "server/index.js"
-    },
-    {
-      "src": "/validate",
-      "dest": "server/index.js"
-    },
-    {
-      "src": "/health",
-      "dest": "server/index.js"
-    },
-    {
       "src": "/(.*)",
-      "dest": "server/index.js"
+      "dest": "index.js"
     }
   ]
 }
