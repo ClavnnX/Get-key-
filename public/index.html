@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Get Key / KeyFlow</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        #btnGen {
+            background: #007bff;
+            color: white;
+        }
+        #btnGen:hover {
+            background: #0056b3;
+        }
+        #btnCopy {
+            background: #28a745;
+            color: white;
+            display: none;
+        }
+        #btnCopy:hover {
+            background: #1e7e34;
+        }
+        #out {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 100px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+            margin-bottom: 15px;
+        }
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .container { padding: 20px; }
+        }
+    </style>
