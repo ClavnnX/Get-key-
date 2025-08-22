@@ -7,8 +7,8 @@ const app = express();
 // Trust proxy for Vercel
 app.set('trust proxy', true);
 
-// Serve static files
-app.use(express.static('public'));
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Middleware to parse JSON and get real IP
 app.use(express.json());
@@ -37,7 +37,7 @@ const keyStorage = {};
 // Structure: { ip: { token: string, expires: Date, created: Date, step: number } }
 const tokenStorage = {};
 
-// Token Vertise Anda
+// Token Vertise Anda (untuk nanti saat dipasang link)
 const VERTISE_TOKEN = '6457aac2196b55786323be0f9d8580cc1dd63627c32d6d5e34fc74cfaee18c88';
 
 // Helper function to generate random 10-character uppercase key
@@ -60,7 +60,7 @@ function isKeyExpired(keyData) {
   return new Date() > keyData.expires;
 }
 
-// Helper function to clean up expired keys (optional cleanup)
+// Helper function to clean up expired keys
 function cleanupExpiredKeys() {
   const now = new Date();
   Object.keys(keyStorage).forEach(ip => {
@@ -234,16 +234,16 @@ app.get('/validate', (req, res) => {
 
 // Homepage - serve HTML UI (starting point)
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public/index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// STEP ROUTES - sekarang mengharuskan token
+// STEP ROUTES - mengharuskan token
 app.get('/step1', (req, res) => {
   const { token } = req.query;
   if (!token) {
     return res.redirect('/');
   }
-  res.sendFile(path.join(__dirname, 'public/index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.get('/step2', (req, res) => {
@@ -251,7 +251,7 @@ app.get('/step2', (req, res) => {
   if (!token) {
     return res.redirect('/');
   }
-  res.sendFile(path.join(__dirname, 'public/index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.get('/step3', (req, res) => {
@@ -259,7 +259,7 @@ app.get('/step3', (req, res) => {
   if (!token) {
     return res.redirect('/');
   }
-  res.sendFile(path.join(__dirname, 'public/index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.get('/generate', (req, res) => {
@@ -267,7 +267,7 @@ app.get('/generate', (req, res) => {
   if (!token) {
     return res.redirect('/');
   }
-  res.sendFile(path.join(__dirname, 'public/index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Start verification process - generate token and redirect to step1
@@ -346,7 +346,65 @@ app.get('/verify', (req, res) => {
   }
 });
 
-// CALLBACK ENDPOINTS UNTUK VERTISE LINKS
+// TESTING ENDPOINTS - menggantikan callback Vertise untuk testing
+// Test endpoint untuk step 1 completion
+app.get('/test/complete-step1', (req, res) => {
+  const { token } = req.query;
+  
+  if (!token) {
+    return res.status(400).json({ error: 'Token required' });
+  }
+  
+  const userIP = req.realIP;
+  if (tokenStorage[userIP] && tokenStorage[userIP].token === token) {
+    tokenStorage[userIP].step = 1;
+    tokenStorage[userIP].expires = new Date(Date.now() + 2 * 60 * 60 * 1000); // Extend expiry
+    
+    res.redirect(`/step2?token=${token}`);
+  } else {
+    res.status(400).json({ error: 'Invalid token' });
+  }
+});
+
+// Test endpoint untuk step 2 completion
+app.get('/test/complete-step2', (req, res) => {
+  const { token } = req.query;
+  
+  if (!token) {
+    return res.status(400).json({ error: 'Token required' });
+  }
+  
+  const userIP = req.realIP;
+  if (tokenStorage[userIP] && tokenStorage[userIP].token === token && tokenStorage[userIP].step >= 1) {
+    tokenStorage[userIP].step = 2;
+    tokenStorage[userIP].expires = new Date(Date.now() + 2 * 60 * 60 * 1000); // Extend expiry
+    
+    res.redirect(`/step3?token=${token}`);
+  } else {
+    res.status(400).json({ error: 'Invalid token or step not completed' });
+  }
+});
+
+// Test endpoint untuk step 3 completion
+app.get('/test/complete-step3', (req, res) => {
+  const { token } = req.query;
+  
+  if (!token) {
+    return res.status(400).json({ error: 'Token required' });
+  }
+  
+  const userIP = req.realIP;
+  if (tokenStorage[userIP] && tokenStorage[userIP].token === token && tokenStorage[userIP].step >= 2) {
+    tokenStorage[userIP].step = 3;
+    tokenStorage[userIP].expires = new Date(Date.now() + 2 * 60 * 60 * 1000); // Extend expiry
+    
+    res.redirect(`/generate?token=${token}`);
+  } else {
+    res.status(400).json({ error: 'Invalid token or previous steps not completed' });
+  }
+});
+
+// CALLBACK ENDPOINTS UNTUK VERTISE LINKS (untuk nanti saat dipasang)
 // Callback untuk step 1 - setelah selesai vertise pertama
 app.get('/callback/step1', (req, res) => {
   const { user_ref, token } = req.query;
@@ -420,11 +478,12 @@ app.get('/callback/step3', (req, res) => {
 app.get('/status', (req, res) => {
   res.json({
     status: 'online',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    server: 'Vercel'
   });
 });
 
-// Endpoint for getting system stats (optional, for debugging)
+// Endpoint for getting system stats
 app.get('/stats', (req, res) => {
   try {
     // Clean up expired keys before showing stats
@@ -462,7 +521,10 @@ app.use('*', (req, res) => {
       '/step1', 
       '/step2', 
       '/step3', 
-      '/generate', 
+      '/generate',
+      '/test/complete-step1',
+      '/test/complete-step2', 
+      '/test/complete-step3',
       '/callback/step1',
       '/callback/step2',
       '/callback/step3',
@@ -486,16 +548,6 @@ setInterval(() => {
   cleanupExpiredTokens();
   console.log('Cleaned up expired keys and tokens at:', new Date().toISOString());
 }, 30 * 60 * 1000);
-
-// For local development (Replit)
-if (require.main === module) {
-  const PORT = process.env.PORT || 5000;
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`ClavnnX Key System API server running on port ${PORT}`);
-    console.log(`Access at: http://localhost:${PORT}`);
-    console.log('Verification links: Ready to be configured');
-  });
-}
 
 // Export app for Vercel
 module.exports = app;
