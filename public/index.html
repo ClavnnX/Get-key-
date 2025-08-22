@@ -144,11 +144,8 @@
                         output.textContent = 'Complete the first verification step to proceed.\n\nCopy URL dari address bar untuk setup Vertise link pertama.\n\nURL saat ini untuk Step 1:\n' + newURL.replace('step=0', 'step=1');
                         
                         btnContinue.onclick = () => {
-                            // Di sini nanti akan diganti dengan link vertise
-                            // window.location.href = 'YOUR_VERTISE_LINK_1';
-                            
-                            // Untuk testing sementara, langsung ke step berikutnya:
-                            window.location.href = `/verify?token=${token}&step=1&bypass=dac4c4fd65791af6212f7b69f1a28f97259082835ee9d0eddca7f95732275509`;
+                            // Redirect to Vertise link 1
+                            window.location.href = 'https://link-hub.net/1385845/0Tpockg8i7RS';
                         };
                         
                     } else if (currentStep === 1) {
@@ -158,11 +155,8 @@
                         output.textContent = 'Great! Step 1 completed.\n\nCopy URL dari address bar untuk setup Vertise link kedua.\n\nURL saat ini untuk Step 2:\n' + newURL.replace('step=1', 'step=2');
                         
                         btnContinue.onclick = () => {
-                            // Di sini nanti akan diganti dengan link vertise
-                            // window.location.href = 'YOUR_VERTISE_LINK_2';
-                            
-                            // Untuk testing sementara, langsung ke step berikutnya:
-                            window.location.href = `/verify?token=${token}&step=2&bypass=dac4c4fd65791af6212f7b69f1a28f97259082835ee9d0eddca7f95732275509`;
+                            // Redirect to Vertise link 2
+                            window.location.href = 'https://link-target.net/1385845/sCCiJeLQ3BfA';
                         };
                         
                     } else if (currentStep === 2) {
@@ -172,11 +166,8 @@
                         output.textContent = 'Excellent! Steps 1 & 2 completed.\n\nCopy URL dari address bar untuk setup Vertise link ketiga.\n\nURL saat ini untuk Step 3:\n' + newURL.replace('step=2', 'step=3');
                         
                         btnContinue.onclick = () => {
-                            // Di sini nanti akan diganti dengan link vertise
-                            // window.location.href = 'YOUR_VERTISE_LINK_3';
-                            
-                            // Untuk testing sementara, langsung ke step berikutnya:
-                            window.location.href = `/verify?token=${token}&step=3&bypass=dac4c4fd65791af6212f7b69f1a28f97259082835ee9d0eddca7f95732275509`;
+                            // Redirect to Vertise link 3
+                            window.location.href = 'https://link-target.net/1385845/1NJw6vONwDd5';
                         };
                         
                     } else if (currentStep >= 3) {
