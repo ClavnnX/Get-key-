@@ -125,7 +125,7 @@
             
             btnContinue.addEventListener('click', () => {
                 // Start verification process - akan generate token dan redirect ke step1
-                window.location.href = '/start-verification';
+                window.location.href = '/api/start-verification';
             });
         }
 
@@ -143,7 +143,7 @@
                 
                 btnContinue.addEventListener('click', () => {
                     // Vertise link 1 - https://link-target.net/1385845/1NJw6vONwDd5
-                    const callbackURL = encodeURIComponent(`${window.location.origin}/callback/step1?user_ref=${token}&token=${getVertiseToken()}`);
+                    const callbackURL = encodeURIComponent(`${window.location.origin}/api/callback/step1?user_ref=${token}&token=${getVertiseToken()}`);
                     const vertiseURL = `https://link-target.net/1385845/1NJw6vONwDd5?url=${callbackURL}`;
                     
                     output.textContent = 'Opening verification link...\n\nPlease complete the verification on the opened page.\n\nAfter completion, you will be automatically redirected to the next step.';
@@ -170,7 +170,7 @@
                 
                 btnContinue.addEventListener('click', () => {
                     // Vertise link 2 - https://link-target.net/1385845/sCCiJeLQ3BfA
-                    const callbackURL = encodeURIComponent(`${window.location.origin}/callback/step2?user_ref=${token}&token=${getVertiseToken()}`);
+                    const callbackURL = encodeURIComponent(`${window.location.origin}/api/callback/step2?user_ref=${token}&token=${getVertiseToken()}`);
                     const vertiseURL = `https://link-target.net/1385845/sCCiJeLQ3BfA?url=${callbackURL}`;
                     
                     output.textContent = 'Opening second verification link...\n\nPlease complete the verification on the opened page.\n\nAfter completion, you will be automatically redirected to the next step.';
@@ -197,7 +197,7 @@
                 
                 btnContinue.addEventListener('click', () => {
                     // Vertise link 3 - https://link-hub.net/1385845/0Tpockg8i7RS (langsung ke generate key)
-                    const callbackURL = encodeURIComponent(`${window.location.origin}/callback/step3?user_ref=${token}&token=${getVertiseToken()}`);
+                    const callbackURL = encodeURIComponent(`${window.location.origin}/api/callback/step3?user_ref=${token}&token=${getVertiseToken()}`);
                     const vertiseURL = `https://link-hub.net/1385845/0Tpockg8i7RS?url=${callbackURL}`;
                     
                     output.textContent = 'Opening final verification link...\n\nPlease complete the verification on the opened page.\n\nAfter completion, you will be automatically redirected to generate your API key.';
@@ -232,7 +232,7 @@
         // Helper function to verify token and required step
         async function verifyTokenAndProceed(token, requiredStep, callback) {
             try {
-                const response = await fetch(`/verify?token=${token}`);
+                const response = await fetch(`/api/verify?token=${token}`);
                 const data = await response.json();
                 
                 if (response.ok && data.valid) {
@@ -277,7 +277,7 @@
             btnGen.classList.add('loading');
             
             try {
-                const response = await fetch(`/getkey?token=${token}`);
+                const response = await fetch(`/api/getkey?token=${token}`);
                 const data = await response.json();
                 
                 if (response.ok) {
@@ -285,43 +285,90 @@
                     const expiry = new Date(data.expires);
                     output.textContent = `SUCCESS! ✓\n\nYour API Key: ${data.key}\n\nExpires: ${expiry.toLocaleString()}\n\nKey is valid for 24 hours from generation.\n\nPlease copy and save your key securely.`;
                     btnCopy.style.display = 'block';
+                    btnGen.style.display = 'none';
                 } else {
-                    output.textContent = `❌ Error: ${data.error || 'Failed to generate key'}\n\nPlease make sure you have completed all verification steps properly.\n\nIf you skipped any step or tried to bypass the verification process, you need to start over from the beginning.`;
-                    btnCopy.style.display = 'none';
+                    output.textContent = `❌ Error: ${data.error || 'Failed to generate key'}\n\nPlease try again or contact support if the problem persists.`;
+                    btnGen.disabled = false;
+                    btnGen.textContent = 'Generate Key';
+                    btnGen.classList.remove('loading');
                 }
             } catch (error) {
-                output.textContent = `❌ Error: Unable to connect to server.\n\nPlease check your internet connection and try again.`;
-                btnCopy.style.display = 'none';
+                output.textContent = '❌ Error: Unable to generate key.\n\nPlease check your internet connection and try again.';
+                btnGen.disabled = false;
+                btnGen.textContent = 'Generate Key';
+                btnGen.classList.remove('loading');
             }
-            
-            btnGen.disabled = false;
-            btnGen.textContent = 'Generate Key';
-            btnGen.classList.remove('loading');
         }
 
-        // Copy key functionality
+        // Copy key to clipboard
         btnCopy.addEventListener('click', async () => {
             if (currentKey) {
                 try {
                     await navigator.clipboard.writeText(currentKey);
+                    const originalText = btnCopy.textContent;
                     btnCopy.textContent = 'Copied! ✓';
+                    btnCopy.style.background = '#20c997';
+                    
                     setTimeout(() => {
-                        btnCopy.textContent = 'Copy Key';
+                        btnCopy.textContent = originalText;
+                        btnCopy.style.background = '#28a745';
                     }, 2000);
-                } catch (error) {
+                } catch (err) {
                     // Fallback for older browsers
                     const textArea = document.createElement('textarea');
                     textArea.value = currentKey;
+                    textArea.style.position = 'fixed';
+                    textArea.style.left = '-999999px';
+                    textArea.style.top = '-999999px';
                     document.body.appendChild(textArea);
+                    textArea.focus();
                     textArea.select();
-                    document.execCommand('copy');
+                    
+                    try {
+                        document.execCommand('copy');
+                        const originalText = btnCopy.textContent;
+                        btnCopy.textContent = 'Copied! ✓';
+                        btnCopy.style.background = '#20c997';
+                        
+                        setTimeout(() => {
+                            btnCopy.textContent = originalText;
+                            btnCopy.style.background = '#28a745';
+                        }, 2000);
+                    } catch (err) {
+                        output.textContent += '\n\n⚠️ Copy failed: Please manually select and copy the key above.';
+                    }
+                    
                     document.body.removeChild(textArea);
-                    btnCopy.textContent = 'Copied! ✓';
-                    setTimeout(() => {
-                        btnCopy.textContent = 'Copy Key';
-                    }, 2000);
                 }
             }
+        });
+
+        // Initialize page based on current path
+        window.addEventListener('load', () => {
+            // Clean up any existing event listeners to prevent duplicates
+            const newBtn = btnContinue.cloneNode(true);
+            btnContinue.parentNode.replaceChild(newBtn, btnContinue);
+            
+            // Re-initialize references
+            const updatedBtnContinue = document.getElementById('btnContinue');
+            
+            // Re-run page initialization based on current path
+            if (currentPath === '/') {
+                handleHomepage();
+            } else if (currentPath === '/step1') {
+                handleStep1();
+            } else if (currentPath === '/step2') {
+                handleStep2();
+            } else if (currentPath === '/step3') {
+                handleStep3();
+            } else if (currentPath === '/generate') {
+                handleGenerate();
+            }
+        });
+
+        // Handle browser back/forward navigation
+        window.addEventListener('popstate', (event) => {
+            location.reload();
         });
     </script>
 </body>
