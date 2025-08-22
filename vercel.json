@@ -12,7 +12,7 @@
       "dest": "server/index.js"
     },
     {
-      "src": "/getkey",
+      "src": "/getkey", 
       "dest": "server/index.js"
     },
     {
@@ -27,13 +27,5 @@
       "src": "/(.*)",
       "dest": "server/index.js"
     }
-  ],
-  "functions": {
-    "server/index.js": {
-      "maxDuration": 30
-    }
-  },
-  "env": {
-    "NODE_ENV": "production"
-  }
+  ]
 }
