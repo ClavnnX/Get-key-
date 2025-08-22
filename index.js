@@ -34,8 +34,11 @@ app.use((req, res, next) => {
 const keyStorage = {};
 
 // In-memory storage for verification tokens
-// Structure: { ip: { token: string, expires: Date, created: Date, used: boolean } }
+// Structure: { ip: { token: string, expires: Date, created: Date, step: number } }
 const tokenStorage = {};
+
+// Anti-bypass token from vertise
+const ANTI_BYPASS_TOKEN = 'dac4c4fd65791af6212f7b69f1a28f97259082835ee9d0eddca7f95732275509';
 
 // Helper function to generate random 10-character uppercase key
 function generateKey() {
@@ -87,18 +90,18 @@ function isTokenExpired(tokenData) {
   return new Date() > tokenData.expires;
 }
 
-// Helper function to validate token
-function isValidToken(userIP, token) {
+// Helper function to validate token for specific step
+function isValidToken(userIP, token, requiredStep = 3) {
   if (!tokenStorage[userIP]) {
     return false;
   }
   
   const tokenData = tokenStorage[userIP];
   
-  // Check if token matches and is not expired and not used
+  // Check if token matches and is not expired and has completed required steps
   return tokenData.token === token && 
          !isTokenExpired(tokenData) && 
-         !tokenData.used;
+         tokenData.step >= requiredStep;
 }
 
 // Helper function to clean up expired tokens
@@ -139,10 +142,7 @@ app.get('/getkey', (req, res) => {
     const now = new Date();
     const expirationTime = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
     
-    // Mark token as used
-    if (tokenStorage[userIP]) {
-      tokenStorage[userIP].used = true;
-    }
+    // No need to mark token as used anymore since we track by steps
     
     // Check if user already has a key
     if (keyStorage[userIP]) {
@@ -239,11 +239,11 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
-// Verify endpoint - handles token validation and generation
+// Verify endpoint - handles token validation and step progression
 app.get('/verify', (req, res) => {
   try {
     const userIP = req.realIP;
-    const { token } = req.query;
+    const { token, step, bypass } = req.query;
     
     if (!userIP) {
       return res.status(400).json({
@@ -252,34 +252,68 @@ app.get('/verify', (req, res) => {
     }
 
     const now = new Date();
-    const tokenExpirationTime = new Date(now.getTime() + 30 * 60 * 1000); // 30 minutes
+    const tokenExpirationTime = new Date(now.getTime() + 60 * 60 * 1000); // 60 minutes
 
-    // If no token provided, this means user is coming from Platoboost/Vertise
-    // Generate a new verification token for them
+    // If no token provided, this means user is starting fresh
     if (!token) {
       const newToken = generateToken();
       
-      // Store the new token
+      // Store the new token with step 0
       tokenStorage[userIP] = {
         token: newToken,
         expires: tokenExpirationTime,
         created: now,
-        used: false
+        step: 0
       };
       
       // Redirect to home page with token parameter
       return res.redirect(`/?token=${newToken}`);
     }
     
-    // If token is provided, validate it
-    if (isValidToken(userIP, token)) {
+    // If step parameter is provided, this means user completed a vertise step
+    if (step) {
+      const stepNumber = parseInt(step);
+      
+      // Anti-bypass validation: check if bypass token is provided and valid
+      if (!bypass || bypass !== ANTI_BYPASS_TOKEN) {
+        return res.status(403).json({
+          error: 'Invalid bypass token. Please complete the verification step properly.'
+        });
+      }
+      
+      if (tokenStorage[userIP] && tokenStorage[userIP].token === token) {
+        // Additional validation: user can only advance one step at a time
+        const currentStep = tokenStorage[userIP].step;
+        if (stepNumber !== currentStep + 1) {
+          return res.status(403).json({
+            error: 'Invalid step progression. Please complete steps in order.'
+          });
+        }
+        
+        // Update step progress
+        tokenStorage[userIP].step = stepNumber;
+        tokenStorage[userIP].expires = new Date(now.getTime() + 60 * 60 * 1000); // Extend expiry
+        
+        // Redirect back to home page with updated token
+        return res.redirect(`/?token=${token}`);
+      } else {
+        return res.status(403).json({
+          error: 'Invalid user token'
+        });
+      }
+    }
+    
+    // If token is provided for validation, check current step
+    if (tokenStorage[userIP] && tokenStorage[userIP].token === token && !isTokenExpired(tokenStorage[userIP])) {
       return res.json({
         valid: true,
+        step: tokenStorage[userIP].step,
         message: 'Token is valid'
       });
     } else {
       return res.json({
         valid: false,
+        step: 0,
         message: 'Invalid or expired token'
       });
     }
