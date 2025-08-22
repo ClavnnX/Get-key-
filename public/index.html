@@ -108,10 +108,11 @@
         // Check if we're on verify page (has token parameter)
         const urlParams = new URLSearchParams(window.location.search);
         const token = urlParams.get('token');
+        const currentStep = urlParams.get('currentstep');
         
         if (token) {
             // We're on verify page, verify the token
-            verifyToken(token);
+            verifyToken(token, currentStep);
         } else {
             // We're on start page, show initial step
             btnContinue.textContent = 'Complete the step';
@@ -124,7 +125,7 @@
             });
         }
 
-        async function verifyToken(token) {
+        async function verifyToken(token, currentStepFromURL) {
             try {
                 const response = await fetch(`/verify?token=${token}`);
                 const data = await response.json();
@@ -132,14 +133,21 @@
                 if (response.ok && data.valid) {
                     const currentStep = data.step;
                     
+                    // Update URL to show current step
+                    const newURL = `${window.location.origin}/?token=${token}&step=${currentStep}`;
+                    window.history.replaceState({}, '', newURL);
+                    
                     if (currentStep === 0) {
                         // User belum complete step apapun, show step 1/3
                         btnContinue.textContent = 'Continue 1/3';
                         stepInfo.textContent = 'Step 1/3: First verification step';
-                        output.textContent = 'Complete the first verification step to proceed.\n\nAfter completing the step, you will return here automatically.';
+                        output.textContent = 'Complete the first verification step to proceed.\n\nCopy URL dari address bar untuk setup Vertise link pertama.\n\nURL saat ini untuk Step 1:\n' + newURL.replace('step=0', 'step=1');
                         
                         btnContinue.onclick = () => {
-                            // Langsung lanjut ke step berikutnya tanpa vertise
+                            // Di sini nanti akan diganti dengan link vertise
+                            // window.location.href = 'YOUR_VERTISE_LINK_1';
+                            
+                            // Untuk testing sementara, langsung ke step berikutnya:
                             window.location.href = `/verify?token=${token}&step=1&bypass=dac4c4fd65791af6212f7b69f1a28f97259082835ee9d0eddca7f95732275509`;
                         };
                         
@@ -147,10 +155,13 @@
                         // User sudah complete step 1, show step 2/3
                         btnContinue.textContent = 'Continue 2/3';
                         stepInfo.textContent = 'Step 2/3: Second verification step';
-                        output.textContent = 'Great! Step 1 completed.\n\nNow complete the second verification step to proceed.';
+                        output.textContent = 'Great! Step 1 completed.\n\nCopy URL dari address bar untuk setup Vertise link kedua.\n\nURL saat ini untuk Step 2:\n' + newURL.replace('step=1', 'step=2');
                         
                         btnContinue.onclick = () => {
-                            // Langsung lanjut ke step berikutnya tanpa vertise
+                            // Di sini nanti akan diganti dengan link vertise
+                            // window.location.href = 'YOUR_VERTISE_LINK_2';
+                            
+                            // Untuk testing sementara, langsung ke step berikutnya:
                             window.location.href = `/verify?token=${token}&step=2&bypass=dac4c4fd65791af6212f7b69f1a28f97259082835ee9d0eddca7f95732275509`;
                         };
                         
@@ -158,10 +169,13 @@
                         // User sudah complete step 2, show step 3/3
                         btnContinue.textContent = 'Continue 3/3';
                         stepInfo.textContent = 'Step 3/3: Final verification step';
-                        output.textContent = 'Excellent! Steps 1 & 2 completed.\n\nComplete the final verification step to unlock key generation.';
+                        output.textContent = 'Excellent! Steps 1 & 2 completed.\n\nCopy URL dari address bar untuk setup Vertise link ketiga.\n\nURL saat ini untuk Step 3:\n' + newURL.replace('step=2', 'step=3');
                         
                         btnContinue.onclick = () => {
-                            // Langsung lanjut ke step berikutnya tanpa vertise
+                            // Di sini nanti akan diganti dengan link vertise
+                            // window.location.href = 'YOUR_VERTISE_LINK_3';
+                            
+                            // Untuk testing sementara, langsung ke step berikutnya:
                             window.location.href = `/verify?token=${token}&step=3&bypass=dac4c4fd65791af6212f7b69f1a28f97259082835ee9d0eddca7f95732275509`;
                         };
                         
@@ -172,7 +186,12 @@
                         stepInfo.textContent = 'All steps completed! Ready to generate key.';
                         stepInfo.style.background = '#0f4f0f';
                         stepInfo.style.borderColor = '#28a745';
-                        output.textContent = '🎉 Congratulations!\n\nAll 3 verification steps completed successfully!\n\nClick "Generate Key" to get your API key.';
+                        
+                        // Update URL to show step 3 (final step)
+                        const finalURL = `${window.location.origin}/?token=${token}&step=3`;
+                        window.history.replaceState({}, '', finalURL);
+                        
+                        output.textContent = '🎉 Congratulations!\n\nAll 3 verification steps completed successfully!\n\nURL untuk Generate Key:\n' + finalURL + '\n\nClick "Generate Key" to get your API key.';
                         
                         btnContinue.onclick = async () => {
                             await generateKey(token);
