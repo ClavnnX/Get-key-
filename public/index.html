@@ -88,11 +88,21 @@
         const output = document.getElementById('out');
         let currentKey = '';
 
-        // Check if we're on verify page (has token parameter)
+        // Get current URL path and parameters
+        const currentPath = window.location.pathname;
         const urlParams = new URLSearchParams(window.location.search);
         const token = urlParams.get('token');
         
-        if (token) {
+        // Determine current page based on URL
+        if (currentPath === '/step1') {
+            handleStep1();
+        } else if (currentPath === '/step2') {
+            handleStep2();
+        } else if (currentPath === '/step3') {
+            handleStep3();
+        } else if (currentPath === '/generate') {
+            handleGenerate();
+        } else if (token) {
             // We're on verify page, verify the token
             verifyToken(token);
         } else {
@@ -110,6 +120,78 @@
             });
         }
 
+        function handleStep1() {
+            if (!token) {
+                window.location.href = '/';
+                return;
+            }
+            
+            btnContinue.textContent = 'Continue 1/3';
+            output.textContent = 'Complete verification step 1 of 3';
+            
+            btnContinue.addEventListener('click', () => {
+                // Link vertise pertama akan diisi user nanti
+                // const vertiseLink1 = 'YOUR_VERTISE_LINK_1_HERE';
+                // window.location.href = vertiseLink1;
+                
+                // Untuk testing sementara
+                window.location.href = `/verify?token=${token}&step=1&bypass=dac4c4fd65791af6212f7b69f1a28f97259082835ee9d0eddca7f95732275509`;
+            });
+        }
+
+        function handleStep2() {
+            if (!token) {
+                window.location.href = '/';
+                return;
+            }
+            
+            btnContinue.textContent = 'Continue 2/3';
+            output.textContent = 'Complete verification step 2 of 3';
+            
+            btnContinue.addEventListener('click', () => {
+                // Link vertise kedua akan diisi user nanti
+                // const vertiseLink2 = 'YOUR_VERTISE_LINK_2_HERE';
+                // window.location.href = vertiseLink2;
+                
+                // Untuk testing sementara
+                window.location.href = `/verify?token=${token}&step=2&bypass=dac4c4fd65791af6212f7b69f1a28f97259082835ee9d0eddca7f95732275509`;
+            });
+        }
+
+        function handleStep3() {
+            if (!token) {
+                window.location.href = '/';
+                return;
+            }
+            
+            btnContinue.textContent = 'Continue 3/3';
+            output.textContent = 'Complete final verification step 3 of 3';
+            
+            btnContinue.addEventListener('click', () => {
+                // Link vertise ketiga akan diisi user nanti
+                // const vertiseLink3 = 'YOUR_VERTISE_LINK_3_HERE';
+                // window.location.href = vertiseLink3;
+                
+                // Untuk testing sementara
+                window.location.href = `/verify?token=${token}&step=3&bypass=dac4c4fd65791af6212f7b69f1a28f97259082835ee9d0eddca7f95732275509`;
+            });
+        }
+
+        function handleGenerate() {
+            if (!token) {
+                window.location.href = '/';
+                return;
+            }
+            
+            btnContinue.textContent = 'Generate Key';
+            btnContinue.id = 'btnGen';
+            output.textContent = 'All verification steps completed! Click "Generate Key" to get your API key.';
+            
+            btnContinue.addEventListener('click', async () => {
+                await generateKey(token);
+            });
+        }
+
         async function verifyToken(token) {
             try {
                 const response = await fetch(`/verify?token=${token}`);
@@ -119,56 +201,20 @@
                     const currentStep = data.step;
                     
                     if (currentStep === 0) {
-                        // User belum complete step apapun, show step 1/3
-                        btnContinue.textContent = 'Continue 1/3';
-                        output.textContent = 'Complete verification step 1 of 3';
-                        
-                        btnContinue.addEventListener('click', () => {
-                            // Link vertise pertama akan diisi user nanti
-                            // const vertiseLink1 = 'YOUR_VERTISE_LINK_1_HERE';
-                            // window.location.href = vertiseLink1;
-                            
-                            // Untuk testing sementara
-                            window.location.href = `/verify?token=${token}&step=1&bypass=dac4c4fd65791af6212f7b69f1a28f97259082835ee9d0eddca7f95732275509`;
-                        });
+                        // User belum complete step apapun, redirect to step1
+                        window.location.href = `/step1?token=${token}`;
                         
                     } else if (currentStep === 1) {
-                        // User sudah complete step 1, show step 2/3
-                        btnContinue.textContent = 'Continue 2/3';
-                        output.textContent = 'Complete verification step 2 of 3';
-                        
-                        btnContinue.addEventListener('click', () => {
-                            // Link vertise kedua akan diisi user nanti
-                            // const vertiseLink2 = 'YOUR_VERTISE_LINK_2_HERE';
-                            // window.location.href = vertiseLink2;
-                            
-                            // Untuk testing sementara
-                            window.location.href = `/verify?token=${token}&step=2&bypass=dac4c4fd65791af6212f7b69f1a28f97259082835ee9d0eddca7f95732275509`;
-                        });
+                        // User sudah complete step 1, redirect to step2
+                        window.location.href = `/step2?token=${token}`;
                         
                     } else if (currentStep === 2) {
-                        // User sudah complete step 2, show step 3/3
-                        btnContinue.textContent = 'Continue 3/3';
-                        output.textContent = 'Complete final verification step 3 of 3';
-                        
-                        btnContinue.addEventListener('click', () => {
-                            // Link vertise ketiga akan diisi user nanti
-                            // const vertiseLink3 = 'YOUR_VERTISE_LINK_3_HERE';
-                            // window.location.href = vertiseLink3;
-                            
-                            // Untuk testing sementara
-                            window.location.href = `/verify?token=${token}&step=3&bypass=dac4c4fd65791af6212f7b69f1a28f97259082835ee9d0eddca7f95732275509`;
-                        });
+                        // User sudah complete step 2, redirect to step3
+                        window.location.href = `/step3?token=${token}`;
                         
                     } else if (currentStep >= 3) {
-                        // User sudah complete semua step, show generate key button
-                        btnContinue.textContent = 'Generate Key';
-                        btnContinue.id = 'btnGen';
-                        output.textContent = 'All verification steps completed! Click "Generate Key" to get your API key.';
-                        
-                        btnContinue.addEventListener('click', async () => {
-                            await generateKey(token);
-                        });
+                        // User sudah complete semua step, redirect to generate
+                        window.location.href = `/generate?token=${token}`;
                     }
                 } else {
                     // Token is invalid
