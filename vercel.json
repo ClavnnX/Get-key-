@@ -1,11 +1,10 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "index.js",
-      "use": "@vercel/node"
+  "functions": {
+    "index.js": {
+      "runtime": "@vercel/node@18.x"
     }
-  ],
+  },
   "routes": [
     {
       "src": "/",
@@ -28,36 +27,14 @@
       "dest": "/index.js"
     },
     {
-      "src": "/start-verification",
-      "dest": "/index.js"
-    },
-    {
-      "src": "/getkey",
-      "dest": "/index.js"
-    },
-    {
-      "src": "/validate",
-      "dest": "/index.js"
-    },
-    {
-      "src": "/verify",
-      "dest": "/index.js"
-    },
-    {
-      "src": "/callback/(.*)",
-      "dest": "/index.js"
-    },
-    {
-      "src": "/status",
-      "dest": "/index.js"
-    },
-    {
-      "src": "/stats",
+      "src": "/api/(.*)",
       "dest": "/index.js"
     },
     {
       "src": "/(.*)",
       "dest": "/index.js"
     }
-  ]
+  ],
+  "cleanUrls": true,
+  "trailingSlash": false
 }
