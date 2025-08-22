@@ -133,9 +133,9 @@ app.get('/getkey', (req, res) => {
       });
     }
 
-    if (!isValidToken(userIP, token)) {
+    if (!isValidToken(userIP, token, 3)) {
       return res.status(403).json({
-        error: 'Forbidden: Invalid or expired token. Please complete all verification steps properly.'
+        error: 'Forbidden: Invalid token or incomplete verification steps. You must complete all 3 verification steps in order.'
       });
     }
 
@@ -346,65 +346,17 @@ app.get('/verify', (req, res) => {
   }
 });
 
-// TESTING ENDPOINTS - menggantikan callback Vertise untuk testing
-// Test endpoint untuk step 1 completion
-app.get('/test/complete-step1', (req, res) => {
-  const { token } = req.query;
-  
-  if (!token) {
-    return res.status(400).json({ error: 'Token required' });
+// Helper function to find user IP by token (for callback validation)
+function findUserIPByToken(token) {
+  for (const [ip, tokenData] of Object.entries(tokenStorage)) {
+    if (tokenData && tokenData.token === token && !isTokenExpired(tokenData)) {
+      return ip;
+    }
   }
-  
-  const userIP = req.realIP;
-  if (tokenStorage[userIP] && tokenStorage[userIP].token === token) {
-    tokenStorage[userIP].step = 1;
-    tokenStorage[userIP].expires = new Date(Date.now() + 2 * 60 * 60 * 1000); // Extend expiry
-    
-    res.redirect(`/step2?token=${token}`);
-  } else {
-    res.status(400).json({ error: 'Invalid token' });
-  }
-});
+  return null;
+}
 
-// Test endpoint untuk step 2 completion
-app.get('/test/complete-step2', (req, res) => {
-  const { token } = req.query;
-  
-  if (!token) {
-    return res.status(400).json({ error: 'Token required' });
-  }
-  
-  const userIP = req.realIP;
-  if (tokenStorage[userIP] && tokenStorage[userIP].token === token && tokenStorage[userIP].step >= 1) {
-    tokenStorage[userIP].step = 2;
-    tokenStorage[userIP].expires = new Date(Date.now() + 2 * 60 * 60 * 1000); // Extend expiry
-    
-    res.redirect(`/step3?token=${token}`);
-  } else {
-    res.status(400).json({ error: 'Invalid token or step not completed' });
-  }
-});
-
-// Test endpoint untuk step 3 completion
-app.get('/test/complete-step3', (req, res) => {
-  const { token } = req.query;
-  
-  if (!token) {
-    return res.status(400).json({ error: 'Token required' });
-  }
-  
-  const userIP = req.realIP;
-  if (tokenStorage[userIP] && tokenStorage[userIP].token === token && tokenStorage[userIP].step >= 2) {
-    tokenStorage[userIP].step = 3;
-    tokenStorage[userIP].expires = new Date(Date.now() + 2 * 60 * 60 * 1000); // Extend expiry
-    
-    res.redirect(`/generate?token=${token}`);
-  } else {
-    res.status(400).json({ error: 'Invalid token or previous steps not completed' });
-  }
-});
-
-// CALLBACK ENDPOINTS UNTUK VERTISE LINKS (untuk nanti saat dipasang)
+// CALLBACK ENDPOINTS UNTUK VERTISE LINKS
 // Callback untuk step 1 - setelah selesai vertise pertama
 app.get('/callback/step1', (req, res) => {
   const { user_ref, token } = req.query;
@@ -415,14 +367,21 @@ app.get('/callback/step1', (req, res) => {
   }
   
   if (user_ref) {
-    // Update step ke 1 dan redirect ke step2
-    const userIP = req.realIP;
-    if (tokenStorage[userIP] && tokenStorage[userIP].token === user_ref) {
-      tokenStorage[userIP].step = 1;
-      tokenStorage[userIP].expires = new Date(Date.now() + 2 * 60 * 60 * 1000); // Extend expiry
-    }
+    // Cari IP user berdasarkan token
+    const userIP = findUserIPByToken(user_ref);
     
-    res.redirect(`/step2?token=${user_ref}`);
+    if (userIP && tokenStorage[userIP] && tokenStorage[userIP].token === user_ref) {
+      // Pastikan user mulai dari step 0
+      if (tokenStorage[userIP].step === 0) {
+        tokenStorage[userIP].step = 1;
+        tokenStorage[userIP].expires = new Date(Date.now() + 2 * 60 * 60 * 1000); // Extend expiry
+        res.redirect(`/step2?token=${user_ref}`);
+      } else {
+        res.status(403).json({ error: 'Invalid step sequence' });
+      }
+    } else {
+      res.status(400).json({ error: 'Invalid user reference token' });
+    }
   } else {
     res.status(400).json({ error: 'Missing user reference token' });
   }
@@ -438,14 +397,21 @@ app.get('/callback/step2', (req, res) => {
   }
   
   if (user_ref) {
-    // Update step ke 2 dan redirect ke step3
-    const userIP = req.realIP;
-    if (tokenStorage[userIP] && tokenStorage[userIP].token === user_ref) {
-      tokenStorage[userIP].step = 2;
-      tokenStorage[userIP].expires = new Date(Date.now() + 2 * 60 * 60 * 1000); // Extend expiry
-    }
+    // Cari IP user berdasarkan token
+    const userIP = findUserIPByToken(user_ref);
     
-    res.redirect(`/step3?token=${user_ref}`);
+    if (userIP && tokenStorage[userIP] && tokenStorage[userIP].token === user_ref) {
+      // Pastikan user sudah menyelesaikan step 1
+      if (tokenStorage[userIP].step === 1) {
+        tokenStorage[userIP].step = 2;
+        tokenStorage[userIP].expires = new Date(Date.now() + 2 * 60 * 60 * 1000); // Extend expiry
+        res.redirect(`/step3?token=${user_ref}`);
+      } else {
+        res.status(403).json({ error: 'Step 1 not completed or invalid sequence' });
+      }
+    } else {
+      res.status(400).json({ error: 'Invalid user reference token' });
+    }
   } else {
     res.status(400).json({ error: 'Missing user reference token' });
   }
@@ -461,14 +427,21 @@ app.get('/callback/step3', (req, res) => {
   }
   
   if (user_ref) {
-    // Update step ke 3 dan redirect ke generate
-    const userIP = req.realIP;
-    if (tokenStorage[userIP] && tokenStorage[userIP].token === user_ref) {
-      tokenStorage[userIP].step = 3;
-      tokenStorage[userIP].expires = new Date(Date.now() + 2 * 60 * 60 * 1000); // Extend expiry
-    }
+    // Cari IP user berdasarkan token
+    const userIP = findUserIPByToken(user_ref);
     
-    res.redirect(`/generate?token=${user_ref}`);
+    if (userIP && tokenStorage[userIP] && tokenStorage[userIP].token === user_ref) {
+      // Pastikan user sudah menyelesaikan step 2
+      if (tokenStorage[userIP].step === 2) {
+        tokenStorage[userIP].step = 3;
+        tokenStorage[userIP].expires = new Date(Date.now() + 2 * 60 * 60 * 1000); // Extend expiry
+        res.redirect(`/generate?token=${user_ref}`);
+      } else {
+        res.status(403).json({ error: 'Step 2 not completed or invalid sequence' });
+      }
+    } else {
+      res.status(400).json({ error: 'Invalid user reference token' });
+    }
   } else {
     res.status(400).json({ error: 'Missing user reference token' });
   }
