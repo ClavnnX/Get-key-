@@ -33,11 +33,11 @@
             margin-bottom: 15px;
             font-weight: bold;
         }
-        #btnGen {
+        #btnContinue, #btnGen {
             background: #007bff;
             color: white;
         }
-        #btnGen:hover {
+        #btnContinue:hover, #btnGen:hover {
             background: #0056b3;
         }
         #btnCopy {
@@ -71,46 +71,109 @@
 </head>
 <body>
     <div class="container">
-        <h1>Key Generator</h1>
-        <div id="out">Click "Generate Key" to get your key.</div>
-        <button id="btnGen">Generate Key</button>
-        <button id="btnCopy">Copy Key</button>
+        <h1>Get Key / KeyFlow</h1>
+        <button id="btnContinue">Continue</button>
+        <div id="out">Click "Continue" to proceed through verification steps</div>
+        <button id="btnCopy" style="display: none;">Copy Key</button>
     </div>
 
     <script>
-        const btnGen = document.getElementById('btnGen');
+        const btnContinue = document.getElementById('btnContinue');
         const btnCopy = document.getElementById('btnCopy');
-        const out = document.getElementById('out');
-        let currentKey = "";
+        const output = document.getElementById('out');
+        let currentKey = '';
 
-        btnGen.addEventListener('click', async () => {
-            btnGen.classList.add('loading');
-            out.textContent = "Generating key...";
+        // Check if we're on verify page (has token parameter)
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        
+        if (token) {
+            // We're on verify page, verify the token
+            verifyToken(token);
+        } else {
+            // We're on start page, show continue button
+            btnContinue.addEventListener('click', () => {
+                // For testing: redirect directly to /verify 
+                // In production, replace with your actual Platoboost/Vertise link
+                // const vertiseLink = `https://linkvertise.com/your-link?redirect=${encodeURIComponent(window.location.origin + '/verify')}`;
+                window.location.href = '/verify';
+            });
+        }
+
+        async function verifyToken(token) {
             try {
-                const res = await fetch('/getkey');
-                const data = await res.json();
-                if (data.success) {
+                const response = await fetch(`/verify?token=${token}`);
+                const data = await response.json();
+                
+                if (response.ok && data.valid) {
+                    // Token is valid, show generate key button
+                    btnContinue.textContent = 'Generate Key';
+                    btnContinue.id = 'btnGen';
+                    output.textContent = 'Token verified! Click "Generate Key" to get your API key.';
+                    
+                    btnContinue.addEventListener('click', async () => {
+                        await generateKey(token);
+                    });
+                } else {
+                    // Token is invalid
+                    btnContinue.style.display = 'none';
+                    output.textContent = 'Error: Invalid or expired verification token. Please start again.';
+                }
+            } catch (error) {
+                btnContinue.style.display = 'none';
+                output.textContent = 'Error: Unable to verify token. Please try again.';
+            }
+        }
+
+        async function generateKey(token) {
+            const btnGen = document.getElementById('btnGen');
+            btnGen.disabled = true;
+            btnGen.textContent = 'Generating...';
+            btnGen.classList.add('loading');
+            
+            try {
+                const response = await fetch(`/getkey?token=${token}`);
+                const data = await response.json();
+                
+                if (response.ok) {
                     currentKey = data.key;
-                    out.textContent = `Key: ${data.key}\nExpires: ${new Date(data.expires).toLocaleString()}`;
+                    const expiry = new Date(data.expires);
+                    output.textContent = `Key: ${data.key}\n\nExpires: ${expiry.toLocaleString()}\n\nValid for 24 hours from generation.`;
                     btnCopy.style.display = 'block';
                 } else {
-                    out.textContent = "Failed to generate key.";
+                    output.textContent = `Error: ${data.error || 'Failed to generate key'}`;
+                    btnCopy.style.display = 'none';
                 }
-            } catch (err) {
-                out.textContent = "Error: " + err.message;
-            } finally {
-                btnGen.classList.remove('loading');
+            } catch (error) {
+                output.textContent = `Error: Unable to connect to server. Please try again.`;
+                btnCopy.style.display = 'none';
             }
-        });
+            
+            btnGen.disabled = false;
+            btnGen.textContent = 'Generate Key';
+            btnGen.classList.remove('loading');
+        }
 
         btnCopy.addEventListener('click', async () => {
-            if (!currentKey) return;
-            try {
-                await navigator.clipboard.writeText(currentKey);
-                btnCopy.textContent = "Copied!";
-                setTimeout(() => btnCopy.textContent = "Copy Key", 2000);
-            } catch {
-                alert("Failed to copy");
+            if (currentKey) {
+                try {
+                    await navigator.clipboard.writeText(currentKey);
+                    btnCopy.textContent = 'Copied!';
+                    setTimeout(() => {
+                        btnCopy.textContent = 'Copy Key';
+                    }, 2000);
+                } catch (error) {
+                    // Fallback for older browsers
+                    const textArea = document.createElement('textarea');
+                    textArea.value = currentKey;
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    btnCopy.textContent = 'Copied!';
+                    setTimeout(() => {
+                        btnCopy.textContent = 'Copy Key';
+                    }, 2000);
+                }
             }
         });
     </script>
