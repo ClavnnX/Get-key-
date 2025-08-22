@@ -139,14 +139,15 @@
                         output.textContent = 'Complete the first verification step to proceed.\n\nAfter completing the step, you will return here automatically.';
                         
                         btnContinue.onclick = () => {
-                            // Di sini Anda akan memasang link vertise pertama
-                            // Contoh: window.location.href = 'https://link-vertise-step-1.com';
+                            // URL untuk step 1: Copy URL ini untuk setup vertise pertama
+                            const step1URL = `${window.location.origin}/verify?token=${token}&step=1&bypass=dac4c4fd65791af6212f7b69f1a28f97259082835ee9d0eddca7f95732275509`;
                             
-                            // Untuk testing sementara:
-                            alert('Paste your first Vertise link here!\n\nReplace this alert with:\nwindow.location.href = "YOUR_VERTISE_LINK_1";');
+                            // Show URL in output for copying
+                            output.textContent = `URL untuk Step 1:\n\n${step1URL}\n\nCopy URL di atas untuk setup Vertise link pertama.\n\nSetelah setup vertise, ganti button ini dengan link vertise Anda.`;
                             
-                            // Uncomment line berikut untuk testing tanpa vertise:
-                            // window.location.href = `/verify?token=${token}&step=1&bypass=dac4c4fd65791af6212f7b69f1a28f97259082835ee9d0eddca7f95732275509`;
+                            // Disable button to prevent accidental clicks
+                            btnContinue.disabled = true;
+                            btnContinue.textContent = 'URL Step 1 Displayed';
                         };
                         
                     } else if (currentStep === 1) {
@@ -156,14 +157,15 @@
                         output.textContent = 'Great! Step 1 completed.\n\nNow complete the second verification step to proceed.';
                         
                         btnContinue.onclick = () => {
-                            // Di sini Anda akan memasang link vertise kedua
-                            // Contoh: window.location.href = 'https://link-vertise-step-2.com';
+                            // URL untuk step 2: Copy URL ini untuk setup vertise kedua
+                            const step2URL = `${window.location.origin}/verify?token=${token}&step=2&bypass=dac4c4fd65791af6212f7b69f1a28f97259082835ee9d0eddca7f95732275509`;
                             
-                            // Untuk testing sementara:
-                            alert('Paste your second Vertise link here!\n\nReplace this alert with:\nwindow.location.href = "YOUR_VERTISE_LINK_2";');
+                            // Show URL in output for copying
+                            output.textContent = `URL untuk Step 2:\n\n${step2URL}\n\nCopy URL di atas untuk setup Vertise link kedua.\n\nSetelah setup vertise, ganti button ini dengan link vertise Anda.`;
                             
-                            // Uncomment line berikut untuk testing tanpa vertise:
-                            // window.location.href = `/verify?token=${token}&step=2&bypass=dac4c4fd65791af6212f7b69f1a28f97259082835ee9d0eddca7f95732275509`;
+                            // Disable button to prevent accidental clicks
+                            btnContinue.disabled = true;
+                            btnContinue.textContent = 'URL Step 2 Displayed';
                         };
                         
                     } else if (currentStep === 2) {
@@ -173,14 +175,15 @@
                         output.textContent = 'Excellent! Steps 1 & 2 completed.\n\nComplete the final verification step to unlock key generation.';
                         
                         btnContinue.onclick = () => {
-                            // Di sini Anda akan memasang link vertise ketiga
-                            // Contoh: window.location.href = 'https://link-vertise-step-3.com';
+                            // URL untuk step 3: Copy URL ini untuk setup vertise ketiga
+                            const step3URL = `${window.location.origin}/verify?token=${token}&step=3&bypass=dac4c4fd65791af6212f7b69f1a28f97259082835ee9d0eddca7f95732275509`;
                             
-                            // Untuk testing sementara:
-                            alert('Paste your third Vertise link here!\n\nReplace this alert with:\nwindow.location.href = "YOUR_VERTISE_LINK_3";');
+                            // Show URL in output for copying
+                            output.textContent = `URL untuk Step 3:\n\n${step3URL}\n\nCopy URL di atas untuk setup Vertise link ketiga (final step).\n\nSetelah setup vertise, ganti button ini dengan link vertise Anda.`;
                             
-                            // Uncomment line berikut untuk testing tanpa vertise:
-                            // window.location.href = `/verify?token=${token}&step=3&bypass=dac4c4fd65791af6212f7b69f1a28f97259082835ee9d0eddca7f95732275509`;
+                            // Disable button to prevent accidental clicks
+                            btnContinue.disabled = true;
+                            btnContinue.textContent = 'URL Step 3 Displayed';
                         };
                         
                     } else if (currentStep >= 3) {
