@@ -1,40 +1,13 @@
 {
-  "version": 2,
   "functions": {
     "index.js": {
-      "runtime": "@vercel/node@18.x"
+      "runtime": "@vercel/node"
     }
   },
-  "routes": [
+  "rewrites": [
     {
-      "src": "/",
-      "dest": "/index.js"
-    },
-    {
-      "src": "/step1",
-      "dest": "/index.js"
-    },
-    {
-      "src": "/step2", 
-      "dest": "/index.js"
-    },
-    {
-      "src": "/step3",
-      "dest": "/index.js"
-    },
-    {
-      "src": "/generate",
-      "dest": "/index.js"
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "/index.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.js"
+      "source": "/(.*)",
+      "destination": "/index.js"
     }
-  ],
-  "cleanUrls": true,
-  "trailingSlash": false
+  ]
 }
