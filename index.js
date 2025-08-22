@@ -293,8 +293,8 @@ app.get('/verify', (req, res) => {
         tokenStorage[userIP].step = stepNumber;
         tokenStorage[userIP].expires = new Date(now.getTime() + 60 * 60 * 1000); // Extend expiry
         
-        // Redirect back to home page with updated token
-        return res.redirect(`/?token=${token}`);
+        // Redirect back to home page with updated token and step info
+        return res.redirect(`/?token=${token}&currentstep=${stepNumber}`);
       } else {
         return res.status(403).json({
           error: 'Invalid user token'
