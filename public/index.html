@@ -1,4 +1,4 @@
-        }<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -72,15 +72,6 @@
             opacity: 0.6;
             pointer-events: none;
         }
-        .testing-mode {
-            background: #dc3545;
-            color: white;
-            padding: 10px;
-            border-radius: 5px;
-            text-align: center;
-            margin-bottom: 20px;
-            font-weight: bold;
-        }
         @media (max-width: 600px) {
             body { padding: 10px; }
             .container { padding: 20px; }
@@ -100,6 +91,14 @@
         const btnCopy = document.getElementById('btnCopy');
         const output = document.getElementById('out');
         let currentKey = '';
+
+        // Vertise token for callbacks
+        const VERTISE_TOKEN = '6457aac2196b55786323be0f9d8580cc1dd63627c32d6d5e34fc74cfaee18c88';
+
+        // Helper function to get Vertise token
+        function getVertiseToken() {
+            return VERTISE_TOKEN;
+        }
 
         // Get current URL path and parameters
         const currentPath = window.location.pathname;
@@ -143,7 +142,7 @@
                 output.textContent = 'Verification Step 1 of 3\n\nYou are now ready to complete the first verification step.\n\nClick "Continue 1/3" to open the first verification link.';
                 
                 btnContinue.addEventListener('click', () => {
-                    // Vertise link 1
+                    // Vertise link 1 - https://link-target.net/1385845/1NJw6vONwDd5
                     const callbackURL = encodeURIComponent(`${window.location.origin}/callback/step1?user_ref=${token}&token=${getVertiseToken()}`);
                     const vertiseURL = `https://link-target.net/1385845/1NJw6vONwDd5?url=${callbackURL}`;
                     
@@ -170,7 +169,7 @@
                 output.textContent = 'Step 1 completed successfully! ✓\n\nVerification Step 2 of 3\n\nClick "Continue 2/3" to open the second verification link.';
                 
                 btnContinue.addEventListener('click', () => {
-                    // Vertise link 2
+                    // Vertise link 2 - https://link-target.net/1385845/sCCiJeLQ3BfA
                     const callbackURL = encodeURIComponent(`${window.location.origin}/callback/step2?user_ref=${token}&token=${getVertiseToken()}`);
                     const vertiseURL = `https://link-target.net/1385845/sCCiJeLQ3BfA?url=${callbackURL}`;
                     
@@ -197,7 +196,7 @@
                 output.textContent = 'Step 2 completed successfully! ✓\n\nFinal Verification Step 3 of 3\n\nClick "Continue 3/3" to open the final verification link.';
                 
                 btnContinue.addEventListener('click', () => {
-                    // Vertise link 3 - langsung ke generate key
+                    // Vertise link 3 - https://link-hub.net/1385845/0Tpockg8i7RS (langsung ke generate key)
                     const callbackURL = encodeURIComponent(`${window.location.origin}/callback/step3?user_ref=${token}&token=${getVertiseToken()}`);
                     const vertiseURL = `https://link-hub.net/1385845/0Tpockg8i7RS?url=${callbackURL}`;
                     
