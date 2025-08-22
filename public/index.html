@@ -44,6 +44,10 @@
         #btnContinue:hover, #btnGen:hover {
             background: #0056b3;
         }
+        #btnContinue:disabled, #btnGen:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
         #btnCopy {
             background: #28a745;
             color: white;
@@ -68,6 +72,15 @@
             opacity: 0.6;
             pointer-events: none;
         }
+        .testing-mode {
+            background: #dc3545;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
         @media (max-width: 600px) {
             body { padding: 10px; }
             .container { padding: 20px; }
@@ -76,6 +89,9 @@
 </head>
 <body>
     <div class="container">
+        <div class="testing-mode">
+            🧪 TESTING MODE - Link Vertise Dinonaktifkan
+        </div>
         <h1>ClavnnX Get key</h1>
         <button id="btnContinue">Complete the step</button>
         <div id="out">Click "Complete the step" to proceed through verification steps</div>
@@ -109,7 +125,7 @@
         // Homepage: User clicks "Complete the step" to start verification
         function handleHomepage() {
             btnContinue.textContent = 'Complete the step';
-            output.textContent = 'Welcome to ClavnnX Key System!\n\nTo get your API key, you need to complete 3 verification steps.\n\nClick "Complete the step" to begin the verification process.';
+            output.textContent = 'Welcome to ClavnnX Key System!\n\n🧪 TESTING MODE AKTIF\nLink Vertise dinonaktifkan untuk testing.\n\nTo get your API key, you need to complete 3 verification steps.\n\nClick "Complete the step" to begin the verification process.';
             
             btnContinue.addEventListener('click', () => {
                 // Start verification process - akan generate token dan redirect ke step1
@@ -117,7 +133,7 @@
             });
         }
 
-        // Step 1: User clicks "Continue 1/3" to go to first Vertise link
+        // Step 1: User clicks "Continue 1/3" untuk testing
         function handleStep1() {
             if (!token) {
                 window.location.href = '/';
@@ -126,25 +142,24 @@
             
             // Verify token first
             verifyTokenAndProceed(token, 0, () => {
-                btnContinue.textContent = 'Continue 1/3';
-                output.textContent = 'Verification Step 1 of 3\n\nYou are now ready to complete the first verification step.\n\nClick "Continue 1/3" to open the first verification link.';
+                btnContinue.textContent = 'Continue 1/3 (Test)';
+                output.textContent = '🧪 TESTING MODE\n\nVerification Step 1 of 3\n\nYou are now ready to complete the first verification step.\n\nIn production, this would open a Vertise link.\nFor testing, click "Continue 1/3 (Test)" to simulate completion.';
                 
                 btnContinue.addEventListener('click', () => {
-                    // Placeholder untuk Vertise link 1 - akan diganti dengan link baru
-                    const callbackURL = encodeURIComponent(`${window.location.origin}/callback/step1?user_ref=${token}&token=${getVertiseToken()}`);
-                    const vertiseURL = `YOUR_VERTISE_LINK_1_HERE?url=${callbackURL}`;
-                    
-                    output.textContent = 'Opening verification link...\n\nPlease complete the verification on the opened page.\n\nAfter completion, you will be automatically redirected to the next step.';
-                    btnContinue.textContent = 'Verification in Progress...';
+                    // Testing mode - langsung redirect ke test endpoint
+                    output.textContent = 'Simulating step 1 completion...\n\nIn testing mode, automatically completing step 1.\n\nRedirecting to step 2...';
+                    btnContinue.textContent = 'Completing Step 1...';
                     btnContinue.disabled = true;
                     
-                    // Open in same window to ensure proper redirect flow
-                    window.location.href = vertiseURL;
+                    // Simulate step 1 completion
+                    setTimeout(() => {
+                        window.location.href = `/test/complete-step1?token=${token}`;
+                    }, 1500);
                 });
             });
         }
 
-        // Step 2: User clicks "Continue 2/3" to go to second Vertise link
+        // Step 2: User clicks "Continue 2/3" untuk testing
         function handleStep2() {
             if (!token) {
                 window.location.href = '/';
@@ -153,25 +168,24 @@
             
             // Verify token and check step progress
             verifyTokenAndProceed(token, 1, () => {
-                btnContinue.textContent = 'Continue 2/3';
-                output.textContent = 'Step 1 completed successfully! ✓\n\nVerification Step 2 of 3\n\nClick "Continue 2/3" to open the second verification link.';
+                btnContinue.textContent = 'Continue 2/3 (Test)';
+                output.textContent = 'Step 1 completed successfully! ✓\n\n🧪 TESTING MODE\n\nVerification Step 2 of 3\n\nClick "Continue 2/3 (Test)" to simulate second verification completion.';
                 
                 btnContinue.addEventListener('click', () => {
-                    // Placeholder untuk Vertise link 2 - akan diganti dengan link baru
-                    const callbackURL = encodeURIComponent(`${window.location.origin}/callback/step2?user_ref=${token}&token=${getVertiseToken()}`);
-                    const vertiseURL = `YOUR_VERTISE_LINK_2_HERE?url=${callbackURL}`;
-                    
-                    output.textContent = 'Opening second verification link...\n\nPlease complete the verification on the opened page.\n\nAfter completion, you will be automatically redirected to the next step.';
-                    btnContinue.textContent = 'Verification in Progress...';
+                    // Testing mode - langsung redirect ke test endpoint
+                    output.textContent = 'Simulating step 2 completion...\n\nIn testing mode, automatically completing step 2.\n\nRedirecting to step 3...';
+                    btnContinue.textContent = 'Completing Step 2...';
                     btnContinue.disabled = true;
                     
-                    // Open in same window to ensure proper redirect flow
-                    window.location.href = vertiseURL;
+                    // Simulate step 2 completion
+                    setTimeout(() => {
+                        window.location.href = `/test/complete-step2?token=${token}`;
+                    }, 1500);
                 });
             });
         }
 
-        // Step 3: User clicks "Continue 3/3" to go to third Vertise link
+        // Step 3: User clicks "Continue 3/3" untuk testing
         function handleStep3() {
             if (!token) {
                 window.location.href = '/';
@@ -180,20 +194,19 @@
             
             // Verify token and check step progress
             verifyTokenAndProceed(token, 2, () => {
-                btnContinue.textContent = 'Continue 3/3';
-                output.textContent = 'Step 2 completed successfully! ✓\n\nFinal Verification Step 3 of 3\n\nClick "Continue 3/3" to open the final verification link.';
+                btnContinue.textContent = 'Continue 3/3 (Test)';
+                output.textContent = 'Step 2 completed successfully! ✓\n\n🧪 TESTING MODE\n\nFinal Verification Step 3 of 3\n\nClick "Continue 3/3 (Test)" to simulate final verification completion.';
                 
                 btnContinue.addEventListener('click', () => {
-                    // Placeholder untuk Vertise link 3 - akan diganti dengan link baru
-                    const callbackURL = encodeURIComponent(`${window.location.origin}/callback/step3?user_ref=${token}&token=${getVertiseToken()}`);
-                    const vertiseURL = `YOUR_VERTISE_LINK_3_HERE?url=${callbackURL}`;
-                    
-                    output.textContent = 'Opening final verification link...\n\nPlease complete the verification on the opened page.\n\nAfter completion, you will be automatically redirected to generate your API key.';
-                    btnContinue.textContent = 'Final Verification in Progress...';
+                    // Testing mode - langsung redirect ke test endpoint
+                    output.textContent = 'Simulating step 3 completion...\n\nIn testing mode, automatically completing final step.\n\nRedirecting to generate key...';
+                    btnContinue.textContent = 'Completing Step 3...';
                     btnContinue.disabled = true;
                     
-                    // Open in same window to ensure proper redirect flow
-                    window.location.href = vertiseURL;
+                    // Simulate step 3 completion
+                    setTimeout(() => {
+                        window.location.href = `/test/complete-step3?token=${token}`;
+                    }, 1500);
                 });
             });
         }
@@ -209,7 +222,7 @@
             verifyTokenAndProceed(token, 3, () => {
                 btnContinue.textContent = 'Generate Key';
                 btnContinue.id = 'btnGen';
-                output.textContent = 'Congratulations! All verification steps completed successfully! ✓✓✓\n\nYou can now generate your API key.\n\nClick "Generate Key" to get your key.';
+                output.textContent = 'Congratulations! All verification steps completed successfully! ✓✓✓\n\n🧪 TESTING MODE COMPLETED\n\nAll steps have been simulated successfully.\nYou can now generate your API key.\n\nClick "Generate Key" to get your key.';
                 
                 btnContinue.addEventListener('click', async () => {
                     await generateKey(token);
@@ -229,7 +242,7 @@
                     } else {
                         // User hasn't completed required steps
                         btnContinue.style.display = 'none';
-                        output.textContent = `Error: Verification incomplete.\n\nYou need to complete the previous verification steps properly.\n\nCurrent step: ${data.step}, Required: ${requiredStep}\n\nPlease start over from the beginning.`;
+                        output.textContent = `❌ Error: Verification incomplete.\n\nYou need to complete the previous verification steps properly.\n\nCurrent step: ${data.step}, Required: ${requiredStep}\n\nPlease start over from the beginning.\n\nRedirecting to homepage in 3 seconds...`;
                         
                         // Redirect to homepage after 3 seconds
                         setTimeout(() => {
@@ -239,7 +252,7 @@
                 } else {
                     // Token is invalid
                     btnContinue.style.display = 'none';
-                    output.textContent = 'Error: Invalid or expired verification token.\n\nPlease start the verification process again.\n\nRedirecting to homepage...';
+                    output.textContent = '❌ Error: Invalid or expired verification token.\n\nPlease start the verification process again.\n\nRedirecting to homepage in 3 seconds...';
                     
                     // Redirect to homepage after 3 seconds
                     setTimeout(() => {
@@ -248,18 +261,13 @@
                 }
             } catch (error) {
                 btnContinue.style.display = 'none';
-                output.textContent = 'Error: Unable to verify token.\n\nPlease check your internet connection and try again.\n\nRedirecting to homepage...';
+                output.textContent = '❌ Error: Unable to verify token.\n\nPlease check your internet connection and try again.\n\nRedirecting to homepage in 3 seconds...';
                 
                 // Redirect to homepage after 3 seconds
                 setTimeout(() => {
                     window.location.href = '/';
                 }, 3000);
             }
-        }
-
-        // Helper function to get Vertise token
-        function getVertiseToken() {
-            return '6457aac2196b55786323be0f9d8580cc1dd63627c32d6d5e34fc74cfaee18c88';
         }
 
         // Generate key function
@@ -276,14 +284,14 @@
                 if (response.ok) {
                     currentKey = data.key;
                     const expiry = new Date(data.expires);
-                    output.textContent = `SUCCESS! ✓\n\nYour API Key: ${data.key}\n\nExpires: ${expiry.toLocaleString()}\n\nKey is valid for 24 hours from generation.\n\nPlease copy and save your key securely.`;
+                    output.textContent = `SUCCESS! ✓\n\nYour API Key: ${data.key}\n\nExpires: ${expiry.toLocaleString()}\n\nKey is valid for 24 hours from generation.\n\nPlease copy and save your key securely.\n\n🧪 Testing completed successfully!`;
                     btnCopy.style.display = 'block';
                 } else {
-                    output.textContent = `Error: ${data.error || 'Failed to generate key'}\n\nPlease make sure you have completed all verification steps properly.\n\nIf the problem persists, please start the verification process again.`;
+                    output.textContent = `❌ Error: ${data.error || 'Failed to generate key'}\n\nPlease make sure you have completed all verification steps properly.\n\nIf the problem persists, please start the verification process again.`;
                     btnCopy.style.display = 'none';
                 }
             } catch (error) {
-                output.textContent = `Error: Unable to connect to server.\n\nPlease check your internet connection and try again.`;
+                output.textContent = `❌ Error: Unable to connect to server.\n\nPlease check your internet connection and try again.`;
                 btnCopy.style.display = 'none';
             }
             
@@ -297,7 +305,7 @@
             if (currentKey) {
                 try {
                     await navigator.clipboard.writeText(currentKey);
-                    btnCopy.textContent = 'Copied!';
+                    btnCopy.textContent = 'Copied! ✓';
                     setTimeout(() => {
                         btnCopy.textContent = 'Copy Key';
                     }, 2000);
@@ -309,7 +317,7 @@
                     textArea.select();
                     document.execCommand('copy');
                     document.body.removeChild(textArea);
-                    btnCopy.textContent = 'Copied!';
+                    btnCopy.textContent = 'Copied! ✓';
                     setTimeout(() => {
                         btnCopy.textContent = 'Copy Key';
                     }, 2000);
