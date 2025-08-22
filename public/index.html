@@ -68,3 +68,51 @@
             .container { padding: 20px; }
         }
     </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Key Generator</h1>
+        <div id="out">Click "Generate Key" to get your key.</div>
+        <button id="btnGen">Generate Key</button>
+        <button id="btnCopy">Copy Key</button>
+    </div>
+
+    <script>
+        const btnGen = document.getElementById('btnGen');
+        const btnCopy = document.getElementById('btnCopy');
+        const out = document.getElementById('out');
+        let currentKey = "";
+
+        btnGen.addEventListener('click', async () => {
+            btnGen.classList.add('loading');
+            out.textContent = "Generating key...";
+            try {
+                const res = await fetch('/getkey');
+                const data = await res.json();
+                if (data.success) {
+                    currentKey = data.key;
+                    out.textContent = `Key: ${data.key}\nExpires: ${new Date(data.expires).toLocaleString()}`;
+                    btnCopy.style.display = 'block';
+                } else {
+                    out.textContent = "Failed to generate key.";
+                }
+            } catch (err) {
+                out.textContent = "Error: " + err.message;
+            } finally {
+                btnGen.classList.remove('loading');
+            }
+        });
+
+        btnCopy.addEventListener('click', async () => {
+            if (!currentKey) return;
+            try {
+                await navigator.clipboard.writeText(currentKey);
+                btnCopy.textContent = "Copied!";
+                setTimeout(() => btnCopy.textContent = "Copy Key", 2000);
+            } catch {
+                alert("Failed to copy");
+            }
+        });
+    </script>
+</body>
+</html>
