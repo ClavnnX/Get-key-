@@ -120,7 +120,7 @@
             output.textContent = 'Click "Complete the step" to start the 3-step verification process';
             
             btnContinue.addEventListener('click', () => {
-                // Start verification process
+                // Start verification process - redirect to /verify to get a new token
                 window.location.href = '/verify';
             });
         }
@@ -181,38 +181,49 @@
                         };
                     }
                 } else {
-                    // Token is invalid
-                    btnContinue.style.display = 'none';
-                    stepInfo.textContent = 'Error: Invalid verification session';
-                    stepInfo.style.background = '#4f0f0f';
-                    stepInfo.style.borderColor = '#dc3545';
-                    output.textContent = 'Error: Invalid or expired verification token.\n\nPlease start the verification process again.';
-                    
-                    // Show restart button
-                    setTimeout(() => {
-                        btnContinue.style.display = 'block';
-                        btnContinue.textContent = 'Start Again';
-                        btnContinue.onclick = () => {
-                            window.location.href = '/';
-                        };
-                    }, 3000);
+                    // Token is invalid, show clean restart
+                    showInvalidTokenError();
                 }
             } catch (error) {
-                btnContinue.style.display = 'none';
-                stepInfo.textContent = 'Error: Connection failed';
-                stepInfo.style.background = '#4f0f0f';
-                stepInfo.style.borderColor = '#dc3545';
-                output.textContent = 'Error: Unable to verify token. Please check your connection and try again.';
-                
-                // Show retry button
-                setTimeout(() => {
-                    btnContinue.style.display = 'block';
-                    btnContinue.textContent = 'Retry';
-                    btnContinue.onclick = () => {
-                        window.location.reload();
-                    };
-                }, 3000);
+                console.error('Fetch error:', error);
+                // Connection error, show retry
+                showConnectionError();
             }
+        }
+
+        function showInvalidTokenError() {
+            btnContinue.style.display = 'none';
+            stepInfo.textContent = 'Error: Invalid verification session';
+            stepInfo.style.background = '#4f0f0f';
+            stepInfo.style.borderColor = '#dc3545';
+            output.textContent = 'Error: Invalid or expired verification token.\n\nPlease start the verification process again.';
+            
+            // Show restart button after 2 seconds
+            setTimeout(() => {
+                btnContinue.style.display = 'block';
+                btnContinue.textContent = 'Start Again';
+                btnContinue.onclick = () => {
+                    // Clear URL parameters and start fresh
+                    window.location.href = window.location.origin;
+                };
+            }, 2000);
+        }
+
+        function showConnectionError() {
+            btnContinue.style.display = 'none';
+            stepInfo.textContent = 'Error: Connection failed';
+            stepInfo.style.background = '#4f0f0f';
+            stepInfo.style.borderColor = '#dc3545';
+            output.textContent = 'Error: Unable to verify token. Please check your connection and try again.';
+            
+            // Show retry button after 2 seconds
+            setTimeout(() => {
+                btnContinue.style.display = 'block';
+                btnContinue.textContent = 'Retry';
+                btnContinue.onclick = () => {
+                    window.location.reload();
+                };
+            }, 2000);
         }
 
         async function generateKey(token) {
