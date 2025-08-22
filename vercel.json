@@ -2,14 +2,38 @@
   "version": 2,
   "builds": [
     {
-      "src": "index.js",
+      "src": "server/index.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
+      "src": "/verify",
+      "dest": "server/index.js"
+    },
+    {
+      "src": "/getkey",
+      "dest": "server/index.js"
+    },
+    {
+      "src": "/validate",
+      "dest": "server/index.js"
+    },
+    {
+      "src": "/health",
+      "dest": "server/index.js"
+    },
+    {
       "src": "/(.*)",
-      "dest": "/index.js"
+      "dest": "server/index.js"
     }
-  ]
+  ],
+  "functions": {
+    "server/index.js": {
+      "maxDuration": 30
+    }
+  },
+  "env": {
+    "NODE_ENV": "production"
+  }
 }
