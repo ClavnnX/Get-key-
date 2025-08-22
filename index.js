@@ -37,8 +37,8 @@ const keyStorage = {};
 // Structure: { ip: { token: string, expires: Date, created: Date, step: number } }
 const tokenStorage = {};
 
-// Anti-bypass token from vertise
-const ANTI_BYPASS_TOKEN = 'dac4c4fd65791af6212f7b69f1a28f97259082835ee9d0eddca7f95732275509';
+// Token Vertise Anda
+const VERTISE_TOKEN = '6457aac2196b55786323be0f9d8580cc1dd63627c32d6d5e34fc74cfaee18c88';
 
 // Helper function to generate random 10-character uppercase key
 function generateKey() {
@@ -129,20 +129,18 @@ app.get('/getkey', (req, res) => {
     // Check if token is provided and valid
     if (!token) {
       return res.status(403).json({
-        error: 'Forbidden: Valid token required'
+        error: 'Forbidden: Valid token required. Please complete all verification steps first.'
       });
     }
 
     if (!isValidToken(userIP, token)) {
       return res.status(403).json({
-        error: 'Forbidden: Invalid or expired token'
+        error: 'Forbidden: Invalid or expired token. Please complete all verification steps properly.'
       });
     }
 
     const now = new Date();
     const expirationTime = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
-    
-    // No need to mark token as used anymore since we track by steps
     
     // Check if user already has a key
     if (keyStorage[userIP]) {
@@ -234,12 +232,12 @@ app.get('/validate', (req, res) => {
   }
 });
 
-// Homepage - serve HTML UI
+// Homepage - serve HTML UI dan langsung generate token
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
-// NEW ROUTES FOR DIFFERENT STEPS
+// STEP ROUTES
 app.get('/step1', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/index.html'));
 });
@@ -269,7 +267,7 @@ app.get('/verify', (req, res) => {
     }
 
     const now = new Date();
-    const tokenExpirationTime = new Date(now.getTime() + 60 * 60 * 1000); // 60 minutes
+    const tokenExpirationTime = new Date(now.getTime() + 2 * 60 * 60 * 1000); // 2 hours untuk proses verifikasi
 
     // If no token provided, this means user is starting fresh
     if (!token) {
@@ -291,10 +289,11 @@ app.get('/verify', (req, res) => {
     if (step) {
       const stepNumber = parseInt(step);
       
-      // Anti-bypass validation: check if bypass token is provided and valid
-      if (!bypass || bypass !== ANTI_BYPASS_TOKEN) {
+      // Validasi token Vertise: pastikan request datang dari Vertise dengan token yang benar
+      const vertiseTokenFromQuery = req.query.vertise_token;
+      if (!vertiseTokenFromQuery || vertiseTokenFromQuery !== VERTISE_TOKEN) {
         return res.status(403).json({
-          error: 'Invalid bypass token. Please complete the verification step properly.'
+          error: 'Invalid verification source. Please complete the verification step properly through the provided links.'
         });
       }
       
@@ -303,13 +302,13 @@ app.get('/verify', (req, res) => {
         const currentStep = tokenStorage[userIP].step;
         if (stepNumber !== currentStep + 1) {
           return res.status(403).json({
-            error: 'Invalid step progression. Please complete steps in order.'
+            error: 'Invalid step progression. Please complete verification steps in the correct order.'
           });
         }
         
         // Update step progress
         tokenStorage[userIP].step = stepNumber;
-        tokenStorage[userIP].expires = new Date(now.getTime() + 60 * 60 * 1000); // Extend expiry
+        tokenStorage[userIP].expires = new Date(now.getTime() + 2 * 60 * 60 * 1000); // Extend expiry
         
         // Redirect to different URLs based on step completed
         if (stepNumber === 1) {
@@ -317,12 +316,13 @@ app.get('/verify', (req, res) => {
         } else if (stepNumber === 2) {
           return res.redirect(`/step3?token=${token}`);
         } else if (stepNumber === 3) {
+          // Langsung ke generate setelah step 3 selesai
           return res.redirect(`/generate?token=${token}`);
         }
         
       } else {
         return res.status(403).json({
-          error: 'Invalid user token'
+          error: 'Invalid or expired verification token. Please start the verification process again.'
         });
       }
     }
@@ -332,6 +332,7 @@ app.get('/verify', (req, res) => {
       return res.json({
         valid: true,
         step: tokenStorage[userIP].step,
+        expires: tokenStorage[userIP].expires.toISOString(),
         message: 'Token is valid'
       });
     } else {
@@ -350,10 +351,63 @@ app.get('/verify', (req, res) => {
   }
 });
 
+// CALLBACK ENDPOINTS UNTUK VERTISE LINKS
+// Callback untuk step 1
+app.get('/callback/step1', (req, res) => {
+  const { user_ref, token } = req.query;
+  
+  // Validasi token Vertise
+  if (token !== VERTISE_TOKEN) {
+    return res.status(403).json({ error: 'Invalid Vertise token' });
+  }
+  
+  if (user_ref) {
+    // Redirect ke verify dengan step 1 completed
+    res.redirect(`/verify?token=${user_ref}&step=1&vertise_token=${VERTISE_TOKEN}`);
+  } else {
+    res.status(400).json({ error: 'Missing user reference token' });
+  }
+});
+
+// Callback untuk step 2
+app.get('/callback/step2', (req, res) => {
+  const { user_ref, token } = req.query;
+  
+  // Validasi token Vertise
+  if (token !== VERTISE_TOKEN) {
+    return res.status(403).json({ error: 'Invalid Vertise token' });
+  }
+  
+  if (user_ref) {
+    // Redirect ke verify dengan step 2 completed
+    res.redirect(`/verify?token=${user_ref}&step=2&vertise_token=${VERTISE_TOKEN}`);
+  } else {
+    res.status(400).json({ error: 'Missing user reference token' });
+  }
+});
+
+// Callback untuk step 3
+app.get('/callback/step3', (req, res) => {
+  const { user_ref, token } = req.query;
+  
+  // Validasi token Vertise
+  if (token !== VERTISE_TOKEN) {
+    return res.status(403).json({ error: 'Invalid Vertise token' });
+  }
+  
+  if (user_ref) {
+    // Redirect ke verify dengan step 3 completed
+    res.redirect(`/verify?token=${user_ref}&step=3&vertise_token=${VERTISE_TOKEN}`);
+  } else {
+    res.status(400).json({ error: 'Missing user reference token' });
+  }
+});
+
 // Status endpoint for healthcheck
 app.get('/status', (req, res) => {
   res.json({
-    status: 'online'
+    status: 'online',
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -362,12 +416,15 @@ app.get('/stats', (req, res) => {
   try {
     // Clean up expired keys before showing stats
     cleanupExpiredKeys();
+    cleanupExpiredTokens();
     
     const activeKeys = Object.keys(keyStorage).length;
+    const activeTokens = Object.keys(tokenStorage).length;
     const now = new Date();
     
     res.json({
       active_keys: activeKeys,
+      active_verification_tokens: activeTokens,
       server_time: now.toISOString(),
       uptime: process.uptime()
     });
@@ -383,7 +440,21 @@ app.get('/stats', (req, res) => {
 app.use('*', (req, res) => {
   res.status(404).json({
     error: 'Endpoint not found',
-    available_endpoints: ['/getkey', '/validate', '/verify', '/', '/step1', '/step2', '/step3', '/generate', '/stats', '/status']
+    available_endpoints: [
+      '/getkey', 
+      '/validate', 
+      '/verify', 
+      '/', 
+      '/step1', 
+      '/step2', 
+      '/step3', 
+      '/generate', 
+      '/callback/step1',
+      '/callback/step2',
+      '/callback/step3',
+      '/stats', 
+      '/status'
+    ]
   });
 });
 
@@ -395,19 +466,23 @@ app.use((error, req, res, next) => {
   });
 });
 
-// Periodic cleanup of expired keys and tokens (every hour)
+// Periodic cleanup of expired keys and tokens (every 30 minutes)
 setInterval(() => {
   cleanupExpiredKeys();
   cleanupExpiredTokens();
-  console.log('Cleaned up expired keys and tokens');
-}, 60 * 60 * 1000);
+  console.log('Cleaned up expired keys and tokens at:', new Date().toISOString());
+}, 30 * 60 * 1000);
 
 // For local development (Replit)
 if (require.main === module) {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Roblox Key System API server running on port ${PORT}`);
+    console.log(`ClavnnX Key System API server running on port ${PORT}`);
     console.log(`Access at: http://localhost:${PORT}`);
+    console.log('Verification links configured:');
+    console.log('- Step 1: https://link-hub.net/1385845/0Tpockg8i7RS');
+    console.log('- Step 2: https://link-target.net/1385845/sCCiJeLQ3BfA');
+    console.log('- Step 3: https://link-target.net/1385845/1NJw6vONwDd5');
   });
 }
 
