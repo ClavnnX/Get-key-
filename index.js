@@ -493,10 +493,7 @@ if (require.main === module) {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`ClavnnX Key System API server running on port ${PORT}`);
     console.log(`Access at: http://localhost:${PORT}`);
-    console.log('Verification links configured:');
-    console.log('- Step 1: https://link-hub.net/1385845/0Tpockg8i7RS');
-    console.log('- Step 2: https://link-target.net/1385845/sCCiJeLQ3BfA');
-    console.log('- Step 3: https://link-target.net/1385845/1NJw6vONwDd5');
+    console.log('Verification links: Ready to be configured');
   });
 }
 
