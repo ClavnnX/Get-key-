@@ -4,7 +4,6 @@ const path = require('path');
 const cors = require('cors');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 // Trust proxy for Vercel
 app.set('trust proxy', true);
@@ -12,7 +11,7 @@ app.set('trust proxy', true);
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '../public')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // In-memory storage (better for Vercel)
 let keyStorage = new Map();
@@ -23,7 +22,6 @@ const ANTI_BYPASS_TOKEN = '1c3c210b0a6101cfb3b20619b480a70598dbca6e0b60567c73a64
 
 // Middleware to get real IP
 app.use((req, res, next) => {
-  // Get real IP address (considering Vercel proxy headers)
   req.realIP = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
                req.headers['x-real-ip'] || 
                req.connection?.remoteAddress || 
@@ -39,13 +37,10 @@ app.use((req, res, next) => {
 function generateKey() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let result = '';
-  
   const randomBytes = crypto.randomBytes(10);
-  
   for (let i = 0; i < 10; i++) {
     result += chars[randomBytes[i] % chars.length];
   }
-  
   return result;
 }
 
@@ -54,28 +49,14 @@ function isKeyExpired(keyData) {
   return new Date() > new Date(keyData.expires);
 }
 
-// Helper function to clean up expired keys
-function cleanupExpiredKeys() {
-  const now = new Date();
-  
-  for (let [ip, keyData] of keyStorage) {
-    if (keyData && now > new Date(keyData.expires)) {
-      keyStorage.delete(ip);
-    }
-  }
-}
-
 // Helper function to generate verification token
 function generateToken() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let result = '';
-  
   const randomBytes = crypto.randomBytes(32);
-  
   for (let i = 0; i < 32; i++) {
     result += chars[randomBytes[i] % chars.length];
   }
-  
   return result;
 }
 
@@ -94,24 +75,12 @@ function isValidToken(userIP, token, requiredStep = 3) {
   const tokenData = tokenStorage.get(userIP);
   console.log(`Validating token for IP: ${userIP}, Required step: ${requiredStep}, Current step: ${tokenData.step}`);
   
-  // Check if token matches and is not expired and has completed required steps
   return tokenData.token === token && 
          !isTokenExpired(tokenData) && 
          tokenData.step >= requiredStep;
 }
 
-// Helper function to clean up expired tokens
-function cleanupExpiredTokens() {
-  const now = new Date();
-  
-  for (let [ip, tokenData] of tokenStorage) {
-    if (tokenData && now > new Date(tokenData.expires)) {
-      tokenStorage.delete(ip);
-    }
-  }
-}
-
-// Endpoint: /getkey (requires valid token with all 3 steps completed)
+// Endpoint: /getkey
 app.get('/getkey', (req, res) => {
   try {
     const userIP = req.realIP;
@@ -125,14 +94,12 @@ app.get('/getkey', (req, res) => {
       });
     }
 
-    // Check if token is provided and valid
     if (!token) {
       return res.status(403).json({
         error: 'Forbidden: Valid token required'
       });
     }
 
-    // Check if user completed all 3 steps
     if (!isValidToken(userIP, token, 3)) {
       console.log(`Token validation failed for IP: ${userIP}`);
       return res.status(403).json({
@@ -141,13 +108,10 @@ app.get('/getkey', (req, res) => {
     }
 
     const now = new Date();
-    const expirationTime = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
+    const expirationTime = new Date(now.getTime() + 24 * 60 * 60 * 1000);
     
-    // Check if user already has a key
     if (keyStorage.has(userIP)) {
       const existingKey = keyStorage.get(userIP);
-      
-      // If key is still valid, return it
       if (!isKeyExpired(existingKey)) {
         console.log(`Returning existing key for IP: ${userIP}`);
         return res.json({
@@ -155,15 +119,11 @@ app.get('/getkey', (req, res) => {
           expires: existingKey.expires
         });
       } else {
-        // Key expired, remove it
         keyStorage.delete(userIP);
       }
     }
     
-    // Generate new key
     const newKey = generateKey();
-    
-    // Store the new key
     keyStorage.set(userIP, {
       key: newKey,
       expires: expirationTime.toISOString(),
@@ -172,7 +132,6 @@ app.get('/getkey', (req, res) => {
     
     console.log(`Generated new key for IP: ${userIP}`);
     
-    // Return the new key
     res.json({
       key: newKey,
       expires: expirationTime.toISOString()
@@ -192,12 +151,9 @@ app.get('/validate', (req, res) => {
     const { key } = req.query;
     
     if (!key) {
-      return res.json({
-        status: 'INVALID'
-      });
+      return res.json({ status: 'INVALID' });
     }
     
-    // Find the key in storage
     let foundKey = null;
     let foundIP = null;
     
@@ -210,39 +166,28 @@ app.get('/validate', (req, res) => {
     }
     
     if (!foundKey) {
-      return res.json({
-        status: 'INVALID'
-      });
+      return res.json({ status: 'INVALID' });
     }
     
-    // Check if key is expired
     if (isKeyExpired(foundKey)) {
-      // Remove expired key
       keyStorage.delete(foundIP);
-      return res.json({
-        status: 'EXPIRED'
-      });
+      return res.json({ status: 'EXPIRED' });
     }
     
-    // Key is valid
-    res.json({
-      status: 'VALID'
-    });
+    res.json({ status: 'VALID' });
     
   } catch (error) {
     console.error('Error in /validate:', error);
-    res.status(500).json({
-      error: 'Internal server error'
-    });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Homepage - serve HTML UI
+// Homepage
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/index.html'));
+  res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
-// Verify endpoint - handles token validation and step progression
+// Verify endpoint
 app.get('/verify', (req, res) => {
   try {
     const userIP = req.realIP;
@@ -257,13 +202,10 @@ app.get('/verify', (req, res) => {
     }
 
     const now = new Date();
-    const tokenExpirationTime = new Date(now.getTime() + 3 * 60 * 60 * 1000); // Extended to 3 hours
+    const tokenExpirationTime = new Date(now.getTime() + 3 * 60 * 60 * 1000);
 
-    // If no token provided, this means user is starting fresh
     if (!token) {
       const newToken = generateToken();
-      
-      // Store the new token with step 0
       tokenStorage.set(userIP, {
         token: newToken,
         expires: tokenExpirationTime.toISOString(),
@@ -272,12 +214,9 @@ app.get('/verify', (req, res) => {
       });
       
       console.log(`Generated new token for IP: ${userIP}`);
-      
-      // Redirect to verification page with token
       return res.redirect(`/?token=${newToken}&currentstep=0`);
     }
     
-    // Token provided - validate it
     if (!tokenStorage.has(userIP)) {
       console.log(`No token found for IP: ${userIP}`);
       return res.json({
@@ -288,7 +227,6 @@ app.get('/verify', (req, res) => {
     
     const userTokenData = tokenStorage.get(userIP);
     
-    // Check if token matches and is not expired
     if (userTokenData.token !== token || isTokenExpired(userTokenData)) {
       console.log(`Invalid or expired token for IP: ${userIP}`);
       return res.json({
@@ -297,23 +235,15 @@ app.get('/verify', (req, res) => {
       });
     }
     
-    // Handle bypass parameter for step progression
     if (bypass === ANTI_BYPASS_TOKEN) {
       console.log(`Valid bypass token received for IP: ${userIP}`);
-      
-      // Progress to next step
       userTokenData.step++;
       userTokenData.lastUpdated = now.toISOString();
-      
       tokenStorage.set(userIP, userTokenData);
-      
       console.log(`User ${userIP} progressed to step ${userTokenData.step}`);
-      
-      // Redirect back to main page with updated token
       return res.redirect(`/?token=${token}&currentstep=${userTokenData.step}`);
     }
     
-    // Return current token status
     res.json({
       valid: true,
       step: userTokenData.step,
@@ -328,7 +258,7 @@ app.get('/verify', (req, res) => {
   }
 });
 
-// Add endpoint for health check
+// Health check
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'OK', 
@@ -338,32 +268,32 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Clean up expired data every 10 minutes
+// Cleanup every 10 minutes
 setInterval(() => {
-  cleanupExpiredKeys();
-  cleanupExpiredTokens();
+  const now = new Date();
+  for (let [ip, keyData] of keyStorage) {
+    if (keyData && now > new Date(keyData.expires)) {
+      keyStorage.delete(ip);
+    }
+  }
+  for (let [ip, tokenData] of tokenStorage) {
+    if (tokenData && now > new Date(tokenData.expires)) {
+      tokenStorage.delete(ip);
+    }
+  }
   console.log(`Cleanup completed. Active tokens: ${tokenStorage.size}, Active keys: ${keyStorage.size}`);
 }, 10 * 60 * 1000);
 
-// Handle 404 for API routes
-app.use('/api/*', (req, res) => {
-  res.status(404).json({ error: 'API endpoint not found' });
-});
-
-// Catch all other routes and serve index.html
+// Catch all routes
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/index.html'));
+  res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
-// Error handling middleware
+// Error handling
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.status(500).json({ error: 'Internal server error' });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-});
-
+// Export for Vercel
 module.exports = app;
