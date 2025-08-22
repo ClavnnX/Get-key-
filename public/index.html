@@ -121,7 +121,6 @@
         let retryCount = 0;
         const MAX_RETRIES = 3;
 
-        // Debug function with better error handling
         function updateDebugInfo(info) {
             try {
                 const timestamp = new Date().toLocaleTimeString();
@@ -134,7 +133,6 @@
             }
         }
 
-        // Enhanced URL parameter parsing
         function getUrlParams() {
             try {
                 const urlParams = new URLSearchParams(window.location.search);
@@ -148,17 +146,13 @@
             }
         }
 
-        // Check if we're on verify page (has token parameter)
         const { token, currentStep } = getUrlParams();
-        
         updateDebugInfo(`Token: ${token ? 'Present' : 'Missing'}, Step: ${currentStep || 'None'}`);
         
         if (token) {
-            // We're on verify page, verify the token
             updateDebugInfo('Verifying token...');
             verifyToken(token, currentStep);
         } else {
-            // We're on start page, show initial step
             btnContinue.textContent = 'Complete the step';
             stepInfo.textContent = 'Step 0/3: Initialize verification process';
             output.textContent = 'Click "Complete the step" to start the 3-step verification process';
@@ -166,7 +160,6 @@
             
             btnContinue.addEventListener('click', () => {
                 updateDebugInfo('Starting verification process...');
-                // Start verification process - redirect to /verify to get a new token
                 window.location.href = '/verify';
             });
         }
@@ -175,9 +168,8 @@
             try {
                 updateDebugInfo('Fetching token validation...');
                 
-                // Add timeout to fetch request
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
                 
                 const response = await fetch(`/verify?token=${encodeURIComponent(token)}`, {
                     signal: controller.signal,
@@ -189,22 +181,19 @@
                 
                 clearTimeout(timeoutId);
                 
-                // Check if response is JSON
                 const contentType = response.headers.get('content-type');
                 if (!contentType || !contentType.includes('application/json')) {
                     throw new Error('Server did not return JSON response');
                 }
                 
                 const data = await response.json();
-                
                 updateDebugInfo(`Server response: ${response.status}, Valid: ${data.valid}, Step: ${data.step}`);
                 
                 if (response.ok && data.valid) {
                     const currentStep = data.step;
-                    retryCount = 0; // Reset retry count on success
+                    retryCount = 0;
                     
                     if (currentStep === 0) {
-                        // User belum complete step apapun, show step 1/3
                         btnContinue.textContent = 'Continue 1/3';
                         stepInfo.textContent = 'Step 1/3: First verification step';
                         output.textContent = 'Complete the first verification step to proceed.';
@@ -212,45 +201,39 @@
                         
                         btnContinue.onclick = () => {
                             updateDebugInfo('Redirecting to step 1...');
-                            // Redirect to Vertise link 1
                             window.open('https://link-hub.net/1385845/0Tpockg8i7RS', '_blank');
                         };
                         
                     } else if (currentStep === 1) {
-                        // User sudah complete step 1, show step 2/3
                         btnContinue.textContent = 'Continue 2/3';
                         stepInfo.textContent = 'Step 2/3: Second verification step';
-                        output.textContent = 'Great! Step 1 completed.\\n\\nProceed to the second verification step.';
+                        output.textContent = 'Great! Step 1 completed.\n\nProceed to the second verification step.';
                         updateDebugInfo('Ready for step 2/3');
                         
                         btnContinue.onclick = () => {
                             updateDebugInfo('Redirecting to step 2...');
-                            // Redirect to Vertise link 2
                             window.open('https://link-target.net/1385845/sCCiJeLQ3BfA', '_blank');
                         };
                         
                     } else if (currentStep === 2) {
-                        // User sudah complete step 2, show step 3/3
                         btnContinue.textContent = 'Continue 3/3';
                         stepInfo.textContent = 'Step 3/3: Final verification step';
-                        output.textContent = 'Excellent! Steps 1 & 2 completed.\\n\\nProceed to the final verification step.';
+                        output.textContent = 'Excellent! Steps 1 & 2 completed.\n\nProceed to the final verification step.';
                         updateDebugInfo('Ready for step 3/3');
                         
                         btnContinue.onclick = () => {
                             updateDebugInfo('Redirecting to step 3...');
-                            // Redirect to Vertise link 3
                             window.open('https://link-target.net/1385845/1NJw6vONwDd5', '_blank');
                         };
                         
                     } else if (currentStep >= 3) {
-                        // User sudah complete semua step, show generate key button
                         btnContinue.textContent = 'Generate Key';
                         btnContinue.id = 'btnGen';
                         stepInfo.textContent = 'All steps completed! Ready to generate key.';
                         stepInfo.style.background = '#0f4f0f';
                         stepInfo.style.borderColor = '#28a745';
                         
-                        output.textContent = '🎉 Congratulations!\\n\\nAll 3 verification steps completed successfully!\\n\\nClick "Generate Key" to get your API key.';
+                        output.textContent = '🎉 Congratulations!\n\nAll 3 verification steps completed successfully!\n\nClick "Generate Key" to get your API key.';
                         updateDebugInfo('All steps completed, ready to generate key');
                         
                         btnContinue.onclick = async () => {
@@ -258,7 +241,6 @@
                         };
                     }
                 } else {
-                    // Token is invalid, show clean restart
                     updateDebugInfo(`Token invalid: ${data.message || 'Unknown reason'}`);
                     showInvalidTokenError();
                 }
@@ -266,15 +248,13 @@
                 console.error('Fetch error:', error);
                 updateDebugInfo(`Connection error: ${error.message}`);
                 
-                // Retry logic
                 if (retryCount < MAX_RETRIES) {
                     retryCount++;
                     updateDebugInfo(`Retrying... (${retryCount}/${MAX_RETRIES})`);
                     setTimeout(() => {
                         verifyToken(token, currentStepFromURL);
-                    }, 2000 * retryCount); // Exponential backoff
+                    }, 2000 * retryCount);
                 } else {
-                    // Max retries reached, show connection error
                     showConnectionError();
                 }
             }
@@ -285,16 +265,14 @@
             stepInfo.textContent = 'Error: Invalid verification session';
             stepInfo.style.background = '#4f0f0f';
             stepInfo.style.borderColor = '#dc3545';
-            output.textContent = 'Error: Invalid or expired verification token.\\n\\nPlease start the verification process again.';
+            output.textContent = 'Error: Invalid or expired verification token.\n\nPlease start the verification process again.';
             updateDebugInfo('Showing invalid token error');
             
-            // Show restart button after 2 seconds
             setTimeout(() => {
                 btnContinue.style.display = 'block';
                 btnContinue.textContent = 'Start Again';
                 btnContinue.onclick = () => {
                     updateDebugInfo('Restarting verification...');
-                    // Clear URL parameters and start fresh
                     window.location.href = window.location.origin;
                 };
             }, 2000);
@@ -305,16 +283,15 @@
             stepInfo.textContent = 'Error: Connection failed';
             stepInfo.style.background = '#4f0f0f';
             stepInfo.style.borderColor = '#dc3545';
-            output.textContent = 'Error: Unable to verify token. Please check your connection and try again.\\n\\nThis may be due to server maintenance or network issues.';
+            output.textContent = 'Error: Unable to verify token. Please check your connection and try again.\n\nThis may be due to server maintenance or network issues.';
             updateDebugInfo('Showing connection error');
             
-            // Show retry button after 3 seconds
             setTimeout(() => {
                 btnContinue.style.display = 'block';
                 btnContinue.textContent = 'Retry';
                 btnContinue.onclick = () => {
                     updateDebugInfo('Manual retry initiated');
-                    retryCount = 0; // Reset retry count
+                    retryCount = 0;
                     window.location.reload();
                 };
             }, 3000);
@@ -329,7 +306,7 @@
             
             try {
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+                const timeoutId = setTimeout(() => controller.abort(), 15000);
                 
                 const response = await fetch(`/getkey?token=${encodeURIComponent(token)}`, {
                     signal: controller.signal,
@@ -340,9 +317,7 @@
                 });
                 
                 clearTimeout(timeoutId);
-                
                 const data = await response.json();
-                
                 updateDebugInfo(`Key generation response: ${response.status}`);
                 
                 if (response.ok && data.key) {
@@ -353,7 +328,7 @@
                     stepInfo.style.background = '#0f4f0f';
                     stepInfo.style.borderColor = '#28a745';
                     
-                    output.textContent = `🔑 Your API Key:\\n${data.key}\\n\\n⏰ Expires: ${expiry.toLocaleString()}\\n\\n✅ Valid for 24 hours from generation\\n\\nKeep this key safe and do not share it!`;
+                    output.textContent = `🔑 Your API Key:\n${data.key}\n\n⏰ Expires: ${expiry.toLocaleString()}\n\n✅ Valid for 24 hours from generation\n\nKeep this key safe and do not share it!`;
                     updateDebugInfo('Key generated successfully');
                     
                     btnCopy.style.display = 'block';
@@ -366,15 +341,14 @@
                     updateDebugInfo(`Key generation failed: ${data.error}`);
                     
                     if (data.error && data.error.includes('verification steps must be completed')) {
-                        output.textContent = `❌ Generation Failed!\\n\\nReason: Not all verification steps were completed.\\n\\nPlease complete all 3 verification steps before generating a key.`;
+                        output.textContent = `❌ Generation Failed!\n\nReason: Not all verification steps were completed.\n\nPlease complete all 3 verification steps before generating a key.`;
                     } else if (data.error && data.error.includes('token')) {
-                        output.textContent = `❌ Generation Failed!\\n\\nReason: Session expired or invalid.\\n\\nPlease restart the verification process.`;
-                        // Auto-restart after 3 seconds
+                        output.textContent = `❌ Generation Failed!\n\nReason: Session expired or invalid.\n\nPlease restart the verification process.`;
                         setTimeout(() => {
                             window.location.href = window.location.origin;
                         }, 3000);
                     } else {
-                        output.textContent = `❌ Generation Failed!\\n\\nError: ${data.error || 'Unknown error occurred'}\\n\\nPlease try again or contact support.`;
+                        output.textContent = `❌ Generation Failed!\n\nError: ${data.error || 'Unknown error occurred'}\n\nPlease try again or contact support.`;
                     }
                     
                     btnCopy.style.display = 'none';
@@ -383,7 +357,7 @@
                 stepInfo.textContent = 'Connection error during key generation';
                 stepInfo.style.background = '#4f0f0f';
                 stepInfo.style.borderColor = '#dc3545';
-                output.textContent = `❌ Connection Error!\\n\\nUnable to connect to server for key generation.\\n\\nPlease check your internet connection and try again.`;
+                output.textContent = `❌ Connection Error!\n\nUnable to connect to server for key generation.\n\nPlease check your internet connection and try again.`;
                 updateDebugInfo(`Key generation connection error: ${error.message}`);
                 btnCopy.style.display = 'none';
             }
@@ -405,7 +379,6 @@
                         btnCopy.style.background = '#28a745';
                     }, 2000);
                 } catch (error) {
-                    // Fallback for older browsers
                     try {
                         const textArea = document.createElement('textarea');
                         textArea.value = currentKey;
@@ -438,45 +411,6 @@
             }
         });
 
-        // Auto-refresh page if idle for too long (prevent token expiry)
-        let lastActivity = Date.now();
-        const IDLE_TIMEOUT = 2.5 * 60 * 60 * 1000; // 2.5 hours (less than token expiry)
-
-        function resetIdleTimer() {
-            lastActivity = Date.now();
-        }
-
-        // Track user activity
-        document.addEventListener('click', resetIdleTimer);
-        document.addEventListener('keypress', resetIdleTimer);
-        document.addEventListener('scroll', resetIdleTimer);
-
-        // Check for idle timeout every minute
-        setInterval(() => {
-            if (Date.now() - lastActivity > IDLE_TIMEOUT && token) {
-                updateDebugInfo('Session timeout due to inactivity');
-                alert('Session expired due to inactivity. Page will refresh.');
-                window.location.href = window.location.origin;
-            }
-        }, 60000);
-
-        // Prevent accidental page refresh with unsaved progress
-        window.addEventListener('beforeunload', (e) => {
-            if (token && !currentKey) {
-                e.preventDefault();
-                e.returnValue = 'You have an active verification session. Are you sure you want to leave?';
-            }
-        });
-
-        // Handle page visibility change
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) {
-                resetIdleTimer();
-                updateDebugInfo('Page became visible');
-            }
-        });
-
-        // Initial setup complete
         updateDebugInfo('Page initialization complete');
     </script>
 </body>
