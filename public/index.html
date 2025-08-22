@@ -130,9 +130,9 @@
                 output.textContent = 'Verification Step 1 of 3\n\nYou are now ready to complete the first verification step.\n\nClick "Continue 1/3" to open the first verification link.';
                 
                 btnContinue.addEventListener('click', () => {
-                    // Open Vertise link 1 with proper callback URL
+                    // Placeholder untuk Vertise link 1 - akan diganti dengan link baru
                     const callbackURL = encodeURIComponent(`${window.location.origin}/callback/step1?user_ref=${token}&token=${getVertiseToken()}`);
-                    const vertiseURL = `https://link-hub.net/1385845/0Tpockg8i7RS?url=${callbackURL}`;
+                    const vertiseURL = `YOUR_VERTISE_LINK_1_HERE?url=${callbackURL}`;
                     
                     output.textContent = 'Opening verification link...\n\nPlease complete the verification on the opened page.\n\nAfter completion, you will be automatically redirected to the next step.';
                     btnContinue.textContent = 'Verification in Progress...';
@@ -157,9 +157,9 @@
                 output.textContent = 'Step 1 completed successfully! ✓\n\nVerification Step 2 of 3\n\nClick "Continue 2/3" to open the second verification link.';
                 
                 btnContinue.addEventListener('click', () => {
-                    // Open Vertise link 2 with proper callback URL
+                    // Placeholder untuk Vertise link 2 - akan diganti dengan link baru
                     const callbackURL = encodeURIComponent(`${window.location.origin}/callback/step2?user_ref=${token}&token=${getVertiseToken()}`);
-                    const vertiseURL = `https://link-target.net/1385845/sCCiJeLQ3BfA?url=${callbackURL}`;
+                    const vertiseURL = `YOUR_VERTISE_LINK_2_HERE?url=${callbackURL}`;
                     
                     output.textContent = 'Opening second verification link...\n\nPlease complete the verification on the opened page.\n\nAfter completion, you will be automatically redirected to the next step.';
                     btnContinue.textContent = 'Verification in Progress...';
@@ -184,9 +184,9 @@
                 output.textContent = 'Step 2 completed successfully! ✓\n\nFinal Verification Step 3 of 3\n\nClick "Continue 3/3" to open the final verification link.';
                 
                 btnContinue.addEventListener('click', () => {
-                    // Open Vertise link 3 with proper callback URL
+                    // Placeholder untuk Vertise link 3 - akan diganti dengan link baru
                     const callbackURL = encodeURIComponent(`${window.location.origin}/callback/step3?user_ref=${token}&token=${getVertiseToken()}`);
-                    const vertiseURL = `https://link-target.net/1385845/1NJw6vONwDd5?url=${callbackURL}`;
+                    const vertiseURL = `YOUR_VERTISE_LINK_3_HERE?url=${callbackURL}`;
                     
                     output.textContent = 'Opening final verification link...\n\nPlease complete the verification on the opened page.\n\nAfter completion, you will be automatically redirected to generate your API key.';
                     btnContinue.textContent = 'Final Verification in Progress...';
