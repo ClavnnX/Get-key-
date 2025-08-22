@@ -8,7 +8,7 @@ const app = express();
 app.set('trust proxy', true);
 
 // Serve static files from public directory
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, '../public')));
 
 // Middleware to parse JSON and get real IP
 app.use(express.json());
@@ -29,15 +29,12 @@ app.use((req, res, next) => {
   next();
 });
 
-// In-memory storage for keys
-// Structure: { ip: { key: string, expires: Date, created: Date } }
+// In-memory storage for keys (Note: This will reset on each serverless function cold start)
+// For production, consider using a database or Redis
 const keyStorage = {};
-
-// In-memory storage for verification tokens
-// Structure: { ip: { token: string, expires: Date, created: Date, step: number } }
 const tokenStorage = {};
 
-// Token Vertise Anda (untuk nanti saat dipasang link)
+// Token Vertise Anda
 const VERTISE_TOKEN = '6457aac2196b55786323be0f9d8580cc1dd63627c32d6d5e34fc74cfaee18c88';
 
 // Helper function to generate random 10-character uppercase key
@@ -45,7 +42,6 @@ function generateKey() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let result = '';
   
-  // Use crypto.randomBytes for better randomness
   const randomBytes = crypto.randomBytes(10);
   
   for (let i = 0; i < 10; i++) {
@@ -75,7 +71,6 @@ function generateToken() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let result = '';
   
-  // Use crypto.randomBytes for better randomness
   const randomBytes = crypto.randomBytes(32);
   
   for (let i = 0; i < 32; i++) {
@@ -98,7 +93,6 @@ function isValidToken(userIP, token, requiredStep = 3) {
   
   const tokenData = tokenStorage[userIP];
   
-  // Check if token matches and is not expired and has completed required steps
   return tokenData.token === token && 
          !isTokenExpired(tokenData) && 
          tokenData.step >= requiredStep;
@@ -115,7 +109,7 @@ function cleanupExpiredTokens() {
 }
 
 // Endpoint: /getkey (requires valid token)
-app.get('/getkey', (req, res) => {
+app.get('/api/getkey', (req, res) => {
   try {
     const userIP = req.realIP;
     const { token } = req.query;
@@ -126,7 +120,6 @@ app.get('/getkey', (req, res) => {
       });
     }
 
-    // Check if token is provided and valid
     if (!token) {
       return res.status(403).json({
         error: 'Forbidden: Valid token required. Please complete all verification steps first.'
@@ -140,35 +133,29 @@ app.get('/getkey', (req, res) => {
     }
 
     const now = new Date();
-    const expirationTime = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
+    const expirationTime = new Date(now.getTime() + 24 * 60 * 60 * 1000);
     
-    // Check if user already has a key
     if (keyStorage[userIP]) {
       const existingKey = keyStorage[userIP];
       
-      // If key is still valid, return it
       if (!isKeyExpired(existingKey)) {
         return res.json({
           key: existingKey.key,
           expires: existingKey.expires.toISOString()
         });
       } else {
-        // Key expired, remove it
         delete keyStorage[userIP];
       }
     }
     
-    // Generate new key
     const newKey = generateKey();
     
-    // Store the new key
     keyStorage[userIP] = {
       key: newKey,
       expires: expirationTime,
       created: now
     };
     
-    // Return the new key
     res.json({
       key: newKey,
       expires: expirationTime.toISOString()
@@ -183,7 +170,7 @@ app.get('/getkey', (req, res) => {
 });
 
 // Endpoint: /validate
-app.get('/validate', (req, res) => {
+app.get('/api/validate', (req, res) => {
   try {
     const { key } = req.query;
     
@@ -193,7 +180,6 @@ app.get('/validate', (req, res) => {
       });
     }
     
-    // Find the key in storage
     let foundKey = null;
     let foundIP = null;
     
@@ -210,16 +196,13 @@ app.get('/validate', (req, res) => {
       });
     }
     
-    // Check if key is expired
     if (isKeyExpired(foundKey)) {
-      // Remove expired key
       delete keyStorage[foundIP];
       return res.json({
         status: 'EXPIRED'
       });
     }
     
-    // Key is valid
     res.json({
       status: 'VALID'
     });
@@ -232,18 +215,18 @@ app.get('/validate', (req, res) => {
   }
 });
 
-// Homepage - serve HTML UI (starting point)
+// Homepage - serve HTML UI
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, '../public', 'index.html'));
 });
 
-// STEP ROUTES - mengharuskan token
+// STEP ROUTES
 app.get('/step1', (req, res) => {
   const { token } = req.query;
   if (!token) {
     return res.redirect('/');
   }
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, '../public', 'index.html'));
 });
 
 app.get('/step2', (req, res) => {
@@ -251,7 +234,7 @@ app.get('/step2', (req, res) => {
   if (!token) {
     return res.redirect('/');
   }
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, '../public', 'index.html'));
 });
 
 app.get('/step3', (req, res) => {
@@ -259,7 +242,7 @@ app.get('/step3', (req, res) => {
   if (!token) {
     return res.redirect('/');
   }
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, '../public', 'index.html'));
 });
 
 app.get('/generate', (req, res) => {
@@ -267,11 +250,11 @@ app.get('/generate', (req, res) => {
   if (!token) {
     return res.redirect('/');
   }
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, '../public', 'index.html'));
 });
 
-// Start verification process - generate token and redirect to step1
-app.get('/start-verification', (req, res) => {
+// Start verification process
+app.get('/api/start-verification', (req, res) => {
   try {
     const userIP = req.realIP;
     
@@ -282,10 +265,9 @@ app.get('/start-verification', (req, res) => {
     }
 
     const now = new Date();
-    const tokenExpirationTime = new Date(now.getTime() + 2 * 60 * 60 * 1000); // 2 hours untuk proses verifikasi
+    const tokenExpirationTime = new Date(now.getTime() + 2 * 60 * 60 * 1000);
     const newToken = generateToken();
     
-    // Store the new token with step 0 (belum mulai)
     tokenStorage[userIP] = {
       token: newToken,
       expires: tokenExpirationTime,
@@ -293,7 +275,6 @@ app.get('/start-verification', (req, res) => {
       step: 0
     };
     
-    // Redirect to step1 with token parameter
     res.redirect(`/step1?token=${newToken}`);
     
   } catch (error) {
@@ -304,8 +285,8 @@ app.get('/start-verification', (req, res) => {
   }
 });
 
-// Verify endpoint - untuk validasi token dan mendapatkan status
-app.get('/verify', (req, res) => {
+// Verify endpoint
+app.get('/api/verify', (req, res) => {
   try {
     const userIP = req.realIP;
     const { token } = req.query;
@@ -322,7 +303,6 @@ app.get('/verify', (req, res) => {
       });
     }
     
-    // Check token validity
     if (tokenStorage[userIP] && tokenStorage[userIP].token === token && !isTokenExpired(tokenStorage[userIP])) {
       return res.json({
         valid: true,
@@ -346,7 +326,7 @@ app.get('/verify', (req, res) => {
   }
 });
 
-// Helper function to find user IP by token (for callback validation)
+// Helper function to find user IP by token
 function findUserIPByToken(token) {
   for (const [ip, tokenData] of Object.entries(tokenStorage)) {
     if (tokenData && tokenData.token === token && !isTokenExpired(tokenData)) {
@@ -357,24 +337,20 @@ function findUserIPByToken(token) {
 }
 
 // CALLBACK ENDPOINTS UNTUK VERTISE LINKS
-// Callback untuk step 1 - setelah selesai vertise pertama
-app.get('/callback/step1', (req, res) => {
+app.get('/api/callback/step1', (req, res) => {
   const { user_ref, token } = req.query;
   
-  // Validasi token Vertise
   if (token !== VERTISE_TOKEN) {
     return res.status(403).json({ error: 'Invalid Vertise token' });
   }
   
   if (user_ref) {
-    // Cari IP user berdasarkan token
     const userIP = findUserIPByToken(user_ref);
     
     if (userIP && tokenStorage[userIP] && tokenStorage[userIP].token === user_ref) {
-      // Pastikan user mulai dari step 0
       if (tokenStorage[userIP].step === 0) {
         tokenStorage[userIP].step = 1;
-        tokenStorage[userIP].expires = new Date(Date.now() + 2 * 60 * 60 * 1000); // Extend expiry
+        tokenStorage[userIP].expires = new Date(Date.now() + 2 * 60 * 60 * 1000);
         res.redirect(`/step2?token=${user_ref}`);
       } else {
         res.status(403).json({ error: 'Invalid step sequence' });
@@ -387,24 +363,20 @@ app.get('/callback/step1', (req, res) => {
   }
 });
 
-// Callback untuk step 2 - setelah selesai vertise kedua
-app.get('/callback/step2', (req, res) => {
+app.get('/api/callback/step2', (req, res) => {
   const { user_ref, token } = req.query;
   
-  // Validasi token Vertise
   if (token !== VERTISE_TOKEN) {
     return res.status(403).json({ error: 'Invalid Vertise token' });
   }
   
   if (user_ref) {
-    // Cari IP user berdasarkan token
     const userIP = findUserIPByToken(user_ref);
     
     if (userIP && tokenStorage[userIP] && tokenStorage[userIP].token === user_ref) {
-      // Pastikan user sudah menyelesaikan step 1
       if (tokenStorage[userIP].step === 1) {
         tokenStorage[userIP].step = 2;
-        tokenStorage[userIP].expires = new Date(Date.now() + 2 * 60 * 60 * 1000); // Extend expiry
+        tokenStorage[userIP].expires = new Date(Date.now() + 2 * 60 * 60 * 1000);
         res.redirect(`/step3?token=${user_ref}`);
       } else {
         res.status(403).json({ error: 'Step 1 not completed or invalid sequence' });
@@ -417,24 +389,20 @@ app.get('/callback/step2', (req, res) => {
   }
 });
 
-// Callback untuk step 3 - setelah selesai vertise ketiga
-app.get('/callback/step3', (req, res) => {
+app.get('/api/callback/step3', (req, res) => {
   const { user_ref, token } = req.query;
   
-  // Validasi token Vertise
   if (token !== VERTISE_TOKEN) {
     return res.status(403).json({ error: 'Invalid Vertise token' });
   }
   
   if (user_ref) {
-    // Cari IP user berdasarkan token
     const userIP = findUserIPByToken(user_ref);
     
     if (userIP && tokenStorage[userIP] && tokenStorage[userIP].token === user_ref) {
-      // Pastikan user sudah menyelesaikan step 2
       if (tokenStorage[userIP].step === 2) {
         tokenStorage[userIP].step = 3;
-        tokenStorage[userIP].expires = new Date(Date.now() + 2 * 60 * 60 * 1000); // Extend expiry
+        tokenStorage[userIP].expires = new Date(Date.now() + 2 * 60 * 60 * 1000);
         res.redirect(`/generate?token=${user_ref}`);
       } else {
         res.status(403).json({ error: 'Step 2 not completed or invalid sequence' });
@@ -447,8 +415,8 @@ app.get('/callback/step3', (req, res) => {
   }
 });
 
-// Status endpoint for healthcheck
-app.get('/status', (req, res) => {
+// Status endpoint
+app.get('/api/status', (req, res) => {
   res.json({
     status: 'online',
     timestamp: new Date().toISOString(),
@@ -456,10 +424,9 @@ app.get('/status', (req, res) => {
   });
 });
 
-// Endpoint for getting system stats
-app.get('/stats', (req, res) => {
+// Stats endpoint
+app.get('/api/stats', (req, res) => {
   try {
-    // Clean up expired keys before showing stats
     cleanupExpiredKeys();
     cleanupExpiredTokens();
     
@@ -486,38 +453,23 @@ app.use('*', (req, res) => {
   res.status(404).json({
     error: 'Endpoint not found',
     available_endpoints: [
-      '/getkey', 
-      '/validate', 
-      '/verify',
-      '/start-verification',
+      '/api/getkey', 
+      '/api/validate', 
+      '/api/verify',
+      '/api/start-verification',
       '/', 
       '/step1', 
       '/step2', 
       '/step3', 
       '/generate',
-      '/callback/step1',
-      '/callback/step2',
-      '/callback/step3',
-      '/stats', 
-      '/status'
+      '/api/callback/step1',
+      '/api/callback/step2',
+      '/api/callback/step3',
+      '/api/stats', 
+      '/api/status'
     ]
   });
 });
-
-// Error handling middleware
-app.use((error, req, res, next) => {
-  console.error('Unhandled error:', error);
-  res.status(500).json({
-    error: 'Internal server error'
-  });
-});
-
-// Periodic cleanup of expired keys and tokens (every 30 minutes)
-setInterval(() => {
-  cleanupExpiredKeys();
-  cleanupExpiredTokens();
-  console.log('Cleaned up expired keys and tokens at:', new Date().toISOString());
-}, 30 * 60 * 1000);
 
 // Export app for Vercel
 module.exports = app;
