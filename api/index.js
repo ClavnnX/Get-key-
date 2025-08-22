@@ -1,23 +1,17 @@
 const crypto = require('crypto');
 
-// In-memory storage
-let keyStorage = new Map();
-let tokenStorage = new Map();
-
-// Anti-bypass token
+// Global storage (will reset on cold starts, but that's okay for this use case)
+const keyStorage = new Map();
+const tokenStorage = new Map();
 const ANTI_BYPASS_TOKEN = '1c3c210b0a6101cfb3b20619b480a70598dbca6e0b60567c73a6472557d077c7';
 
-// Get real IP helper
 function getRealIP(req) {
   return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
          req.headers['x-real-ip'] || 
-         req.connection?.remoteAddress || 
-         req.socket?.remoteAddress ||
-         req.ip ||
+         req.ip || 
          '127.0.0.1';
 }
 
-// Helper functions
 function generateKey() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let result = '';
@@ -50,55 +44,8 @@ function isValidToken(userIP, token, requiredStep = 3) {
          tokenData.step >= requiredStep;
 }
 
-// Main handler function
-module.exports = (req, res) => {
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  
-  if (req.method === 'OPTIONS') {
-    res.statusCode = 200;
-    res.end();
-    return;
-  }
-
-  const userIP = getRealIP(req);
-  const url = new URL(req.url, `http://${req.headers.host}`);
-  const pathname = url.pathname;
-  const query = Object.fromEntries(url.searchParams);
-  
-  console.log(`Request from IP: ${userIP} to ${pathname}`);
-
-  try {
-    // Route handling
-    if (pathname === '/' || pathname === '/api' || pathname === '/api/') {
-      handleHomepage(req, res, query);
-    } else if (pathname === '/verify' || pathname === '/api/verify') {
-      handleVerify(req, res, userIP, query);
-    } else if (pathname === '/getkey' || pathname === '/api/getkey') {
-      handleGetKey(req, res, userIP, query);
-    } else if (pathname === '/validate' || pathname === '/api/validate') {
-      handleValidate(req, res, query);
-    } else if (pathname === '/health' || pathname === '/api/health') {
-      handleHealth(req, res);
-    } else {
-      // Redirect unknown routes to homepage
-      res.writeHead(302, { Location: '/' });
-      res.end();
-    }
-  } catch (error) {
-    console.error('Handler error:', error);
-    res.statusCode = 500;
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ error: 'Internal server error' }));
-  }
-};
-
-function handleHomepage(req, res, query) {
-  res.setHeader('Content-Type', 'text/html');
-  res.end(`
-<!DOCTYPE html>
+function getHomepage() {
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -225,11 +172,11 @@ function handleHomepage(req, res, query) {
             try {
                 const timestamp = new Date().toLocaleTimeString();
                 if (debugInfo) {
-                    debugInfo.textContent = \`[\${timestamp}] \${info}\`;
+                    debugInfo.textContent = '[' + timestamp + '] ' + info;
                 }
-                console.log(\`[DEBUG] \${info}\`);
+                console.log('[DEBUG] ' + info);
             } catch (e) {
-                console.log(\`[DEBUG] \${info}\`);
+                console.log('[DEBUG] ' + info);
             }
         }
 
@@ -241,13 +188,16 @@ function handleHomepage(req, res, query) {
                     currentStep: urlParams.get('currentstep')
                 };
             } catch (e) {
-                updateDebugInfo(\`Error parsing URL params: \${e.message}\`);
+                updateDebugInfo('Error parsing URL params: ' + e.message);
                 return { token: null, currentStep: null };
             }
         }
 
-        const { token, currentStep } = getUrlParams();
-        updateDebugInfo(\`Token: \${token ? 'Present' : 'Missing'}, Step: \${currentStep || 'None'}\`);
+        const params = getUrlParams();
+        const token = params.token;
+        const currentStep = params.currentStep;
+        
+        updateDebugInfo('Token: ' + (token ? 'Present' : 'Missing') + ', Step: ' + (currentStep || 'None'));
         
         if (token) {
             updateDebugInfo('Verifying token...');
@@ -271,7 +221,7 @@ function handleHomepage(req, res, query) {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 10000);
                 
-                const response = await fetch(\`/api/verify?token=\${encodeURIComponent(token)}\`, {
+                const response = await fetch('/api/verify?token=' + encodeURIComponent(token), {
                     signal: controller.signal,
                     headers: {
                         'Accept': 'application/json',
@@ -287,7 +237,7 @@ function handleHomepage(req, res, query) {
                 }
                 
                 const data = await response.json();
-                updateDebugInfo(\`Server response: \${response.status}, Valid: \${data.valid}, Step: \${data.step}\`);
+                updateDebugInfo('Server response: ' + response.status + ', Valid: ' + data.valid + ', Step: ' + data.step);
                 
                 if (response.ok && data.valid) {
                     const currentStep = data.step;
@@ -341,16 +291,16 @@ function handleHomepage(req, res, query) {
                         };
                     }
                 } else {
-                    updateDebugInfo(\`Token invalid: \${data.message || 'Unknown reason'}\`);
+                    updateDebugInfo('Token invalid: ' + (data.message || 'Unknown reason'));
                     showInvalidTokenError();
                 }
             } catch (error) {
                 console.error('Fetch error:', error);
-                updateDebugInfo(\`Connection error: \${error.message}\`);
+                updateDebugInfo('Connection error: ' + error.message);
                 
                 if (retryCount < MAX_RETRIES) {
                     retryCount++;
-                    updateDebugInfo(\`Retrying... (\${retryCount}/\${MAX_RETRIES})\`);
+                    updateDebugInfo('Retrying... (' + retryCount + '/' + MAX_RETRIES + ')');
                     setTimeout(() => {
                         verifyToken(token, currentStepFromURL);
                     }, 2000 * retryCount);
@@ -408,7 +358,7 @@ function handleHomepage(req, res, query) {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 15000);
                 
-                const response = await fetch(\`/api/getkey?token=\${encodeURIComponent(token)}\`, {
+                const response = await fetch('/api/getkey?token=' + encodeURIComponent(token), {
                     signal: controller.signal,
                     headers: {
                         'Accept': 'application/json',
@@ -418,7 +368,7 @@ function handleHomepage(req, res, query) {
                 
                 clearTimeout(timeoutId);
                 const data = await response.json();
-                updateDebugInfo(\`Key generation response: \${response.status}\`);
+                updateDebugInfo('Key generation response: ' + response.status);
                 
                 if (response.ok && data.key) {
                     currentKey = data.key;
@@ -428,7 +378,7 @@ function handleHomepage(req, res, query) {
                     stepInfo.style.background = '#0f4f0f';
                     stepInfo.style.borderColor = '#28a745';
                     
-                    output.textContent = \`🔑 Your API Key:\\n\${data.key}\\n\\n⏰ Expires: \${expiry.toLocaleString()}\\n\\n✅ Valid for 24 hours from generation\\n\\nKeep this key safe and do not share it!\`;
+                    output.textContent = '🔑 Your API Key:\\n' + data.key + '\\n\\n⏰ Expires: ' + expiry.toLocaleString() + '\\n\\n✅ Valid for 24 hours from generation\\n\\nKeep this key safe and do not share it!';
                     updateDebugInfo('Key generated successfully');
                     
                     btnCopy.style.display = 'block';
@@ -438,16 +388,16 @@ function handleHomepage(req, res, query) {
                     stepInfo.style.background = '#4f0f0f';
                     stepInfo.style.borderColor = '#dc3545';
                     
-                    updateDebugInfo(\`Key generation failed: \${data.error}\`);
-                    output.textContent = \`❌ Generation Failed!\\n\\nError: \${data.error || 'Unknown error occurred'}\\n\\nPlease try again or contact support.\`;
+                    updateDebugInfo('Key generation failed: ' + data.error);
+                    output.textContent = '❌ Generation Failed!\\n\\nError: ' + (data.error || 'Unknown error occurred') + '\\n\\nPlease try again or contact support.';
                     btnCopy.style.display = 'none';
                 }
             } catch (error) {
                 stepInfo.textContent = 'Connection error during key generation';
                 stepInfo.style.background = '#4f0f0f';
                 stepInfo.style.borderColor = '#dc3545';
-                output.textContent = \`❌ Connection Error!\\n\\nUnable to connect to server for key generation.\\n\\nPlease check your internet connection and try again.\`;
-                updateDebugInfo(\`Key generation connection error: \${error.message}\`);
+                output.textContent = '❌ Connection Error!\\n\\nUnable to connect to server for key generation.\\n\\nPlease check your internet connection and try again.';
+                updateDebugInfo('Key generation connection error: ' + error.message);
                 btnCopy.style.display = 'none';
             }
             
@@ -488,7 +438,7 @@ function handleHomepage(req, res, query) {
                             btnCopy.style.background = '#28a745';
                         }, 2000);
                     } catch (fallbackError) {
-                        updateDebugInfo(\`Copy failed: \${fallbackError.message}\`);
+                        updateDebugInfo('Copy failed: ' + fallbackError.message);
                         btnCopy.textContent = '❌ Copy Failed';
                         btnCopy.style.background = '#dc3545';
                         setTimeout(() => {
@@ -503,168 +453,196 @@ function handleHomepage(req, res, query) {
         updateDebugInfo('Page initialization complete');
     </script>
 </body>
-</html>
-  `);
+</html>`;
 }
 
-function handleVerify(req, res, userIP, query) {
-  const { token, bypass } = query;
-  
-  console.log(\`/verify request from IP: \${userIP}, token: \${token ? 'provided' : 'missing'}, bypass: \${bypass ? 'provided' : 'missing'}\`);
-  
-  if (!userIP) {
-    res.statusCode = 400;
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ error: 'Unable to identify user IP address' }));
-    return;
-  }
-
-  const now = new Date();
-  const tokenExpirationTime = new Date(now.getTime() + 3 * 60 * 60 * 1000);
-
-  if (!token) {
-    const newToken = generateToken();
-    tokenStorage.set(userIP, {
-      token: newToken,
-      expires: tokenExpirationTime.toISOString(),
-      created: now.toISOString(),
-      step: 0
-    });
+module.exports = (req, res) => {
+  try {
+    // Set CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     
-    console.log(\`Generated new token for IP: \${userIP}\`);
-    res.writeHead(302, { Location: \`/?token=\${newToken}&currentstep=0\` });
-    res.end();
-    return;
-  }
-  
-  if (!tokenStorage.has(userIP)) {
-    console.log(\`No token found for IP: \${userIP}\`);
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ valid: false, message: 'Token not found for this IP' }));
-    return;
-  }
-  
-  const userTokenData = tokenStorage.get(userIP);
-  
-  if (userTokenData.token !== token || isExpired(userTokenData)) {
-    console.log(\`Invalid or expired token for IP: \${userIP}\`);
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ valid: false, message: 'Invalid or expired token' }));
-    return;
-  }
-  
-  if (bypass === ANTI_BYPASS_TOKEN) {
-    console.log(\`Valid bypass token received for IP: \${userIP}\`);
-    userTokenData.step++;
-    userTokenData.lastUpdated = now.toISOString();
-    tokenStorage.set(userIP, userTokenData);
-    console.log(\`User \${userIP} progressed to step \${userTokenData.step}\`);
-    res.writeHead(302, { Location: \`/?token=\${token}&currentstep=\${userTokenData.step}\` });
-    res.end();
-    return;
-  }
-  
-  res.setHeader('Content-Type', 'application/json');
-  res.end(JSON.stringify({ valid: true, step: userTokenData.step, message: 'Token is valid' }));
-}
-
-function handleGetKey(req, res, userIP, query) {
-  const { token } = query;
-  
-  console.log(\`/getkey request from IP: \${userIP} with token: \${token ? 'provided' : 'missing'}\`);
-  
-  if (!userIP) {
-    res.statusCode = 400;
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ error: 'Unable to identify user IP address' }));
-    return;
-  }
-
-  if (!token) {
-    res.statusCode = 403;
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ error: 'Forbidden: Valid token required' }));
-    return;
-  }
-
-  if (!isValidToken(userIP, token, 3)) {
-    console.log(\`Token validation failed for IP: \${userIP}\`);
-    res.statusCode = 403;
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ error: 'Forbidden: All verification steps must be completed' }));
-    return;
-  }
-
-  const now = new Date();
-  const expirationTime = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-  
-  if (keyStorage.has(userIP)) {
-    const existingKey = keyStorage.get(userIP);
-    if (!isExpired(existingKey)) {
-      console.log(\`Returning existing key for IP: \${userIP}\`);
-      res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify({ key: existingKey.key, expires: existingKey.expires }));
+    if (req.method === 'OPTIONS') {
+      res.statusCode = 200;
+      res.end();
       return;
-    } else {
-      keyStorage.delete(userIP);
     }
-  }
-  
-  const newKey = generateKey();
-  keyStorage.set(userIP, {
-    key: newKey,
-    expires: expirationTime.toISOString(),
-    created: now.toISOString()
-  });
-  
-  console.log(\`Generated new key for IP: \${userIP}\`);
-  res.setHeader('Content-Type', 'application/json');
-  res.end(JSON.stringify({ key: newKey, expires: expirationTime.toISOString() }));
-}
 
-function handleValidate(req, res, query) {
-  const { key } = query;
-  
-  if (!key) {
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ status: 'INVALID' }));
-    return;
-  }
-  
-  let foundKey = null;
-  let foundIP = null;
-  
-  for (let [ip, keyData] of keyStorage) {
-    if (keyData && keyData.key === key) {
-      foundKey = keyData;
-      foundIP = ip;
-      break;
+    const userIP = getRealIP(req);
+    const url = new URL(req.url, 'http://localhost');
+    const pathname = url.pathname;
+    const searchParams = url.searchParams;
+    
+    console.log(`${req.method} ${pathname} from ${userIP}`);
+
+    // Route handling
+    if (pathname === '/' || pathname === '/api' || pathname === '/api/') {
+      res.setHeader('Content-Type', 'text/html');
+      res.statusCode = 200;
+      res.end(getHomepage());
+      return;
     }
-  }
-  
-  if (!foundKey) {
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ status: 'INVALID' }));
-    return;
-  }
-  
-  if (isExpired(foundKey)) {
-    keyStorage.delete(foundIP);
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ status: 'EXPIRED' }));
-    return;
-  }
-  
-  res.setHeader('Content-Type', 'application/json');
-  res.end(JSON.stringify({ status: 'VALID' }));
-}
 
-function handleHealth(req, res) {
-  res.setHeader('Content-Type', 'application/json');
-  res.end(JSON.stringify({ 
-    status: 'OK', 
-    timestamp: new Date().toISOString(),
-    activeTokens: tokenStorage.size,
-    activeKeys: keyStorage.size
-  }));
-}
+    if (pathname === '/verify' || pathname === '/api/verify') {
+      const token = searchParams.get('token');
+      const bypass = searchParams.get('bypass');
+      
+      if (!token) {
+        const newToken = generateToken();
+        const now = new Date();
+        const tokenExpirationTime = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+        
+        tokenStorage.set(userIP, {
+          token: newToken,
+          expires: tokenExpirationTime.toISOString(),
+          created: now.toISOString(),
+          step: 0
+        });
+        
+        res.writeHead(302, { Location: `/?token=${newToken}&currentstep=0` });
+        res.end();
+        return;
+      }
+      
+      if (!tokenStorage.has(userIP)) {
+        res.setHeader('Content-Type', 'application/json');
+        res.statusCode = 200;
+        res.end(JSON.stringify({ valid: false, message: 'Token not found for this IP' }));
+        return;
+      }
+      
+      const userTokenData = tokenStorage.get(userIP);
+      
+      if (userTokenData.token !== token || isExpired(userTokenData)) {
+        res.setHeader('Content-Type', 'application/json');
+        res.statusCode = 200;
+        res.end(JSON.stringify({ valid: false, message: 'Invalid or expired token' }));
+        return;
+      }
+      
+      if (bypass === ANTI_BYPASS_TOKEN) {
+        userTokenData.step++;
+        userTokenData.lastUpdated = new Date().toISOString();
+        tokenStorage.set(userIP, userTokenData);
+        res.writeHead(302, { Location: `/?token=${token}&currentstep=${userTokenData.step}` });
+        res.end();
+        return;
+      }
+      
+      res.setHeader('Content-Type', 'application/json');
+      res.statusCode = 200;
+      res.end(JSON.stringify({ valid: true, step: userTokenData.step, message: 'Token is valid' }));
+      return;
+    }
+
+    if (pathname === '/getkey' || pathname === '/api/getkey') {
+      const token = searchParams.get('token');
+      
+      if (!token) {
+        res.setHeader('Content-Type', 'application/json');
+        res.statusCode = 403;
+        res.end(JSON.stringify({ error: 'Forbidden: Valid token required' }));
+        return;
+      }
+
+      if (!isValidToken(userIP, token, 3)) {
+        res.setHeader('Content-Type', 'application/json');
+        res.statusCode = 403;
+        res.end(JSON.stringify({ error: 'Forbidden: All verification steps must be completed' }));
+        return;
+      }
+
+      const now = new Date();
+      const expirationTime = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+      
+      if (keyStorage.has(userIP)) {
+        const existingKey = keyStorage.get(userIP);
+        if (!isExpired(existingKey)) {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({ key: existingKey.key, expires: existingKey.expires }));
+          return;
+        } else {
+          keyStorage.delete(userIP);
+        }
+      }
+      
+      const newKey = generateKey();
+      keyStorage.set(userIP, {
+        key: newKey,
+        expires: expirationTime.toISOString(),
+        created: now.toISOString()
+      });
+      
+      res.setHeader('Content-Type', 'application/json');
+      res.statusCode = 200;
+      res.end(JSON.stringify({ key: newKey, expires: expirationTime.toISOString() }));
+      return;
+    }
+
+    if (pathname === '/validate' || pathname === '/api/validate') {
+      const key = searchParams.get('key');
+      
+      if (!key) {
+        res.setHeader('Content-Type', 'application/json');
+        res.statusCode = 200;
+        res.end(JSON.stringify({ status: 'INVALID' }));
+        return;
+      }
+      
+      let foundKey = null;
+      let foundIP = null;
+      
+      for (let [ip, keyData] of keyStorage) {
+        if (keyData && keyData.key === key) {
+          foundKey = keyData;
+          foundIP = ip;
+          break;
+        }
+      }
+      
+      if (!foundKey) {
+        res.setHeader('Content-Type', 'application/json');
+        res.statusCode = 200;
+        res.end(JSON.stringify({ status: 'INVALID' }));
+        return;
+      }
+      
+      if (isExpired(foundKey)) {
+        keyStorage.delete(foundIP);
+        res.setHeader('Content-Type', 'application/json');
+        res.statusCode = 200;
+        res.end(JSON.stringify({ status: 'EXPIRED' }));
+        return;
+      }
+      
+      res.setHeader('Content-Type', 'application/json');
+      res.statusCode = 200;
+      res.end(JSON.stringify({ status: 'VALID' }));
+      return;
+    }
+
+    if (pathname === '/health' || pathname === '/api/health') {
+      res.setHeader('Content-Type', 'application/json');
+      res.statusCode = 200;
+      res.end(JSON.stringify({ 
+        status: 'OK', 
+        timestamp: new Date().toISOString(),
+        activeTokens: tokenStorage.size,
+        activeKeys: keyStorage.size
+      }));
+      return;
+    }
+
+    // Redirect unknown routes to homepage
+    res.writeHead(302, { Location: '/' });
+    res.end();
+    
+  } catch (error) {
+    console.error('Function error:', error);
+    res.setHeader('Content-Type', 'application/json');
+    res.statusCode = 500;
+    res.end(JSON.stringify({ error: 'Internal server error' }));
+  }
+};
