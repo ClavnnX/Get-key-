@@ -133,15 +133,11 @@
                 if (response.ok && data.valid) {
                     const currentStep = data.step;
                     
-                    // Update URL to show current step
-                    const newURL = `${window.location.origin}/?token=${token}&step=${currentStep}`;
-                    window.history.replaceState({}, '', newURL);
-                    
                     if (currentStep === 0) {
                         // User belum complete step apapun, show step 1/3
                         btnContinue.textContent = 'Continue 1/3';
                         stepInfo.textContent = 'Step 1/3: First verification step';
-                        output.textContent = 'Complete the first verification step to proceed.\n\nCopy URL dari address bar untuk setup Vertise link pertama.\n\nURL saat ini untuk Step 1:\n' + newURL.replace('step=0', 'step=1');
+                        output.textContent = 'Complete the first verification step to proceed.';
                         
                         btnContinue.onclick = () => {
                             // Redirect to Vertise link 1
@@ -152,7 +148,7 @@
                         // User sudah complete step 1, show step 2/3
                         btnContinue.textContent = 'Continue 2/3';
                         stepInfo.textContent = 'Step 2/3: Second verification step';
-                        output.textContent = 'Great! Step 1 completed.\n\nCopy URL dari address bar untuk setup Vertise link kedua.\n\nURL saat ini untuk Step 2:\n' + newURL.replace('step=1', 'step=2');
+                        output.textContent = 'Great! Step 1 completed.\n\nProceed to the second verification step.';
                         
                         btnContinue.onclick = () => {
                             // Redirect to Vertise link 2
@@ -163,7 +159,7 @@
                         // User sudah complete step 2, show step 3/3
                         btnContinue.textContent = 'Continue 3/3';
                         stepInfo.textContent = 'Step 3/3: Final verification step';
-                        output.textContent = 'Excellent! Steps 1 & 2 completed.\n\nCopy URL dari address bar untuk setup Vertise link ketiga.\n\nURL saat ini untuk Step 3:\n' + newURL.replace('step=2', 'step=3');
+                        output.textContent = 'Excellent! Steps 1 & 2 completed.\n\nProceed to the final verification step.';
                         
                         btnContinue.onclick = () => {
                             // Redirect to Vertise link 3
@@ -178,11 +174,7 @@
                         stepInfo.style.background = '#0f4f0f';
                         stepInfo.style.borderColor = '#28a745';
                         
-                        // Update URL to show step 3 (final step)
-                        const finalURL = `${window.location.origin}/?token=${token}&step=3`;
-                        window.history.replaceState({}, '', finalURL);
-                        
-                        output.textContent = '🎉 Congratulations!\n\nAll 3 verification steps completed successfully!\n\nURL untuk Generate Key:\n' + finalURL + '\n\nClick "Generate Key" to get your API key.';
+                        output.textContent = '🎉 Congratulations!\n\nAll 3 verification steps completed successfully!\n\nClick "Generate Key" to get your API key.';
                         
                         btnContinue.onclick = async () => {
                             await generateKey(token);
