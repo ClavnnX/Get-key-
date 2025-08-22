@@ -232,33 +232,48 @@ app.get('/validate', (req, res) => {
   }
 });
 
-// Homepage - serve HTML UI dan langsung generate token
+// Homepage - serve HTML UI (starting point)
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
-// STEP ROUTES
+// STEP ROUTES - sekarang mengharuskan token
 app.get('/step1', (req, res) => {
+  const { token } = req.query;
+  if (!token) {
+    return res.redirect('/');
+  }
   res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
 app.get('/step2', (req, res) => {
+  const { token } = req.query;
+  if (!token) {
+    return res.redirect('/');
+  }
   res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
 app.get('/step3', (req, res) => {
+  const { token } = req.query;
+  if (!token) {
+    return res.redirect('/');
+  }
   res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
 app.get('/generate', (req, res) => {
+  const { token } = req.query;
+  if (!token) {
+    return res.redirect('/');
+  }
   res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
-// Verify endpoint - handles token validation and step progression
-app.get('/verify', (req, res) => {
+// Start verification process - generate token and redirect to step1
+app.get('/start-verification', (req, res) => {
   try {
     const userIP = req.realIP;
-    const { token, step, bypass } = req.query;
     
     if (!userIP) {
       return res.status(400).json({
@@ -268,66 +283,46 @@ app.get('/verify', (req, res) => {
 
     const now = new Date();
     const tokenExpirationTime = new Date(now.getTime() + 2 * 60 * 60 * 1000); // 2 hours untuk proses verifikasi
+    const newToken = generateToken();
+    
+    // Store the new token with step 0 (belum mulai)
+    tokenStorage[userIP] = {
+      token: newToken,
+      expires: tokenExpirationTime,
+      created: now,
+      step: 0
+    };
+    
+    // Redirect to step1 with token parameter
+    res.redirect(`/step1?token=${newToken}`);
+    
+  } catch (error) {
+    console.error('Error in /start-verification:', error);
+    res.status(500).json({
+      error: 'Internal server error'
+    });
+  }
+});
 
-    // If no token provided, this means user is starting fresh
+// Verify endpoint - untuk validasi token dan mendapatkan status
+app.get('/verify', (req, res) => {
+  try {
+    const userIP = req.realIP;
+    const { token } = req.query;
+    
+    if (!userIP) {
+      return res.status(400).json({
+        error: 'Unable to identify user IP address'
+      });
+    }
+
     if (!token) {
-      const newToken = generateToken();
-      
-      // Store the new token with step 0
-      tokenStorage[userIP] = {
-        token: newToken,
-        expires: tokenExpirationTime,
-        created: now,
-        step: 0
-      };
-      
-      // Redirect to step1 with token parameter
-      return res.redirect(`/step1?token=${newToken}`);
+      return res.status(400).json({
+        error: 'Token required'
+      });
     }
     
-    // If step parameter is provided, this means user completed a vertise step
-    if (step) {
-      const stepNumber = parseInt(step);
-      
-      // Validasi token Vertise: pastikan request datang dari Vertise dengan token yang benar
-      const vertiseTokenFromQuery = req.query.vertise_token;
-      if (!vertiseTokenFromQuery || vertiseTokenFromQuery !== VERTISE_TOKEN) {
-        return res.status(403).json({
-          error: 'Invalid verification source. Please complete the verification step properly through the provided links.'
-        });
-      }
-      
-      if (tokenStorage[userIP] && tokenStorage[userIP].token === token) {
-        // Additional validation: user can only advance one step at a time
-        const currentStep = tokenStorage[userIP].step;
-        if (stepNumber !== currentStep + 1) {
-          return res.status(403).json({
-            error: 'Invalid step progression. Please complete verification steps in the correct order.'
-          });
-        }
-        
-        // Update step progress
-        tokenStorage[userIP].step = stepNumber;
-        tokenStorage[userIP].expires = new Date(now.getTime() + 2 * 60 * 60 * 1000); // Extend expiry
-        
-        // Redirect to different URLs based on step completed
-        if (stepNumber === 1) {
-          return res.redirect(`/step2?token=${token}`);
-        } else if (stepNumber === 2) {
-          return res.redirect(`/step3?token=${token}`);
-        } else if (stepNumber === 3) {
-          // Langsung ke generate setelah step 3 selesai
-          return res.redirect(`/generate?token=${token}`);
-        }
-        
-      } else {
-        return res.status(403).json({
-          error: 'Invalid or expired verification token. Please start the verification process again.'
-        });
-      }
-    }
-    
-    // If token is provided for validation, check current step
+    // Check token validity
     if (tokenStorage[userIP] && tokenStorage[userIP].token === token && !isTokenExpired(tokenStorage[userIP])) {
       return res.json({
         valid: true,
@@ -352,7 +347,7 @@ app.get('/verify', (req, res) => {
 });
 
 // CALLBACK ENDPOINTS UNTUK VERTISE LINKS
-// Callback untuk step 1
+// Callback untuk step 1 - setelah selesai vertise pertama
 app.get('/callback/step1', (req, res) => {
   const { user_ref, token } = req.query;
   
@@ -362,14 +357,20 @@ app.get('/callback/step1', (req, res) => {
   }
   
   if (user_ref) {
-    // Redirect ke verify dengan step 1 completed
-    res.redirect(`/verify?token=${user_ref}&step=1&vertise_token=${VERTISE_TOKEN}`);
+    // Update step ke 1 dan redirect ke step2
+    const userIP = req.realIP;
+    if (tokenStorage[userIP] && tokenStorage[userIP].token === user_ref) {
+      tokenStorage[userIP].step = 1;
+      tokenStorage[userIP].expires = new Date(Date.now() + 2 * 60 * 60 * 1000); // Extend expiry
+    }
+    
+    res.redirect(`/step2?token=${user_ref}`);
   } else {
     res.status(400).json({ error: 'Missing user reference token' });
   }
 });
 
-// Callback untuk step 2
+// Callback untuk step 2 - setelah selesai vertise kedua
 app.get('/callback/step2', (req, res) => {
   const { user_ref, token } = req.query;
   
@@ -379,14 +380,20 @@ app.get('/callback/step2', (req, res) => {
   }
   
   if (user_ref) {
-    // Redirect ke verify dengan step 2 completed
-    res.redirect(`/verify?token=${user_ref}&step=2&vertise_token=${VERTISE_TOKEN}`);
+    // Update step ke 2 dan redirect ke step3
+    const userIP = req.realIP;
+    if (tokenStorage[userIP] && tokenStorage[userIP].token === user_ref) {
+      tokenStorage[userIP].step = 2;
+      tokenStorage[userIP].expires = new Date(Date.now() + 2 * 60 * 60 * 1000); // Extend expiry
+    }
+    
+    res.redirect(`/step3?token=${user_ref}`);
   } else {
     res.status(400).json({ error: 'Missing user reference token' });
   }
 });
 
-// Callback untuk step 3
+// Callback untuk step 3 - setelah selesai vertise ketiga
 app.get('/callback/step3', (req, res) => {
   const { user_ref, token } = req.query;
   
@@ -396,8 +403,14 @@ app.get('/callback/step3', (req, res) => {
   }
   
   if (user_ref) {
-    // Redirect ke verify dengan step 3 completed
-    res.redirect(`/verify?token=${user_ref}&step=3&vertise_token=${VERTISE_TOKEN}`);
+    // Update step ke 3 dan redirect ke generate
+    const userIP = req.realIP;
+    if (tokenStorage[userIP] && tokenStorage[userIP].token === user_ref) {
+      tokenStorage[userIP].step = 3;
+      tokenStorage[userIP].expires = new Date(Date.now() + 2 * 60 * 60 * 1000); // Extend expiry
+    }
+    
+    res.redirect(`/generate?token=${user_ref}`);
   } else {
     res.status(400).json({ error: 'Missing user reference token' });
   }
@@ -443,7 +456,8 @@ app.use('*', (req, res) => {
     available_endpoints: [
       '/getkey', 
       '/validate', 
-      '/verify', 
+      '/verify',
+      '/start-verification',
       '/', 
       '/step1', 
       '/step2', 
