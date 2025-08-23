@@ -37,8 +37,12 @@ const keyStorage = {};
 // Structure: { ip: { token: string, expires: Date, created: Date, step: number } }
 const tokenStorage = {};
 
-// Anti-bypass token from vertise
-const ANTI_BYPASS_TOKEN = 'dac4c4fd65791af6212f7b69f1a28f97259082835ee9d0eddca7f95732275509';
+// In-memory storage for generate page access
+// Structure: { ip: { accessTime: Date } }
+const generatePageAccess = {};
+
+// Anti-bypass token from vertise (updated)
+const ANTI_BYPASS_TOKEN = '1c3c210b0a6101cfb3b20619b480a70598dbca6e0b60567c73a6472557d077c7';
 
 // Helper function to generate random 10-character uppercase key
 function generateKey() {
@@ -114,7 +118,20 @@ function cleanupExpiredTokens() {
   });
 }
 
-// Endpoint: /getkey (requires valid token)
+// Helper function to check if generate page access is expired (5 minutes)
+function isGeneratePageExpired(userIP) {
+  if (!generatePageAccess[userIP]) {
+    return true;
+  }
+  
+  const now = new Date();
+  const accessTime = generatePageAccess[userIP].accessTime;
+  const timePassed = (now - accessTime) / 1000; // seconds
+  
+  return timePassed >= 5 * 60; // 5 minutes
+}
+
+// Endpoint: /getkey (requires valid token and generate page access)
 app.get('/getkey', (req, res) => {
   try {
     const userIP = req.realIP;
@@ -139,20 +156,26 @@ app.get('/getkey', (req, res) => {
       });
     }
 
+    // Check if generate page access has expired (5 minutes)
+    if (isGeneratePageExpired(userIP)) {
+      return res.status(403).json({
+        error: 'Generate key access has expired. Please complete verification steps again.'
+      });
+    }
+
     const now = new Date();
     const expirationTime = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
-    
-    // No need to mark token as used anymore since we track by steps
     
     // Check if user already has a key
     if (keyStorage[userIP]) {
       const existingKey = keyStorage[userIP];
       
-      // If key is still valid, return it
+      // If key is still valid, return it (anti-refresh protection)
       if (!isKeyExpired(existingKey)) {
         return res.json({
           key: existingKey.key,
-          expires: existingKey.expires.toISOString()
+          expires: existingKey.expires.toISOString(),
+          isExisting: true
         });
       } else {
         // Key expired, remove it
@@ -173,7 +196,8 @@ app.get('/getkey', (req, res) => {
     // Return the new key
     res.json({
       key: newKey,
-      expires: expirationTime.toISOString()
+      expires: expirationTime.toISOString(),
+      isExisting: false
     });
     
   } catch (error) {
@@ -239,6 +263,38 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
+// Step1 page
+app.get('/step1', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/index.html'));
+});
+
+// Step2 page  
+app.get('/step2', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/index.html'));
+});
+
+// Step3 page
+app.get('/step3', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/index.html'));
+});
+
+// Generate key page
+app.get('/generate-key-secure-xyz', (req, res) => {
+  const userIP = req.realIP;
+  
+  if (!userIP) {
+    return res.status(400).send('Unable to identify user IP address');
+  }
+
+  // Set generate page access time (5 minute timer starts)
+  const now = new Date();
+  generatePageAccess[userIP] = {
+    accessTime: now
+  };
+
+  res.sendFile(path.join(__dirname, 'public/index.html'));
+});
+
 // Verify endpoint - handles token validation and step progression
 app.get('/verify', (req, res) => {
   try {
@@ -294,7 +350,15 @@ app.get('/verify', (req, res) => {
         tokenStorage[userIP].step = stepNumber;
         tokenStorage[userIP].expires = new Date(now.getTime() + 60 * 60 * 1000); // Extend expiry
         
-        // Redirect back to home page with updated token
+        // Redirect based on completed step
+        if (stepNumber === 1) {
+          return res.redirect(`/step2?token=${token}`);
+        } else if (stepNumber === 2) {
+          return res.redirect(`/step3?token=${token}`);
+        } else if (stepNumber === 3) {
+          return res.redirect(`/step3?token=${token}&completed=true`);
+        }
+        
         return res.redirect(`/?token=${token}`);
       } else {
         return res.status(403).json({
@@ -359,7 +423,7 @@ app.get('/stats', (req, res) => {
 app.use('*', (req, res) => {
   res.status(404).json({
     error: 'Endpoint not found',
-    available_endpoints: ['/getkey', '/validate', '/verify', '/', '/stats', '/status']
+    available_endpoints: ['/getkey', '/validate', '/verify', '/', '/step1', '/step2', '/step3', '/generate-key-secure-xyz', '/stats', '/status']
   });
 });
 
