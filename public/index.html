@@ -438,13 +438,13 @@
                 markRedirectionCompleted(3);
                 
                 updateStepIndicator(3);
+                output.textContent = 'All verification steps completed! ✅\n\nStep 1: ✅ Completed\nStep 2: ✅ Completed  \nStep 3: ✅ Completed\n\nRedirecting to generate your API key...';
                 btnContinue.style.display = 'none';
-                btnTakeKey.style.display = 'block';
-                output.textContent = 'All verification steps completed! ✅\n\nStep 1: ✅ Completed\nStep 2: ✅ Completed  \nStep 3: ✅ Completed\n\nClick "Take the key" to generate your API key.';
                 
-                btnTakeKey.addEventListener('click', () => {
-                    window.location.href = '/generate-key-secure-xyz?token=' + token;
-                });
+                // Auto redirect to generate key page after completing step 3
+                setTimeout(() => {
+                    window.location.href = `/generate-key-secure-xyz?token=${token}`;
+                }, 2000);
                 return;
             }
             
@@ -472,7 +472,7 @@
                 // IMPORTANT: Save redirection BEFORE going to Vertise
                 saveStepRedirection(3);
                 
-                output.textContent = 'Step 3 starting... You will be redirected to complete verification.\n\nAfter completing the task, you will return to generate your key.';
+                output.textContent = 'Step 3 starting... You will be redirected to complete verification.\n\nAfter completing the task, you will automatically be redirected to generate your API key.';
                 btnContinue.textContent = 'Redirecting...';
                 btnContinue.disabled = true;
                 
