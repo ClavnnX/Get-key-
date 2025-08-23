@@ -112,24 +112,43 @@
         let timerInterval = null;
         let timeRemaining = 0;
 
-        // Function to save token to sessionStorage
+        // Token storage key
+        const TOKEN_STORAGE_KEY = 'clavnnx_verify_token';
+
+        // Enhanced token management functions
         function saveToken(token) {
             if (token) {
-                sessionStorage.setItem('verifyToken', token);
+                console.log('Saving token:', token);
+                localStorage.setItem(TOKEN_STORAGE_KEY, token);
+                sessionStorage.setItem(TOKEN_STORAGE_KEY, token);
             }
         }
 
-        // Function to get token from URL or sessionStorage
         function getToken() {
+            // Check URL first
             const urlParams = new URLSearchParams(window.location.search);
             const tokenFromUrl = urlParams.get('token');
             
             if (tokenFromUrl) {
+                console.log('Token found in URL:', tokenFromUrl);
                 saveToken(tokenFromUrl);
                 return tokenFromUrl;
             }
             
-            return sessionStorage.getItem('verifyToken');
+            // Check localStorage and sessionStorage
+            const storedToken = localStorage.getItem(TOKEN_STORAGE_KEY) || sessionStorage.getItem(TOKEN_STORAGE_KEY);
+            if (storedToken) {
+                console.log('Token found in storage:', storedToken);
+                return storedToken;
+            }
+            
+            console.log('No token found');
+            return null;
+        }
+
+        function clearToken() {
+            localStorage.removeItem(TOKEN_STORAGE_KEY);
+            sessionStorage.removeItem(TOKEN_STORAGE_KEY);
         }
 
         // Get current page info
@@ -137,6 +156,10 @@
         const urlParams = new URLSearchParams(window.location.search);
         const token = getToken();
         const completed = urlParams.get('completed');
+
+        console.log('Current path:', currentPath);
+        console.log('Current token:', token);
+        console.log('Completed:', completed);
 
         // Initialize page based on current path
         initializePage();
@@ -171,11 +194,18 @@
         }
 
         function initializeStep1Page() {
-            const currentToken = getToken();
-            if (!currentToken) {
-                window.location.href = '/';
+            if (!token) {
+                output.textContent = 'Error: No verification token found. Please start again.';
+                btnContinue.textContent = 'Start Over';
+                btnContinue.addEventListener('click', () => {
+                    clearToken();
+                    window.location.href = '/';
+                });
                 return;
             }
+            
+            // Make sure token is saved before going to Vertise
+            saveToken(token);
             
             verifyTokenAndShowStep(1);
             btnContinue.textContent = 'Step 1/3';
@@ -185,16 +215,34 @@
             const newBtnContinue = document.getElementById('btnContinue');
             
             newBtnContinue.addEventListener('click', () => {
+                // Save token one more time before leaving
+                saveToken(token);
+                console.log('Going to Vertise 1, token saved:', token);
                 window.location.href = 'https://link-hub.net/1385845/qklnqONg4HgC';
             });
         }
 
         function initializeStep2Page() {
-            const currentToken = getToken();
-            if (!currentToken) {
-                window.location.href = '/';
+            if (!token) {
+                output.textContent = 'Error: No verification token found. Please start the verification process again.';
+                btnContinue.textContent = 'Start Over';
+                btnContinue.addEventListener('click', () => {
+                    clearToken();
+                    window.location.href = '/';
+                });
                 return;
             }
+            
+            console.log('Step2 initialized with token:', token);
+            
+            // Make sure we have token in URL for consistency
+            if (!urlParams.get('token')) {
+                window.location.href = `/step2?token=${token}`;
+                return;
+            }
+            
+            // Save token before going to next Vertise
+            saveToken(token);
             
             verifyTokenAndShowStep(2);
             btnContinue.textContent = 'Step 2/3';
@@ -204,14 +252,30 @@
             const newBtnContinue = document.getElementById('btnContinue');
             
             newBtnContinue.addEventListener('click', () => {
+                // Save token one more time before leaving
+                saveToken(token);
+                console.log('Going to Vertise 2, token saved:', token);
                 window.location.href = 'https://link-target.net/1385845/2FtUqPh7m718';
             });
         }
 
         function initializeStep3Page() {
-            const currentToken = getToken();
-            if (!currentToken) {
-                window.location.href = '/';
+            if (!token) {
+                output.textContent = 'Error: No verification token found. Please start the verification process again.';
+                btnContinue.textContent = 'Start Over';
+                btnContinue.addEventListener('click', () => {
+                    clearToken();
+                    window.location.href = '/';
+                });
+                return;
+            }
+            
+            console.log('Step3 initialized with token:', token, 'completed:', completed);
+            
+            // Make sure we have token in URL for consistency
+            if (!urlParams.get('token')) {
+                const completedParam = completed === 'true' ? '&completed=true' : '';
+                window.location.href = `/step3?token=${token}${completedParam}`;
                 return;
             }
             
@@ -222,9 +286,12 @@
                 output.textContent = 'All verification steps completed! Click "Take the key" to generate your API key.';
                 
                 btnTakeKey.addEventListener('click', () => {
-                    window.location.href = '/generate-key-secure-xyz?token=' + currentToken;
+                    window.location.href = '/generate-key-secure-xyz?token=' + token;
                 });
             } else {
+                // Save token before going to final Vertise
+                saveToken(token);
+                
                 verifyTokenAndShowStep(3);
                 btnContinue.textContent = 'Step 3/3';
                 
@@ -233,15 +300,22 @@
                 const newBtnContinue = document.getElementById('btnContinue');
                 
                 newBtnContinue.addEventListener('click', () => {
+                    // Save token one more time before leaving
+                    saveToken(token);
+                    console.log('Going to Vertise 3, token saved:', token);
                     window.location.href = 'https://link-target.net/1385845/GlkP3DeSeukX';
                 });
             }
         }
 
         function initializeGeneratePage() {
-            const currentToken = getToken();
-            if (!currentToken) {
-                window.location.href = '/';
+            if (!token) {
+                output.textContent = 'Error: No verification token found. Please complete all verification steps first.';
+                btnContinue.textContent = 'Start Over';
+                btnContinue.addEventListener('click', () => {
+                    clearToken();
+                    window.location.href = '/';
+                });
                 return;
             }
 
@@ -278,6 +352,7 @@
                     timerDiv.textContent = 'EXPIRED - Please start over';
                     
                     setTimeout(() => {
+                        clearToken();
                         window.location.href = '/';
                     }, 3000);
                 }
@@ -285,9 +360,9 @@
         }
 
         async function verifyTokenAndShowStep(step) {
-            const currentToken = getToken();
             try {
-                const response = await fetch(`/verify?token=${currentToken}`);
+                console.log('Verifying token:', token, 'for step:', step);
+                const response = await fetch(`/verify?token=${token}`);
                 const data = await response.json();
                 
                 if (!response.ok || !data.valid) {
@@ -311,19 +386,19 @@
                 } else if (step === 2) {
                     output.textContent = 'Step 1 completed! Ready for step 2.\n\nComplete verification step 2 of 3';
                 } else if (step === 3) {
-                    output.textContent = 'Step 2 completed! Ready for final step.\n\nComplete final verification step 3 of 3';
+                    output.textContent = 'Step 2 completed! Ready for final step.\n\nComplete verification step 3 of 3';
                 }
                 
             } catch (error) {
+                console.error('Error verifying token:', error);
                 output.textContent = 'Error: Unable to verify token. Please try again.';
                 btnContinue.style.display = 'none';
             }
         }
 
         async function checkExistingKey() {
-            const currentToken = getToken();
             try {
-                const response = await fetch(`/getkey?token=${currentToken}`);
+                const response = await fetch(`/getkey?token=${token}`);
                 
                 if (response.ok) {
                     const data = await response.json();
@@ -343,14 +418,13 @@
         }
 
         async function generateKey() {
-            const currentToken = getToken();
             const btnGen = document.getElementById('btnGen');
             btnGen.disabled = true;
             btnGen.textContent = 'Generating...';
             btnGen.classList.add('loading');
             
             try {
-                const response = await fetch(`/getkey?token=${currentToken}`);
+                const response = await fetch(`/getkey?token=${token}`);
                 const data = await response.json();
                 
                 if (response.ok) {
@@ -397,6 +471,15 @@
                     }, 2000);
                 }
             }
+        });
+
+        // Debug info for troubleshooting
+        console.log('Page loaded:', {
+            path: currentPath,
+            token: token,
+            completed: completed,
+            localStorage: localStorage.getItem(TOKEN_STORAGE_KEY),
+            sessionStorage: sessionStorage.getItem(TOKEN_STORAGE_KEY)
         });
     </script>
 </body>
