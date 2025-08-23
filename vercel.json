@@ -13,10 +13,6 @@
       "dest": "/index.html"
     },
     {
-      "src": "/step3",
-      "dest": "/index.html"
-    },
-    {
       "src": "/get-your-key",
       "dest": "/index.html"
     },
