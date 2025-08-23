@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -77,15 +76,6 @@
             opacity: 0.6;
             pointer-events: none;
         }
-        .timer {
-            background: #dc3545;
-            color: white;
-            padding: 10px;
-            border-radius: 8px;
-            text-align: center;
-            margin-bottom: 15px;
-            display: none;
-        }
         .step-indicator {
             background: #17a2b8;
             color: white;
@@ -122,7 +112,6 @@
         <h1>ClavnnX Get key</h1>
         <div class="step-indicator" id="stepIndicator" style="display: none;">Step Progress</div>
         <button id="btnContinue">Complete the step</button>
-        <div class="timer" id="timer">Generate key link expires in: <span id="timeLeft">5:00</span></div>
         <div id="out">Click "Complete the step" to proceed through verification steps</div>
         <button id="btnTakeKey" style="display: none;">Take the key</button>
         <button id="btnCopy" style="display: none;">Copy Key</button>
@@ -133,18 +122,14 @@
         const btnTakeKey = document.getElementById('btnTakeKey');
         const btnCopy = document.getElementById('btnCopy');
         const output = document.getElementById('out');
-        const timerDiv = document.getElementById('timer');
-        const timeLeftSpan = document.getElementById('timeLeft');
         const stepIndicator = document.getElementById('stepIndicator');
         let currentKey = '';
-        let timerInterval = null;
-        let timeRemaining = 0;
 
-        // Storage keys
-        const TOKEN_STORAGE_KEY = 'clavnnx_token_step2';
+        // Storage keys - simplified for 2-step process
+        const TOKEN_STORAGE_KEY = 'clavnnx_token_step1';
         const STEP_STORAGE_KEY = 'clavnnx_current_step';
 
-        // Token management - hanya untuk step 2 dengan durasi lebih panjang
+        // Token management - 8 minutes validity from step 1
         function saveToken(token) {
             if (token) {
                 const tokenData = {
@@ -218,7 +203,7 @@
             return `token_${timestamp}_${randomStr}`;
         }
 
-        // Step management
+        // Step management - simplified for 2 steps
         function saveStepProgress(step) {
             localStorage.setItem(STEP_STORAGE_KEY, step.toString());
             sessionStorage.setItem(STEP_STORAGE_KEY, step.toString());
@@ -229,7 +214,7 @@
             return parseInt(step);
         }
 
-        function updateStepIndicator(currentStep, totalSteps = 4) {
+        function updateStepIndicator(currentStep, totalSteps = 3) {
             stepIndicator.style.display = 'block';
             if (currentStep >= totalSteps) {
                 stepIndicator.className = 'success-message';
@@ -258,8 +243,6 @@
                 initializeStep1Page();
             } else if (route === 'step2' || currentPath === '/step2') {
                 initializeStep2Page();
-            } else if (route === 'step3' || currentPath === '/step3') {
-                initializeStep3Page();
             } else if (route === 'get-your-key' || currentPath === '/get-your-key') {
                 initializeGetYourKeyPage();
             } else if (route === 'generate-key-secure-xyz' || currentPath === '/generate-key-secure-xyz') {
@@ -277,34 +260,42 @@
                 updateStepIndicator(currentStep);
             }
             
-            btnContinue.textContent = 'Start Step 1/3';
-            output.textContent = 'Complete verification steps to get your API key\n\nClick the button below to start Step 1 (no token required).';
+            btnContinue.textContent = 'Step 1/3';
+            output.textContent = 'Complete verification steps to get your API key\n\nClick "Step 1/3" button below to start the verification process.\n\nStep 1/3 will generate your verification token.';
             
             btnContinue.addEventListener('click', () => {
-                console.log('Home button clicked');
-                btnContinue.textContent = 'Loading...';
+                console.log('Home button clicked - going to Vertise for Step 1/3');
+                btnContinue.textContent = 'Redirecting to Step 1/3...';
                 btnContinue.disabled = true;
                 
+                output.textContent = 'Redirecting to Step 1/3 verification...\n\nAfter completing this step, you will receive a token and proceed to Step 2/3.';
+                
+                const returnUrl = `${window.location.origin}/step1?completed=1`;
+                
                 setTimeout(() => {
-                    if (currentPath === '/') {
-                        window.location.href = `/step1`;
-                    } else {
-                        window.location.href = `#step1`;
-                    }
-                }, 1000);
+                    window.location.href = `https://direct-link.net/1385845/QhuxogBGSmxB?return=${encodeURIComponent(returnUrl)}`;
+                }, 2000);
             });
         }
 
         function initializeStep1Page() {
-            console.log('Initializing Step 1 Page - NO TOKEN REQUIRED');
-            const currentStep = getStepProgress();
-            updateStepIndicator(Math.max(currentStep, 0));
+            console.log('Initializing Step 1 Page - TOKEN GENERATION STEP');
             
             // Check if returning from Vertise
             if (urlParams.get('completed') === '1') {
+                // Generate token for step 1 completion
+                const token = generateToken();
+                saveToken(token);
                 saveStepProgress(1);
+                
+                console.log('Step 1 completed - Token generated:', {
+                    token: token,
+                    saved_localStorage: localStorage.getItem(TOKEN_STORAGE_KEY),
+                    step_saved: localStorage.getItem(STEP_STORAGE_KEY)
+                });
+                
                 updateStepIndicator(1);
-                output.textContent = 'Step 1 completed successfully! ✅\n\nRedirecting to Step 2...';
+                output.textContent = `Step 1/3 completed successfully! ✅\n\n🎉 TOKEN GENERATED: ${token}\n\nThis token will be used for key generation.\nToken is valid for 8 minutes.\n\nRedirecting to Step 2/3...`;
                 btnContinue.style.display = 'none';
                 
                 setTimeout(() => {
@@ -313,88 +304,58 @@
                     } else {
                         window.location.href = `#step2`;
                     }
-                }, 2000);
+                }, 4000); // Show token for 4 seconds
                 return;
             }
             
-            btnContinue.textContent = 'Step 1/3 - Complete Verification';
-            output.textContent = 'Step 1 of 3: First Verification\n\nNo token required for this step.\n\nClick the button below to complete the first verification step.';
+            const currentStep = getStepProgress();
+            updateStepIndicator(Math.max(currentStep, 0));
+            
+            btnContinue.textContent = 'Step 1/3 - Generate Token';
+            output.textContent = 'Step 1 of 3: Token Generation Step\n\nThis step will generate your verification token.\nClick the button below to complete Step 1/3.\n\nAfter completion, you will receive a token valid for 8 minutes.';
             
             btnContinue.addEventListener('click', () => {
-                output.textContent = 'Step 1 starting... You will be redirected to complete verification.\n\nAfter completing the task, you will return to step 2.';
+                output.textContent = 'Step 1/3 starting... You will be redirected to complete verification.\n\nAfter completing this step, you will receive a token and proceed to step 2/3.';
                 btnContinue.textContent = 'Redirecting...';
                 btnContinue.disabled = true;
                 
                 const returnUrl = `${window.location.origin}/step1?completed=1`;
                 
                 setTimeout(() => {
-                    window.location.href = `https://link-hub.net/1385845/vx4xk8JD7x7z?return=${encodeURIComponent(returnUrl)}`;
+                    window.location.href = `https://direct-link.net/1385845/QhuxogBGSmxB?return=${encodeURIComponent(returnUrl)}`;
                 }, 2000);
             });
         }
 
         function initializeStep2Page() {
-            console.log('Initializing Step 2 Page - TOKEN REQUIRED');
+            console.log('Initializing Step 2 Page - FINAL VERIFICATION');
+            
+            const token = getToken();
             
             // Check if returning from Vertise
             if (urlParams.get('completed') === '2') {
-                // Generate token for step 2 completion
-                const token = generateToken();
-                saveToken(token);
+                if (!token) {
+                    // Token expired during step 2
+                    stepIndicator.style.display = 'block';
+                    stepIndicator.className = 'error-message';
+                    stepIndicator.textContent = '❌ Token Expired';
+                    
+                    output.textContent = 'Step 2/3 completed, but your token has expired.\n\nTokens are valid for 8 minutes after Step 1/3.\n\nPlease start over from Step 1/3 to generate a new token.';
+                    btnContinue.textContent = 'Start Over';
+                    btnContinue.addEventListener('click', () => {
+                        clearToken();
+                        window.location.href = '/';
+                    });
+                    return;
+                }
+                
                 saveStepProgress(2);
-                
-                console.log('Step 2 completed - Token generated:', {
-                    token: token,
-                    saved_localStorage: localStorage.getItem(TOKEN_STORAGE_KEY),
-                    saved_sessionStorage: sessionStorage.getItem(TOKEN_STORAGE_KEY),
-                    step_saved: localStorage.getItem(STEP_STORAGE_KEY)
-                });
-                
                 updateStepIndicator(2);
-                output.textContent = `Step 2 completed successfully! ✅\n\nStep 1: ✅ Completed\nStep 2: ✅ Completed\n\n🎉 TOKEN GENERATED: ${token}\n\nThis token will be used for key generation.\nSave this token if needed!\n\nRedirecting to Step 3...`;
+                output.textContent = 'Step 2/3 completed successfully! ✅\n\nStep 1/3: ✅ Completed (Token Generated)\nStep 2/3: ✅ Completed\n\nAll verification steps completed!\nRedirecting to token validation...';
                 btnContinue.style.display = 'none';
                 
                 setTimeout(() => {
                     if (currentPath.includes('/step2')) {
-                        window.location.href = `/step3`;
-                    } else {
-                        window.location.href = `#step3`;
-                    }
-                }, 4000); // Longer delay to show token
-                return;
-            }
-            
-            const currentStep = getStepProgress();
-            updateStepIndicator(Math.max(currentStep, 1));
-            
-            btnContinue.textContent = 'Step 2/3 - Complete Verification';
-            output.textContent = 'Step 2 of 3: Token Generation Step\n\nStep 1: ✅ Completed\n\nThis step will generate your verification token.\nClick the button below to complete the second verification step.';
-            
-            btnContinue.addEventListener('click', () => {
-                output.textContent = 'Step 2 starting... You will be redirected to complete verification.\n\nAfter completing this step, you will receive a token and proceed to step 3.';
-                btnContinue.textContent = 'Redirecting...';
-                btnContinue.disabled = true;
-                
-                const returnUrl = `${window.location.origin}/step2?completed=2`;
-                
-                setTimeout(() => {
-                    window.location.href = `https://direct-link.net/1385845/z8W0KStN0g82?return=${encodeURIComponent(returnUrl)}`;
-                }, 2000);
-            });
-        }
-
-        function initializeStep3Page() {
-            console.log('Initializing Step 3 Page - NO TOKEN REQUIRED');
-            
-            // Check if returning from Vertise
-            if (urlParams.get('completed') === '3') {
-                saveStepProgress(3);
-                updateStepIndicator(3);
-                output.textContent = 'Step 3 completed successfully! ✅\n\nStep 1: ✅ Completed\nStep 2: ✅ Completed (Token Generated)\nStep 3: ✅ Completed\n\nRedirecting to token validation page...';
-                btnContinue.style.display = 'none';
-                
-                setTimeout(() => {
-                    if (currentPath.includes('/step3')) {
                         window.location.href = `/get-your-key`;
                     } else {
                         window.location.href = `#get-your-key`;
@@ -403,21 +364,36 @@
                 return;
             }
             
-            const currentStep = getStepProgress();
-            updateStepIndicator(Math.max(currentStep, 2));
+            // Check if token exists
+            if (!token) {
+                stepIndicator.style.display = 'block';
+                stepIndicator.className = 'error-message';
+                stepIndicator.textContent = '❌ No Token Found';
+                
+                output.textContent = 'Step 2/3: Final Verification\n\n❌ NO TOKEN FOUND\n\nYou need to complete Step 1/3 first to generate a token.\n\nTokens are valid for 8 minutes.\n\nClick "Start Over" to begin from Step 1/3.';
+                btnContinue.textContent = 'Start Over';
+                btnContinue.addEventListener('click', () => {
+                    clearToken();
+                    window.location.href = '/';
+                });
+                return;
+            }
             
-            btnContinue.textContent = 'Step 3/3 - Final Verification';
-            output.textContent = 'Step 3 of 3: Final Verification\n\nStep 1: ✅ Completed\nStep 2: ✅ Completed (Token Generated)\n\nNo additional token required for this step.\nClick the button below to complete the final verification step.';
+            const currentStep = getStepProgress();
+            updateStepIndicator(Math.max(currentStep, 1));
+            
+            btnContinue.textContent = 'Step 2/3 - Final Verification';
+            output.textContent = `Step 2 of 3: Final Verification\n\nStep 1/3: ✅ Completed (Token Generated)\nToken: ${token}\n\nClick the button below to complete the final verification step.\n\nAfter this step, you can generate your API key.`;
             
             btnContinue.addEventListener('click', () => {
-                output.textContent = 'Step 3 starting... You will be redirected to complete verification.\n\nAfter completing this step, you will proceed to token validation.';
+                output.textContent = 'Step 2/3 starting... You will be redirected to complete final verification.\n\nAfter completing this step, you can generate your API key.';
                 btnContinue.textContent = 'Redirecting...';
                 btnContinue.disabled = true;
                 
-                const returnUrl = `${window.location.origin}/step3?completed=3`;
+                const returnUrl = `${window.location.origin}/step2?completed=2`;
                 
                 setTimeout(() => {
-                    window.location.href = `https://link-center.net/1385845/tgUMK8TgIBn1?return=${encodeURIComponent(returnUrl)}`;
+                    window.location.href = `https://link-target.net/1385845/05NfA4wGJcIe?return=${encodeURIComponent(returnUrl)}`;
                 }, 2000);
             });
         }
@@ -432,20 +408,16 @@
                 token: token,
                 currentStep: currentStep,
                 hasToken: !!token,
-                stepComplete: currentStep >= 3,
-                localStorage_token: localStorage.getItem(TOKEN_STORAGE_KEY),
-                sessionStorage_token: sessionStorage.getItem(TOKEN_STORAGE_KEY),
-                localStorage_step: localStorage.getItem(STEP_STORAGE_KEY),
-                sessionStorage_step: sessionStorage.getItem(STEP_STORAGE_KEY)
+                stepComplete: currentStep >= 2
             });
             
-            if (!token || currentStep < 3) {
+            if (!token || currentStep < 2) {
                 stepIndicator.style.display = 'block';
                 stepIndicator.className = 'error-message';
                 stepIndicator.textContent = '❌ Invalid Access';
                 
                 btnContinue.textContent = 'Start Over';
-                output.textContent = `Get Your Key\n\n❌ INVALID ACCESS\n\nDebug Information:\nToken: ${token || 'NONE'}\nCurrent Step: ${currentStep}/3\nToken Required: YES (from Step 2/3)\nSteps Required: 3/3 completed\n\nMissing:\n${!token ? '- Token from Step 2/3\n' : ''}${currentStep < 3 ? '- Complete all 3 steps\n' : ''}\nClick "Start Over" to begin verification.`;
+                output.textContent = `Get Your Key\n\n❌ INVALID ACCESS\n\nDebug Information:\nToken: ${token || 'EXPIRED/NONE'}\nCurrent Step: ${currentStep}/2\nToken Required: YES (from Step 1/3)\nSteps Required: 2/2 completed\n\nMissing:\n${!token ? '- Token from Step 1/3 (may be expired after 8 minutes)\n' : ''}${currentStep < 2 ? '- Complete all verification steps\n' : ''}\nClick "Start Over" to begin verification.`;
                 
                 btnContinue.addEventListener('click', () => {
                     clearToken();
@@ -459,11 +431,11 @@
             }
             
             // Valid token and completed steps
-            updateStepIndicator(4, 4);
+            updateStepIndicator(3, 3);
             btnContinue.textContent = 'Generate Your API Key';
             btnContinue.style.background = '#28a745';
             
-            output.textContent = `Get Your Key\n\n✅ VALID ACCESS CONFIRMED\n\nToken: ${token}\nSteps Completed: ${currentStep}/3\nAll Requirements: ✅ MET\n\nYou can now generate your API key!\n\nClick the button below to proceed to key generation.`;
+            output.textContent = `Get Your Key\n\n✅ VALID ACCESS CONFIRMED\n\nToken: ${token}\nSteps Completed: ${currentStep}/2\nAll Requirements: ✅ MET\n\nYou can now generate your API key!\n\nClick the button below to proceed to key generation.`;
             
             btnContinue.addEventListener('click', () => {
                 btnContinue.textContent = 'Loading...';
@@ -489,21 +461,21 @@
                 token: token,
                 currentStep: currentStep,
                 hasToken: !!token,
-                stepComplete: currentStep >= 3
+                stepComplete: currentStep >= 2
             });
             
-            // SIMPLIFIED VALIDATION - only check if token exists and step >= 3
-            if (!token || currentStep < 3) {
+            // SIMPLIFIED VALIDATION - only check if token exists and step >= 2
+            if (!token || currentStep < 2) {
                 stepIndicator.style.display = 'block';
                 stepIndicator.className = 'error-message';
                 stepIndicator.textContent = '❌ Access Denied';
                 
                 let errorMsg = 'Error: Invalid access to generate key page.\n\nMissing requirements:\n';
                 if (!token) {
-                    errorMsg += '- No valid token found (token may have expired after 8 minutes)\n- Please complete Step 2/3 again to generate new token\n';
+                    errorMsg += '- No valid token found (token may have expired after 8 minutes)\n- Please complete Step 1/3 again to generate new token\n';
                 }
-                if (currentStep < 3) {
-                    errorMsg += '- Steps incomplete (complete all 3 steps)\n';
+                if (currentStep < 2) {
+                    errorMsg += '- Steps incomplete (complete all verification steps)\n';
                 }
                 errorMsg += '\nPlease complete all verification steps first.';
                 
@@ -517,14 +489,11 @@
             }
             
             // Show final step indicator
-            updateStepIndicator(4, 4);
-            
-            // NO TIMER - removed confusing countdown
-            timerDiv.style.display = 'none';
+            updateStepIndicator(3, 3);
             
             btnContinue.textContent = 'Generate Key';
             btnContinue.id = 'btnGen';
-            output.textContent = `Ready to generate your API key! 🎉\n\nToken: ${token}\nAll verification steps completed!\n\nClick "Generate Key" below to get your API key.\n\nNote: Token is valid for 8 minutes from Step 2/3 completion.`;
+            output.textContent = `Ready to generate your API key! 🎉\n\nToken: ${token}\nAll verification steps completed!\n\nClick "Generate Key" below to get your API key.\n\nNote: Token is valid for 8 minutes from Step 1/3 completion.`;
             
             // Check for existing key first
             checkExistingKey();
@@ -533,8 +502,6 @@
                 await generateKey();
             });
         }
-
-        // Timer function removed - no longer needed
 
         async function checkExistingKey() {
             try {
@@ -551,9 +518,6 @@
                         output.textContent = `Key: ${keyData.key}\n\nExpires: ${expiry.toLocaleString()}\n\nValid for 24 hours from generation.\n\nExisting key loaded (anti-refresh protection)`;
                         btnCopy.style.display = 'block';
                         btnContinue.style.display = 'none';
-                        
-                        // Hide timer
-                        timerDiv.style.display = 'none';
                         return;
                     }
                 }
@@ -576,16 +540,16 @@
                     token: token,
                     currentStep: currentStep,
                     hasToken: !!token,
-                    stepComplete: currentStep >= 3
+                    stepComplete: currentStep >= 2
                 });
                 
                 // SIMPLIFIED VALIDATION - check if token is still valid
                 if (!token) {
-                    throw new Error('Token expired or not found. Token is valid for 8 minutes after Step 2/3 completion. Please complete Step 2/3 again.');
+                    throw new Error('Token expired or not found. Token is valid for 8 minutes after Step 1/3 completion. Please complete Step 1/3 again.');
                 }
                 
-                if (currentStep < 3) {
-                    throw new Error('Incomplete verification. Please complete all 3 steps.');
+                if (currentStep < 2) {
+                    throw new Error('Incomplete verification. Please complete all verification steps.');
                 }
                 
                 // Generate API key
@@ -607,17 +571,11 @@
                 btnCopy.style.display = 'block';
                 btnGen.style.display = 'none';
                 
-                // Remove timer since we don't use it anymore
-                if (timerInterval) {
-                    clearInterval(timerInterval);
-                }
-                timerDiv.style.display = 'none';
-                
                 console.log('Key generated successfully:', keyData);
                 
             } catch (error) {
                 console.error('Error generating key:', error);
-                output.textContent = `Error: ${error.message}\n\nDebug Info:\nToken: ${getToken() || 'EXPIRED/NONE'}\nStep: ${getStepProgress()}\n\nIf token expired, please start from Step 2/3 to generate new token.`;
+                output.textContent = `Error: ${error.message}\n\nDebug Info:\nToken: ${getToken() || 'EXPIRED/NONE'}\nStep: ${getStepProgress()}\n\nIf token expired, please start from Step 1/3 to generate new token.`;
                 
                 // Don't auto-redirect, let user see the error
                 setTimeout(() => {
@@ -685,4 +643,4 @@
         console.log('=== END DEBUG INFO ===');
     </script>
 </body>
-</html>
+    </html>
