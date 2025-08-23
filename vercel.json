@@ -17,6 +17,10 @@
       "dest": "/index.html"
     },
     {
+      "src": "/get-your-key",
+      "dest": "/index.html"
+    },
+    {
       "src": "/generate-key-secure-xyz",
       "dest": "/index.html"
     },
