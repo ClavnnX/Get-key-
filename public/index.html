@@ -3,119 +3,505 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ClavnnX Get key</title>
+    <title>ClavnnX Key System</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background: #000000 !important;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0f0f23, #1a1a3e, #0f0f23);
+            min-height: 100vh;
             color: #ffffff;
-        }
-        .container {
-            background: #222222 !important;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(255,255,255,0.2);
-            border: 2px solid #444444;
-        }
-        h1 {
-            text-align: center;
-            color: #ffffff !important;
-            margin-bottom: 30px;
-            font-size: 28px;
-            font-weight: bold;
-        }
-        button {
-            width: 100%;
-            padding: 15px;
-            font-size: 16px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            margin-bottom: 15px;
-            font-weight: bold;
-            transition: background-color 0.2s ease;
-        }
-        #btnContinue, #btnGen, #btnTakeKey {
-            background: #007bff;
-            color: white;
-        }
-        #btnContinue:hover, #btnGen:hover, #btnTakeKey:hover {
-            background: #0056b3;
-        }
-        #btnTakeKey {
-            background: #28a745;
-            display: none;
-            margin-top: 10px;
-        }
-        #btnTakeKey:hover {
-            background: #1e7e34;
-        }
-        #btnCopy {
-            background: #28a745;
-            color: white;
-            display: none;
-        }
-        #btnCopy:hover {
-            background: #1e7e34;
-        }
-        #out {
-            background: #2d2d2d;
-            border: 1px solid #444444;
-            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             padding: 20px;
-            min-height: 100px;
-            font-family: 'Courier New', monospace;
+            background-attachment: fixed;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(0, 150, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(0, 150, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 40% 60%, rgba(0, 150, 255, 0.05) 0%, transparent 50%);
+            z-index: -1;
+        }
+
+        .main-container {
+            width: 100%;
+            max-width: 480px;
+            background: rgba(30, 30, 45, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 
+                0 25px 50px -12px rgba(0, 0, 0, 0.25),
+                0 0 0 1px rgba(255, 255, 255, 0.05),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            padding: 40px 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .main-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0, 150, 255, 0.5), transparent);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #0096ff, #00d4ff);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            color: #9ca3af;
+            font-size: 16px;
+            font-weight: 400;
+            margin-bottom: 20px;
+        }
+
+        .progress-section {
+            margin-bottom: 30px;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .progress-label {
+            color: #d1d5db;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .progress-step {
+            color: #6b7280;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background: rgba(55, 65, 81, 0.6);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #0096ff, #00d4ff);
+            border-radius: 4px;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .step-indicator {
+            background: linear-gradient(135deg, #1e40af, #3b82f6);
+            color: white;
+            padding: 16px 20px;
+            border-radius: 16px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: 600;
+            font-size: 15px;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+        }
+
+        .url-section {
+            margin-bottom: 24px;
+        }
+
+        .url-label {
+            color: #9ca3af;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .url-input {
+            width: 100%;
+            background: rgba(55, 65, 81, 0.5);
+            border: 1px solid rgba(75, 85, 99, 0.6);
+            border-radius: 12px;
+            padding: 14px 16px;
+            color: #e5e7eb;
+            font-size: 15px;
+            font-weight: 400;
+            outline: none;
+            transition: all 0.3s ease;
+            font-family: 'Inter', monospace;
+        }
+
+        .url-input:focus {
+            border-color: #0096ff;
+            background: rgba(55, 65, 81, 0.8);
+            box-shadow: 0 0 0 3px rgba(0, 150, 255, 0.1);
+        }
+
+        .main-button {
+            width: 100%;
+            padding: 16px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 16px;
+            cursor: pointer;
+            margin-bottom: 16px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            letter-spacing: 0.5px;
+        }
+
+        .main-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.6s;
+        }
+
+        .main-button:hover::before {
+            transform: translateX(100%);
+        }
+
+        #btnContinue, #btnGen {
+            background: linear-gradient(135deg, #0096ff, #00d4ff);
+            color: white;
+            box-shadow: 0 8px 25px rgba(0, 150, 255, 0.3);
+        }
+
+        #btnContinue:hover, #btnGen:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(0, 150, 255, 0.4);
+        }
+
+        #btnContinue:active, #btnGen:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 15px rgba(0, 150, 255, 0.3);
+        }
+
+        #btnTakeKey {
+            background: linear-gradient(135deg, #10b981, #34d399);
+            color: white;
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+            display: none;
+        }
+
+        #btnTakeKey:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(16, 185, 129, 0.4);
+        }
+
+        #btnCopy {
+            background: linear-gradient(135deg, #10b981, #34d399);
+            color: white;
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+            display: none;
+        }
+
+        #btnCopy:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(16, 185, 129, 0.4);
+        }
+
+        .output-section {
+            margin-bottom: 20px;
+        }
+
+        #out {
+            background: rgba(17, 24, 39, 0.8);
+            border: 1px solid rgba(75, 85, 99, 0.4);
+            border-radius: 16px;
+            padding: 24px;
+            min-height: 120px;
+            font-family: 'Inter', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
             white-space: pre-wrap;
             word-break: break-all;
-            margin-bottom: 15px;
-            color: #ffffff;
+            color: #e5e7eb;
+            position: relative;
+            backdrop-filter: blur(10px);
         }
+
+        #out::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0, 150, 255, 0.3), transparent);
+        }
+
         .loading {
-            opacity: 0.6;
+            opacity: 0.7;
             pointer-events: none;
+            position: relative;
         }
-        .step-indicator {
-            background: #17a2b8;
-            color: white;
-            padding: 10px;
-            border-radius: 8px;
-            text-align: center;
-            margin-bottom: 15px;
-            font-weight: bold;
+
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 24px;
+            height: 24px;
+            margin: -12px 0 0 -12px;
+            border: 2px solid rgba(0, 150, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #0096ff;
+            animation: spin 1s ease-in-out infinite;
         }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
         .success-message {
-            background: #28a745;
+            background: linear-gradient(135deg, #10b981, #34d399);
             color: white;
-            padding: 10px;
-            border-radius: 8px;
+            padding: 16px 20px;
+            border-radius: 16px;
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.2);
         }
+
         .error-message {
-            background: #dc3545;
+            background: linear-gradient(135deg, #ef4444, #f87171);
             color: white;
-            padding: 10px;
-            border-radius: 8px;
+            padding: 16px 20px;
+            border-radius: 16px;
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.2);
         }
+
+        .urls-section {
+            margin-top: 30px;
+            background: rgba(17, 24, 39, 0.6);
+            border: 1px solid rgba(75, 85, 99, 0.3);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+        }
+
+        .urls-title {
+            color: #0096ff;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+        }
+
+        .url-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(75, 85, 99, 0.2);
+        }
+
+        .url-item:last-child {
+            border-bottom: none;
+        }
+
+        .url-step-label {
+            color: #9ca3af;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .url-step-value {
+            background: rgba(55, 65, 81, 0.8);
+            color: #0096ff;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+        }
+
+        .icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+        }
+
+        /* Mobile responsiveness */
         @media (max-width: 600px) {
-            body { padding: 10px; }
-            .container { padding: 20px; }
+            body {
+                padding: 15px;
+            }
+            
+            .main-container {
+                padding: 30px 24px;
+                border-radius: 20px;
+            }
+
+            .logo {
+                font-size: 28px;
+            }
+
+            .subtitle {
+                font-size: 14px;
+            }
+
+            .main-button {
+                padding: 14px 20px;
+                font-size: 15px;
+            }
+
+            #out {
+                padding: 20px;
+                min-height: 100px;
+                font-size: 13px;
+            }
+
+            .urls-section {
+                padding: 20px;
+            }
+        }
+
+        /* Pulse animation for active elements */
+        .pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: .8;
+            }
+        }
+
+        /* Glow effect for important elements */
+        .glow {
+            box-shadow: 0 0 20px rgba(0, 150, 255, 0.3);
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>ClavnnX Get key</h1>
+    <div class="main-container">
+        <!-- Header Section -->
+        <div class="header">
+            <div class="logo">ClavnnX Key System</div>
+            <div class="subtitle">Secure Multi-Step Verification System</div>
+        </div>
+
+        <!-- Progress Section -->
+        <div class="progress-section">
+            <div class="progress-header">
+                <span class="progress-label">Progress</span>
+                <span class="progress-step" id="progressStep">Step 0/2</span>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Step Indicator -->
         <div class="step-indicator" id="stepIndicator" style="display: none;"></div>
-        <button id="btnContinue">Complete the step</button>
-        <div id="out">Click the button Step for get the key</div>
-        <button id="btnTakeKey" style="display: none;">Take the key</button>
-        <button id="btnCopy" style="display: none;">Copy Key</button>
+
+        <!-- URL Section -->
+        <div class="url-section">
+            <div class="url-label">
+                <span class="icon">🔗</span>
+                Current URL:
+            </div>
+            <input type="text" class="url-input" id="currentUrl" value="/" readonly>
+        </div>
+
+        <!-- Main Action Button -->
+        <button id="btnContinue" class="main-button">Complete the step</button>
+
+        <!-- Output Section -->
+        <div class="output-section">
+            <div id="out">Complete verification steps to get your API key</div>
+        </div>
+
+        <!-- Additional Buttons -->
+        <button id="btnTakeKey" class="main-button" style="display: none;">Take the key</button>
+        <button id="btnCopy" class="main-button" style="display: none;">Copy Key</button>
+
+        <!-- URLs Information -->
+        <div class="urls-section">
+            <div class="urls-title">
+                <span class="icon">⚙️</span>
+                URLs for Vertise Integration:
+            </div>
+            <div class="url-item">
+                <span class="url-step-label">Step 1:</span>
+                <span class="url-step-value">/step1</span>
+            </div>
+            <div class="url-item">
+                <span class="url-step-label">Step 2:</span>
+                <span class="url-step-value">/step2</span>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -125,6 +511,9 @@
         const btnCopy = document.getElementById('btnCopy');
         const output = document.getElementById('out');
         const stepIndicator = document.getElementById('stepIndicator');
+        const progressBar = document.getElementById('progressBar');
+        const progressStep = document.getElementById('progressStep');
+        const currentUrl = document.getElementById('currentUrl');
         let currentKey = '';
 
         // Storage keys
@@ -203,13 +592,19 @@
             return Math.max(0, Math.min(2, parseInt(step)));
         }
 
+        function updateProgress(currentStep, totalSteps = 2) {
+            const percentage = (currentStep / totalSteps) * 100;
+            progressBar.style.width = percentage + '%';
+            progressStep.textContent = `Step ${currentStep}/${totalSteps}`;
+        }
+
         function updateStepIndicator(currentStep, totalSteps = 2) {
             stepIndicator.style.display = 'block';
             if (currentStep >= totalSteps) {
-                stepIndicator.className = 'success-message';
+                stepIndicator.className = 'success-message pulse';
                 stepIndicator.textContent = '✅ All Steps Completed! Ready to generate key';
             } else {
-                stepIndicator.className = 'step-indicator';
+                stepIndicator.className = 'step-indicator pulse';
                 stepIndicator.textContent = `Step ${currentStep}/${totalSteps} Completed`;
             }
         }
@@ -218,8 +613,15 @@
         const route = window.location.hash.replace('#', '') || window.location.pathname.replace('/', '') || 'home';
         const urlParams = new URLSearchParams(window.location.search);
 
+        // Update current URL display
+        function updateCurrentUrl() {
+            currentUrl.value = window.location.pathname + window.location.search + window.location.hash;
+        }
+
         // Initialize based on route
         function init() {
+            updateCurrentUrl();
+            
             switch(route) {
                 case 'step1':
                     initStep1();
@@ -240,12 +642,14 @@
 
         function initHome() {
             const currentStep = getStepProgress();
+            updateProgress(currentStep);
             if (currentStep > 0) updateStepIndicator(currentStep);
             
-            btnContinue.textContent = 'Step 1/2';
+            btnContinue.textContent = '🚀 Start Step 1/2';
             
             btnContinue.onclick = () => {
                 btnContinue.textContent = 'Redirecting...';
+                btnContinue.classList.add('loading');
                 btnContinue.disabled = true;
                 
                 const returnUrl = `${window.location.origin}/step1?completed=1`;
@@ -259,8 +663,9 @@
                 saveToken(token);
                 saveStepProgress(1);
                 
+                updateProgress(1);
                 updateStepIndicator(1);
-                output.textContent = 'Step 1/2 completed successfully! ✅\n\nRedirecting to Step 2/2...';
+                output.textContent = '✅ Step 1/2 completed successfully!\n\n🔄 Redirecting to Step 2/2...';
                 btnContinue.style.display = 'none';
                 
                 setTimeout(() => {
@@ -269,12 +674,14 @@
                 return;
             }
             
+            updateProgress(Math.max(getStepProgress(), 0));
             updateStepIndicator(Math.max(getStepProgress(), 0));
-            btnContinue.textContent = 'Step 1/2 - Generate Token';
-            output.textContent = 'Step 1 of 2: Token Generation Step\n\nClick the button below to complete Step 1/2.';
+            btnContinue.textContent = '🔑 Step 1/2 - Generate Token';
+            output.textContent = '📋 Step 1 of 2: Token Generation Step\n\n🎯 Click the button below to complete Step 1/2.';
             
             btnContinue.onclick = () => {
                 btnContinue.textContent = 'Redirecting...';
+                btnContinue.classList.add('loading');
                 btnContinue.disabled = true;
                 
                 const returnUrl = `${window.location.origin}/step1?completed=1`;
@@ -290,8 +697,9 @@
                 }
                 
                 saveStepProgress(2);
+                updateProgress(2);
                 updateStepIndicator(2);
-                output.textContent = 'Step 2/2 completed successfully! ✅\n\nRedirecting...';
+                output.textContent = '✅ Step 2/2 completed successfully!\n\n🎉 Redirecting to key generation...';
                 btnContinue.style.display = 'none';
                 
                 setTimeout(() => {
@@ -305,12 +713,14 @@
                 return;
             }
             
+            updateProgress(Math.max(getStepProgress(), 1));
             updateStepIndicator(Math.max(getStepProgress(), 1));
-            btnContinue.textContent = 'Step 2/2 - Final Verification';
-            output.textContent = 'Step 2 of 2: Final Verification\n\nStep 1/2: ✅ Completed\n\nClick below to complete final verification.';
+            btnContinue.textContent = '🛡️ Step 2/2 - Final Verification';
+            output.textContent = '📋 Step 2 of 2: Final Verification\n\n✅ Step 1/2: Completed\n\n🎯 Click below to complete final verification.';
             
             btnContinue.onclick = () => {
                 btnContinue.textContent = 'Redirecting...';
+                btnContinue.classList.add('loading');
                 btnContinue.disabled = true;
                 
                 const returnUrl = `${window.location.origin}/step2?completed=2`;
@@ -327,13 +737,15 @@
                 return;
             }
             
+            updateProgress(2, 2);
             updateStepIndicator(2, 2);
-            btnContinue.textContent = 'Generate Your API Key';
-            btnContinue.style.background = '#28a745';
-            output.textContent = 'Get Your Key\n\n✅ VALID ACCESS CONFIRMED\n\nYou can now generate your API key!';
+            btnContinue.textContent = '🎉 Generate Your API Key';
+            btnContinue.classList.add('glow');
+            output.textContent = '🔓 Get Your Key\n\n✅ VALID ACCESS CONFIRMED\n\n🎯 You can now generate your API key!';
             
             btnContinue.onclick = () => {
                 btnContinue.textContent = 'Loading...';
+                btnContinue.classList.add('loading');
                 btnContinue.disabled = true;
                 
                 setTimeout(() => {
@@ -353,10 +765,12 @@
                 return;
             }
             
+            updateProgress(2, 2);
             updateStepIndicator(2, 2);
-            btnContinue.textContent = 'Generate Key';
+            btnContinue.textContent = '✨ Generate Key';
             btnContinue.id = 'btnGen';
-            output.textContent = 'Ready to generate your API key! 🎉\n\nClick "Generate Key" to proceed.';
+            btnContinue.classList.add('glow');
+            output.textContent = '🎉 Ready to generate your API key!\n\n🚀 Click "Generate Key" to proceed.';
             
             checkExistingKey();
             
@@ -365,11 +779,12 @@
 
         function showError(message) {
             stepIndicator.style.display = 'block';
-            stepIndicator.className = 'error-message';
+            stepIndicator.className = 'error-message pulse';
             stepIndicator.textContent = '❌ Error';
             
-            output.textContent = `Error: ${message}\n\nClick "Start Over" to begin verification.`;
-            btnContinue.textContent = 'Start Over';
+            output.textContent = `⚠️ Error: ${message}\n\n🔄 Click "Start Over" to begin verification.`;
+            btnContinue.textContent = '🔄 Start Over';
+            btnContinue.className = 'main-button';
             btnContinue.onclick = () => {
                 clearToken();
                 window.location.href = '/';
@@ -383,7 +798,7 @@
             const existingKey = storage.get(`generated_key_${token}`);
             if (existingKey && new Date(existingKey.expires) > new Date()) {
                 currentKey = existingKey.key;
-                output.textContent = `Key: ${existingKey.key}\n\nExpires: ${new Date(existingKey.expires).toLocaleString()}\n\nValid for 24 hours.`;
+                output.textContent = `🔑 Key: ${existingKey.key}\n\n⏰ Expires: ${new Date(existingKey.expires).toLocaleString()}\n\n✅ Valid for 24 hours.`;
                 btnCopy.style.display = 'block';
                 btnContinue.style.display = 'none';
             }
@@ -392,7 +807,8 @@
         async function generateKey() {
             const btnGen = document.getElementById('btnGen');
             btnGen.disabled = true;
-            btnGen.textContent = 'Generating...';
+            btnGen.textContent = '⚡ Generating...';
+            btnGen.classList.add('loading');
             
             try {
                 const token = getToken();
@@ -414,14 +830,15 @@
                 storage.set(`generated_key_${token}`, keyData);
                 currentKey = keyData.key;
                 
-                output.textContent = `Key: ${keyData.key}\n\nExpires: ${expires.toLocaleString()}\n\nKey generated successfully! 🎉`;
+                output.textContent = `🔑 Key: ${keyData.key}\n\n⏰ Expires: ${expires.toLocaleString()}\n\n🎉 Key generated successfully!`;
                 btnCopy.style.display = 'block';
                 btnGen.style.display = 'none';
                 
             } catch (error) {
-                output.textContent = `Error: ${error.message}\n\nPlease start over if verification expired.`;
+                output.textContent = `⚠️ Error: ${error.message}\n\n🔄 Please start over if verification expired.`;
                 setTimeout(() => {
-                    btnGen.textContent = 'Try Again';
+                    btnGen.textContent = '🔄 Try Again';
+                    btnGen.classList.remove('loading');
                     btnGen.disabled = false;
                 }, 2000);
             }
@@ -433,19 +850,23 @@
             
             try {
                 await navigator.clipboard.writeText(currentKey);
-                btnCopy.textContent = 'Copied!';
+                btnCopy.textContent = '✅ Copied!';
+                btnCopy.style.background = 'linear-gradient(135deg, #059669, #10b981)';
             } catch (error) {
+                // Fallback for browsers that don't support clipboard API
                 const textArea = document.createElement('textarea');
                 textArea.value = currentKey;
                 document.body.appendChild(textArea);
                 textArea.select();
                 document.execCommand('copy');
                 document.body.removeChild(textArea);
-                btnCopy.textContent = 'Copied!';
+                btnCopy.textContent = '✅ Copied!';
+                btnCopy.style.background = 'linear-gradient(135deg, #059669, #10b981)';
             }
             
             setTimeout(() => {
                 btnCopy.textContent = 'Copy Key';
+                btnCopy.style.background = 'linear-gradient(135deg, #10b981, #34d399)';
             }, 2000);
         };
 
