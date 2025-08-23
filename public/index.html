@@ -136,6 +136,12 @@
         }
 
         function initializeHomePage() {
+            if (token) {
+                // If we have a token on home page, redirect to step1
+                window.location.href = `/step1?token=${token}`;
+                return;
+            }
+            
             btnContinue.textContent = 'Complete the step';
             output.textContent = 'Complete verification steps to get your API key';
             
