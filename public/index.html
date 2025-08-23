@@ -112,10 +112,30 @@
         let timerInterval = null;
         let timeRemaining = 0;
 
+        // Function to save token to sessionStorage
+        function saveToken(token) {
+            if (token) {
+                sessionStorage.setItem('verifyToken', token);
+            }
+        }
+
+        // Function to get token from URL or sessionStorage
+        function getToken() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tokenFromUrl = urlParams.get('token');
+            
+            if (tokenFromUrl) {
+                saveToken(tokenFromUrl);
+                return tokenFromUrl;
+            }
+            
+            return sessionStorage.getItem('verifyToken');
+        }
+
         // Get current page info
         const currentPath = window.location.pathname;
         const urlParams = new URLSearchParams(window.location.search);
-        const token = urlParams.get('token');
+        const token = getToken();
         const completed = urlParams.get('completed');
 
         // Initialize page based on current path
@@ -151,7 +171,8 @@
         }
 
         function initializeStep1Page() {
-            if (!token) {
+            const currentToken = getToken();
+            if (!currentToken) {
                 window.location.href = '/';
                 return;
             }
@@ -164,12 +185,13 @@
             const newBtnContinue = document.getElementById('btnContinue');
             
             newBtnContinue.addEventListener('click', () => {
-                window.location.href = 'https://link-hub.net/1385845/vx4xk8JD7x7z';
+                window.location.href = 'https://link-hub.net/1385845/qklnqONg4HgC';
             });
         }
 
         function initializeStep2Page() {
-            if (!token) {
+            const currentToken = getToken();
+            if (!currentToken) {
                 window.location.href = '/';
                 return;
             }
@@ -182,12 +204,13 @@
             const newBtnContinue = document.getElementById('btnContinue');
             
             newBtnContinue.addEventListener('click', () => {
-                window.location.href = 'https://direct-link.net/1385845/z8W0KStN0g82';
+                window.location.href = 'https://link-target.net/1385845/2FtUqPh7m718';
             });
         }
 
         function initializeStep3Page() {
-            if (!token) {
+            const currentToken = getToken();
+            if (!currentToken) {
                 window.location.href = '/';
                 return;
             }
@@ -199,7 +222,7 @@
                 output.textContent = 'All verification steps completed! Click "Take the key" to generate your API key.';
                 
                 btnTakeKey.addEventListener('click', () => {
-                    window.location.href = '/generate-key-secure-xyz?token=' + token;
+                    window.location.href = '/generate-key-secure-xyz?token=' + currentToken;
                 });
             } else {
                 verifyTokenAndShowStep(3);
@@ -210,13 +233,14 @@
                 const newBtnContinue = document.getElementById('btnContinue');
                 
                 newBtnContinue.addEventListener('click', () => {
-                    window.location.href = 'https://link-center.net/1385845/tgUMK8TgIBn1';
+                    window.location.href = 'https://link-target.net/1385845/GlkP3DeSeukX';
                 });
             }
         }
 
         function initializeGeneratePage() {
-            if (!token) {
+            const currentToken = getToken();
+            if (!currentToken) {
                 window.location.href = '/';
                 return;
             }
@@ -261,8 +285,9 @@
         }
 
         async function verifyTokenAndShowStep(step) {
+            const currentToken = getToken();
             try {
-                const response = await fetch(`/verify?token=${token}`);
+                const response = await fetch(`/verify?token=${currentToken}`);
                 const data = await response.json();
                 
                 if (!response.ok || !data.valid) {
@@ -296,8 +321,9 @@
         }
 
         async function checkExistingKey() {
+            const currentToken = getToken();
             try {
-                const response = await fetch(`/getkey?token=${token}`);
+                const response = await fetch(`/getkey?token=${currentToken}`);
                 
                 if (response.ok) {
                     const data = await response.json();
@@ -317,13 +343,14 @@
         }
 
         async function generateKey() {
+            const currentToken = getToken();
             const btnGen = document.getElementById('btnGen');
             btnGen.disabled = true;
             btnGen.textContent = 'Generating...';
             btnGen.classList.add('loading');
             
             try {
-                const response = await fetch(`/getkey?token=${token}`);
+                const response = await fetch(`/getkey?token=${currentToken}`);
                 const data = await response.json();
                 
                 if (response.ok) {
@@ -373,4 +400,4 @@
         });
     </script>
 </body>
-</html>
+    </html>
