@@ -7,6 +7,20 @@ const app = express();
 // Trust proxy for Vercel
 app.set('trust proxy', true);
 
+// ========== CORS MIDDLEWARE - TAMBAHAN BARU ==========
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
+
+// ========== EXISTING MIDDLEWARE ==========
 // Serve static files
 app.use(express.static('public'));
 
@@ -137,6 +151,8 @@ app.get('/getkey', (req, res) => {
     const userIP = req.realIP;
     const { token } = req.query;
     
+    console.log(`[GET KEY] Request from IP: ${userIP}`);
+    
     if (!userIP) {
       return res.status(400).json({
         error: 'Unable to identify user IP address'
@@ -172,6 +188,7 @@ app.get('/getkey', (req, res) => {
       
       // If key is still valid, return it (anti-refresh protection)
       if (!isKeyExpired(existingKey)) {
+        console.log(`[GET KEY] Returning existing key for IP: ${userIP}`);
         return res.json({
           key: existingKey.key,
           expires: existingKey.expires.toISOString(),
@@ -193,6 +210,8 @@ app.get('/getkey', (req, res) => {
       created: now
     };
     
+    console.log(`[GET KEY] Generated new key: ${newKey} for IP: ${userIP}`);
+    
     // Return the new key
     res.json({
       key: newKey,
@@ -208,12 +227,18 @@ app.get('/getkey', (req, res) => {
   }
 });
 
-// Endpoint: /validate
+// Endpoint: /validate - FIXED VERSION
 app.get('/validate', (req, res) => {
   try {
     const { key } = req.query;
     
+    console.log(`[VALIDATE] Validating key: ${key}`);
+    
+    // Set proper JSON header
+    res.setHeader('Content-Type', 'application/json');
+    
     if (!key) {
+      console.log('[VALIDATE] No key provided');
       return res.json({
         status: 'INVALID'
       });
@@ -231,6 +256,7 @@ app.get('/validate', (req, res) => {
     });
     
     if (!foundKey) {
+      console.log(`[VALIDATE] Key not found: ${key}`);
       return res.json({
         status: 'INVALID'
       });
@@ -240,12 +266,14 @@ app.get('/validate', (req, res) => {
     if (isKeyExpired(foundKey)) {
       // Remove expired key
       delete keyStorage[foundIP];
+      console.log(`[VALIDATE] Key expired: ${key}`);
       return res.json({
         status: 'EXPIRED'
       });
     }
     
     // Key is valid
+    console.log(`[VALIDATE] Key valid: ${key}`);
     res.json({
       status: 'VALID'
     });
@@ -390,10 +418,15 @@ app.get('/verify', (req, res) => {
   }
 });
 
-// Status endpoint for healthcheck
+// Status endpoint for healthcheck - MODIFIED
 app.get('/status', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  console.log('[STATUS] Health check requested');
   res.json({
-    status: 'online'
+    status: 'online',
+    timestamp: new Date().toISOString(),
+    service: 'ClavnnX Key System',
+    version: '1.0.0'
   });
 });
 
@@ -404,10 +437,12 @@ app.get('/stats', (req, res) => {
     cleanupExpiredKeys();
     
     const activeKeys = Object.keys(keyStorage).length;
+    const activeTokens = Object.keys(tokenStorage).length;
     const now = new Date();
     
     res.json({
       active_keys: activeKeys,
+      active_tokens: activeTokens,
       server_time: now.toISOString(),
       uptime: process.uptime()
     });
@@ -446,7 +481,7 @@ setInterval(() => {
 if (require.main === module) {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Roblox Key System API server running on port ${PORT}`);
+    console.log(`ClavnnX Key System API server running on port ${PORT}`);
     console.log(`Access at: http://localhost:${PORT}`);
   });
 }
