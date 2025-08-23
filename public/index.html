@@ -432,10 +432,64 @@
             try {
                 console.log('Generating key with token:', token);
                 
-                // Try to generate key directly first - some tokens might still work
-                console.log('Attempting key generation...');
-                const response = await fetch(`/getkey?token=${token}`);
-                console.log('Generate key response status:', response.status);
+                // First, let's verify the token and get current step info
+                console.log('Verifying token and step completion...');
+                const verifyResponse = await fetch(`/verify?token=${token}`);
+                console.log('Verify response status:', verifyResponse.status);
+                
+                if (verifyResponse.ok) {
+                    const verifyData = await verifyResponse.json();
+                    console.log('Token verification data:', verifyData);
+                    
+                    if (!verifyData.valid) {
+                        output.textContent = 'Token is no longer valid. Please start verification again.';
+                        setTimeout(() => {
+                            clearToken();
+                            window.location.href = '/';
+                        }, 3000);
+                        return;
+                    }
+                    
+                    // Check if all steps are completed
+                    if (verifyData.step < 3) {
+                        output.textContent = `Error: Not all verification steps completed.\n\nCurrent progress: Step ${verifyData.step}/3\n\nPlease complete all Vertise links first.`;
+                        
+                        // Add button to go back to current step
+                        const backBtn = document.createElement('button');
+                        backBtn.textContent = `Continue Step ${verifyData.step + 1}/3`;
+                        backBtn.style.cssText = 'width: 100%; padding: 15px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: bold; background: #007bff; color: white;';
+                        backBtn.onclick = () => {
+                            if (verifyData.step === 0) {
+                                window.location.href = `/step1?token=${token}`;
+                            } else if (verifyData.step === 1) {
+                                window.location.href = `/step2?token=${token}`;
+                            } else if (verifyData.step === 2) {
+                                window.location.href = `/step3?token=${token}`;
+                            }
+                        };
+                        btnGen.parentNode.appendChild(backBtn);
+                        return;
+                    }
+                }
+                
+                // Try multiple approaches to generate the key
+                console.log('Attempting key generation - Method 1: Direct');
+                let response = await fetch(`/getkey?token=${token}`);
+                console.log('Method 1 response status:', response.status);
+                
+                // If first method fails, try with explicit completion flag
+                if (!response.ok && response.status === 403) {
+                    console.log('Method 1 failed, trying Method 2: With completion flag');
+                    response = await fetch(`/getkey?token=${token}&completed=true`);
+                    console.log('Method 2 response status:', response.status);
+                }
+                
+                // If still fails, try with step verification
+                if (!response.ok && response.status === 403) {
+                    console.log('Method 2 failed, trying Method 3: With step=3');
+                    response = await fetch(`/getkey?token=${token}&step=3`);
+                    console.log('Method 3 response status:', response.status);
+                }
                 
                 if (response.ok) {
                     const data = await response.json();
@@ -451,54 +505,33 @@
                     return;
                 }
                 
-                // If direct generation fails, check if it's a token issue
+                // If all methods fail, show detailed error
                 const errorData = await response.json().catch(() => ({}));
-                console.error('Key generation failed:', errorData);
+                console.error('All key generation methods failed:', errorData);
                 
-                // If token expired or invalid, verify first
-                if (response.status === 403 || response.status === 401) {
-                    console.log('Token issue detected, verifying token...');
+                if (response.status === 403) {
+                    output.textContent = `Key generation blocked by server.\n\nPossible causes:\n• Not all Vertise steps completed\n• Server verification issue\n• Token permission problem\n\nTry completing all steps again or contact support.`;
                     
-                    const verifyResponse = await fetch(`/verify?token=${token}`);
-                    console.log('Verify response status:', verifyResponse.status);
+                    // Add retry button
+                    const retryBtn = document.createElement('button');
+                    retryBtn.textContent = 'Try Again';
+                    retryBtn.style.cssText = 'width: 100%; padding: 15px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: bold; background: #ffc107; color: black;';
+                    retryBtn.onclick = () => {
+                        location.reload();
+                    };
+                    btnGen.parentNode.appendChild(retryBtn);
                     
-                    if (!verifyResponse.ok) {
-                        const verifyError = await verifyResponse.json().catch(() => ({}));
-                        console.error('Token verification failed:', verifyError);
-                        
-                        // Show user-friendly message for expired token
-                        output.textContent = `Token has expired during Vertise completion.\n\nThis is normal if you took time with the ads.\n\nPlease click "Start Over" to begin verification again.`;
-                        btnGen.style.display = 'none';
-                        
-                        // Add start over button
-                        const startOverBtn = document.createElement('button');
-                        startOverBtn.textContent = 'Start Over';
-                        startOverBtn.style.cssText = 'width: 100%; padding: 15px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: bold; background: #dc3545; color: white;';
-                        startOverBtn.onclick = () => {
-                            clearToken();
-                            window.location.href = '/';
-                        };
-                        btnGen.parentNode.appendChild(startOverBtn);
-                        return;
-                    }
-                    
-                    const verifyData = await verifyResponse.json();
-                    console.log('Token verification data:', verifyData);
-                    
-                    if (!verifyData.valid) {
-                        output.textContent = 'Token is no longer valid. Please start verification again.';
-                        setTimeout(() => {
-                            clearToken();
-                            window.location.href = '/';
-                        }, 3000);
-                        return;
-                    }
-                    
-                    // Token is valid but key generation still failed
-                    output.textContent = `Error: ${errorData.error || 'Failed to generate key'}\n\nToken appears valid but key generation failed.\nPlease try again or contact support.`;
+                    // Add start over button
+                    const startOverBtn = document.createElement('button');
+                    startOverBtn.textContent = 'Start Over';
+                    startOverBtn.style.cssText = 'width: 100%; padding: 15px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; font-weight: bold; background: #dc3545; color: white;';
+                    startOverBtn.onclick = () => {
+                        clearToken();
+                        window.location.href = '/';
+                    };
+                    btnGen.parentNode.appendChild(startOverBtn);
                 } else {
-                    // Other error
-                    output.textContent = `Error: ${errorData.error || 'Failed to generate key'}\n\nStatus: ${response.status}\nTry refreshing the page.`;
+                    output.textContent = `Error: ${errorData.error || 'Failed to generate key'}\n\nStatus: ${response.status}\n\nServer response: ${JSON.stringify(errorData)}`;
                 }
                 
                 btnCopy.style.display = 'none';
@@ -548,4 +581,4 @@
         });
     </script>
 </body>
-    </html>
+</html>
