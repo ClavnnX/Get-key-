@@ -271,16 +271,29 @@
             }
         }
 
-        // Get current page info
+        // Get current page info - support both path and hash routing
         const currentPath = window.location.pathname;
+        const currentHash = window.location.hash.replace('#', '');
         const urlParams = new URLSearchParams(window.location.search);
         let token = getToken();
 
-        // Initialize page based on current path
+        // Initialize page based on current path or hash
         initializePage();
 
         function initializePage() {
-            if (currentPath === '/') {
+            const route = currentHash || currentPath.replace('/', '') || 'home';
+            
+            if (route === 'home' || route === '') {
+                initializeHomePage();
+            } else if (route === 'step1') {
+                initializeStep1Page();
+            } else if (route === 'step2') {
+                initializeStep2Page();
+            } else if (route === 'step3') {
+                initializeStep3Page();
+            } else if (route === 'generate-key-secure-xyz') {
+                initializeGeneratePage();
+            } else if (currentPath === '/') {
                 initializeHomePage();
             } else if (currentPath === '/step1') {
                 initializeStep1Page();
@@ -312,7 +325,7 @@
                     // Check if all steps were properly completed through Vertise
                     if (validateVertiseCompletion(1) && validateVertiseCompletion(2) && validateVertiseCompletion(3) &&
                         validateStepRedirection(1) && validateStepRedirection(2) && validateStepRedirection(3)) {
-                        window.location.href = `/generate-key-secure-xyz?token=${token}`;
+                        window.location.href = `#generate-key-secure-xyz?token=${token}`;
                     } else {
                         // Reset if any step was bypassed
                         output.textContent = 'Some verification steps were not completed properly.\n\nPlease complete all steps through the proper verification process.';
@@ -322,7 +335,7 @@
                         }, 3000);
                     }
                 } else {
-                    window.location.href = `/step1?token=${token}`;
+                    window.location.href = `#step1?token=${token}`;
                 }
             });
         }
