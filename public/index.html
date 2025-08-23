@@ -295,7 +295,7 @@
                 });
                 
                 updateStepIndicator(1);
-                output.textContent = `Step 1/2 completed successfully! ✅\n\n🎉 TOKEN GENERATED: ${token}\n\nThis token will be used for key generation.\nToken is valid for 8 minutes.\n\nRedirecting to Step 2/2...`;
+                output.textContent = `Step 1/2 completed successfully! ✅\n\nRedirecting to Step 2/2...`;
                 btnContinue.style.display = 'none';
                 
                 setTimeout(() => {
@@ -351,7 +351,7 @@
                 
                 saveStepProgress(2);
                 updateStepIndicator(2);
-                output.textContent = 'Step 2/2 completed successfully! ✅\n\nStep 1/2: ✅ Completed (Token Generated)\nStep 2/2: ✅ Completed\n\nAll verification steps completed!\nRedirecting to token validation...';
+                output.textContent = 'Step 2/2 completed successfully! ✅\n\nAll verification steps completed!\nRedirecting to token validation...';
                 btnContinue.style.display = 'none';
                 
                 setTimeout(() => {
@@ -383,7 +383,7 @@
             updateStepIndicator(Math.max(currentStep, 1));
             
             btnContinue.textContent = 'Step 2/2 - Final Verification';
-            output.textContent = `Step 2 of 2: Final Verification\n\nStep 1/2: ✅ Completed (Token Generated)\nToken: ${token}\n\nClick the button below to complete the final verification step.\n\nAfter this step, you can generate your API key.`;
+            output.textContent = `Step 2 of 2: Final Verification\n\nStep 1/2: ✅ Completed\n\nClick the button below to complete the final verification step.\n\nAfter this step, you can generate your API key.`;
             
             btnContinue.addEventListener('click', () => {
                 output.textContent = 'Click the button Step for get the key';
@@ -417,7 +417,7 @@
                 stepIndicator.textContent = '❌ Invalid Access';
                 
                 btnContinue.textContent = 'Start Over';
-                output.textContent = `Get Your Key\n\n❌ INVALID ACCESS\n\nDebug Information:\nToken: ${token || 'EXPIRED/NONE'}\nCurrent Step: ${currentStep}/2\nToken Required: YES (from Step 1/2)\nSteps Required: 2/2 completed\n\nMissing:\n${!token ? '- Token from Step 1/2 (may be expired after 8 minutes)\n' : ''}${currentStep < 2 ? '- Complete all verification steps\n' : ''}\nClick "Start Over" to begin verification.`;
+                output.textContent = `Get Your Key\n\n❌ INVALID ACCESS\n\nDebug Information:\nCurrent Step: ${currentStep}/2\nSteps Required: 2/2 completed\n\nMissing:\n${!token ? '- Complete Step 1/2 (may be expired after 8 minutes)\n' : ''}${currentStep < 2 ? '- Complete all verification steps\n' : ''}\nClick "Start Over" to begin verification.`;
                 
                 btnContinue.addEventListener('click', () => {
                     clearToken();
@@ -435,7 +435,7 @@
             btnContinue.textContent = 'Generate Your API Key';
             btnContinue.style.background = '#28a745';
             
-            output.textContent = `Get Your Key\n\n✅ VALID ACCESS CONFIRMED\n\nToken: ${token}\nSteps Completed: ${currentStep}/2\nAll Requirements: ✅ MET\n\nYou can now generate your API key!\n\nClick the button below to proceed to key generation.`;
+            output.textContent = `Get Your Key\n\n✅ VALID ACCESS CONFIRMED\n\nSteps Completed: ${currentStep}/2\nAll Requirements: ✅ MET\n\nYou can now generate your API key!\n\nClick the button below to proceed to key generation.`;
             
             btnContinue.addEventListener('click', () => {
                 btnContinue.textContent = 'Loading...';
@@ -493,7 +493,7 @@
             
             btnContinue.textContent = 'Generate Key';
             btnContinue.id = 'btnGen';
-            output.textContent = `Ready to generate your API key! 🎉\n\nToken: ${token}\nAll verification steps completed!\n\nClick "Generate Key" below to get your API key.\n\nNote: Token is valid for 8 minutes from Step 1/2 completion.`;
+            output.textContent = `Ready to generate your API key! 🎉\n\nAll verification steps completed!\n\nClick "Generate Key" below to get your API key.`;
             
             // Check for existing key first
             checkExistingKey();
@@ -567,7 +567,7 @@
                 
                 currentKey = keyData.key;
                 
-                output.textContent = `Key: ${keyData.key}\n\nExpires: ${expires.toLocaleString()}\n\nValid for 24 hours from generation.\n\nKey generated successfully! 🎉\n\nGenerated with token: ${token}`;
+                output.textContent = `Key: ${keyData.key}\n\nExpires: ${expires.toLocaleString()}\n\nValid for 24 hours from generation.\n\nKey generated successfully! 🎉`;
                 btnCopy.style.display = 'block';
                 btnGen.style.display = 'none';
                 
@@ -575,7 +575,7 @@
                 
             } catch (error) {
                 console.error('Error generating key:', error);
-                output.textContent = `Error: ${error.message}\n\nDebug Info:\nToken: ${getToken() || 'EXPIRED/NONE'}\nStep: ${getStepProgress()}\n\nIf token expired, please start from Step 1/2 to generate new token.`;
+                output.textContent = `Error: ${error.message}\n\nDebug Info:\nStep: ${getStepProgress()}\n\nIf verification expired, please start from Step 1/2 again.`;
                 
                 // Don't auto-redirect, let user see the error
                 setTimeout(() => {
@@ -643,4 +643,4 @@
         console.log('=== END DEBUG INFO ===');
     </script>
 </body>
-    </html>
+</html>
