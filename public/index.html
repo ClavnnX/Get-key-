@@ -157,18 +157,6 @@
             box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
         }
 
-        .countdown {
-            background: rgba(17, 24, 39, 0.8);
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            border-radius: 12px;
-            padding: 12px 16px;
-            text-align: center;
-            margin-bottom: 16px;
-            color: #fbbf24;
-            font-weight: 600;
-            font-size: 18px;
-        }
-
         .url-section {
             margin-bottom: 24px;
         }
@@ -401,6 +389,43 @@
             margin-right: 8px;
         }
 
+        .timer-display {
+            background: linear-gradient(135deg, #f59e0b, #f97316);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 16px;
+            font-weight: 600;
+            font-size: 18px;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+            display: none;
+        }
+
+        .expired-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .expired-content {
+            background: linear-gradient(135deg, #ef4444, #f87171);
+            color: white;
+            padding: 40px;
+            border-radius: 24px;
+            text-align: center;
+            max-width: 400px;
+            box-shadow: 0 25px 50px rgba(239, 68, 68, 0.5);
+        }
+
         /* Mobile responsiveness */
         @media (max-width: 600px) {
             body {
@@ -464,6 +489,9 @@
             <div class="subtitle">Secure Multi-Step Verification System</div>
         </div>
 
+        <!-- Timer Display -->
+        <div class="timer-display" id="timerDisplay">⏰ Time remaining: 08:00</div>
+
         <!-- Progress Section -->
         <div class="progress-section">
             <div class="progress-header">
@@ -526,62 +554,51 @@
         const progressBar = document.getElementById('progressBar');
         const progressStep = document.getElementById('progressStep');
         const currentUrl = document.getElementById('currentUrl');
+        const timerDisplay = document.getElementById('timerDisplay');
         let currentKey = '';
-        let countdownInterval = null;
+        let pageTimer = null;
+        let remainingTime = 8 * 60; // 8 minutes in seconds
 
         // Storage keys
         const TOKEN_KEY = 'clavnnx_token_step1';
         const STEP_KEY = 'clavnnx_current_step';
-        const KEY_DATA_KEY = 'clavnnx_key_data';
-        const GENERATE_TIME_KEY = 'clavnnx_generate_time';
+        const PAGE_ACCESS_KEY = 'clavnnx_page_access_time';
+        const GENERATED_KEY_TIMESTAMP = 'clavnnx_key_generated_time';
 
-        // Configuration
-        const CONFIG = {
-            GENERATE_PAGE_TIMEOUT: 5 * 60 * 1000, // 5 menit untuk akses halaman generate
-            KEY_VALIDITY: 24 * 60 * 60 * 1000,    // 24 jam untuk key
-            TOKEN_VALIDITY: 8 * 60 * 1000         // 8 menit untuk token
-        };
-
-        // Add countdown elements to DOM
-        const countdownDiv = document.createElement('div');
-        countdownDiv.className = 'countdown';
-        countdownDiv.id = 'countdown';
-        countdownDiv.style.display = 'none';
-        countdownDiv.innerHTML = '⏰ Page expires in: <span id="countdownTime">00:00</span>';
-        document.querySelector('.url-section').after(countdownDiv);
-
-        // Optimized storage operations
+        // Enhanced storage operations with validation
         const storage = {
             set: (key, value) => {
                 try {
                     const data = JSON.stringify(value);
-                    localStorage.setItem(key, data);
-                    sessionStorage.setItem(key, data);
+                    // Store in variables instead of localStorage/sessionStorage
+                    window[`storage_${key}`] = data;
                 } catch (e) {
                     console.warn('Storage failed:', e);
                 }
             },
             get: (key) => {
                 try {
-                    return JSON.parse(localStorage.getItem(key) || sessionStorage.getItem(key) || 'null');
+                    const data = window[`storage_${key}`];
+                    return data ? JSON.parse(data) : null;
                 } catch (e) {
                     return null;
                 }
             },
             remove: (key) => {
-                localStorage.removeItem(key);
-                sessionStorage.removeItem(key);
+                delete window[`storage_${key}`];
             }
         };
 
-        // Token management
+        // Enhanced token management with time validation
         function saveToken(token) {
             if (token) {
-                storage.set(TOKEN_KEY, {
+                const tokenData = {
                     token: token,
                     created: Date.now(),
-                    expires: Date.now() + CONFIG.TOKEN_VALIDITY
-                });
+                    expires: Date.now() + (8 * 60 * 1000), // 8 minutes
+                    step1Complete: Date.now()
+                };
+                storage.set(TOKEN_KEY, tokenData);
             }
         }
 
@@ -590,8 +607,12 @@
             const tokenFromUrl = urlParams.get('token');
             
             if (tokenFromUrl) {
-                saveToken(tokenFromUrl);
-                return tokenFromUrl;
+                // Validate token freshness from URL
+                const tokenData = storage.get(TOKEN_KEY);
+                if (tokenData && tokenData.token === tokenFromUrl && Date.now() < tokenData.expires) {
+                    return tokenFromUrl;
+                }
+                return null; // Token expired or invalid
             }
             
             const tokenData = storage.get(TOKEN_KEY);
@@ -606,93 +627,100 @@
         function clearToken() {
             storage.remove(TOKEN_KEY);
             storage.remove(STEP_KEY);
-            storage.remove(KEY_DATA_KEY);
-            storage.remove(GENERATE_TIME_KEY);
+            storage.remove(PAGE_ACCESS_KEY);
+            storage.remove(GENERATED_KEY_TIMESTAMP);
         }
 
         function generateToken() {
             return `token_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
         }
 
-        // Key generation dengan auto-generate dan security
-        function autoGenerateKey(token) {
-            const generateTime = Date.now();
-            const randomKey = 'sk-' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-            const expires = new Date(generateTime + CONFIG.KEY_VALIDITY);
-            
-            const keyData = {
-                key: randomKey,
-                expires: expires.toISOString(),
-                generated: new Date(generateTime).toISOString(),
-                generateTime: generateTime,
-                pageExpires: generateTime + CONFIG.GENERATE_PAGE_TIMEOUT
-            };
-            
-            storage.set(KEY_DATA_KEY, keyData);
-            storage.set(GENERATE_TIME_KEY, generateTime);
-            
-            return keyData;
-        }
-
-        // Check if generate page has expired
-        function isGeneratePageExpired() {
-            const keyData = storage.get(KEY_DATA_KEY);
-            if (!keyData) return false;
-            
-            return Date.now() > keyData.pageExpires;
-        }
-
-        // Countdown timer
-        function startCountdown(endTime) {
-            const countdown = document.getElementById('countdown');
-            const countdownTime = document.getElementById('countdownTime');
-            
-            if (countdownInterval) clearInterval(countdownInterval);
-            
-            countdown.style.display = 'block';
-            
-            countdownInterval = setInterval(() => {
-                const now = Date.now();
-                const timeLeft = endTime - now;
-                
-                if (timeLeft <= 0) {
-                    clearInterval(countdownInterval);
-                    countdown.style.display = 'none';
-                    showExpiredPage();
-                    return;
-                }
-                
-                const minutes = Math.floor(timeLeft / 60000);
-                const seconds = Math.floor((timeLeft % 60000) / 1000);
-                countdownTime.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            }, 1000);
-        }
-
-        function showExpiredPage() {
-            stepIndicator.style.display = 'block';
-            stepIndicator.className = 'error-message pulse';
-            stepIndicator.textContent = '⏰ Session Expired';
-            
-            output.textContent = '🕐 Your key generation session has expired.\n\n🔄 Please complete the verification process again to get a new key.\n\n⚠️ This is for security purposes.';
-            btnContinue.textContent = '🔄 Start Over';
-            btnContinue.className = 'main-button';
-            btnContinue.style.display = 'block';
-            btnCopy.style.display = 'none';
-            
-            btnContinue.onclick = () => {
-                clearToken();
-                window.location.href = '/';
-            };
-        }
-
-        // Step management
+        // Enhanced step management with time validation
         function saveStepProgress(step) {
-            storage.set(STEP_KEY, step);
+            const stepData = {
+                step: step,
+                timestamp: Date.now(),
+                expires: Date.now() + (8 * 60 * 1000)
+            };
+            storage.set(STEP_KEY, stepData);
         }
 
         function getStepProgress() {
-            const step = storage.get(STEP_KEY) || 0;
-            return Math.max(0, Math.min(2, parseInt(step)));
+            const stepData = storage.get(STEP_KEY);
+            if (stepData && Date.now() < stepData.expires) {
+                return Math.max(0, Math.min(2, parseInt(stepData.step)));
+            }
+            return 0;
+        }
+
+        // Page access control
+        function setPageAccessTime() {
+            storage.set(PAGE_ACCESS_KEY, Date.now());
+        }
+
+        function validatePageAccess() {
+            const accessTime = storage.get(PAGE_ACCESS_KEY);
+            if (!accessTime) return false;
+            
+            const timeElapsed = Date.now() - accessTime;
+            return timeElapsed <= (8 * 60 * 1000); // 8 minutes
+        }
+
+        // Timer functions
+        function startPageTimer() {
+            const accessTime = storage.get(PAGE_ACCESS_KEY);
+            if (accessTime) {
+                const timeElapsed = Math.floor((Date.now() - accessTime) / 1000);
+                remainingTime = (8 * 60) - timeElapsed;
+                
+                if (remainingTime <= 0) {
+                    showExpiredPage();
+                    return;
+                }
+            } else {
+                setPageAccessTime();
+                remainingTime = 8 * 60;
+            }
+
+            timerDisplay.style.display = 'block';
+            updateTimerDisplay();
+            
+            pageTimer = setInterval(() => {
+                remainingTime--;
+                updateTimerDisplay();
+                
+                if (remainingTime <= 0) {
+                    clearInterval(pageTimer);
+                    showExpiredPage();
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(remainingTime / 60);
+            const seconds = remainingTime % 60;
+            const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            timerDisplay.textContent = `⏰ Time remaining: ${timeString}`;
+            
+            if (remainingTime <= 60) {
+                timerDisplay.style.background = 'linear-gradient(135deg, #ef4444, #f87171)';
+                timerDisplay.classList.add('pulse');
+            }
+        }
+
+        function showExpiredPage() {
+            clearToken();
+            
+            const overlay = document.createElement('div');
+            overlay.className = 'expired-overlay';
+            overlay.innerHTML = `
+                <div class="expired-content">
+                    <h2 style="font-size: 24px; margin-bottom: 16px;">⏰ Session Expired</h2>
+                    <p style="margin-bottom: 24px;">Your session has expired after 8 minutes. Please start the verification process again.</p>
+                    <button onclick="window.location.href='/'" style="padding: 12px 24px; background: white; color: #ef4444; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Start Over</button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
         }
 
         function updateProgress(currentStep, totalSteps = 2) {
@@ -712,7 +740,7 @@
             }
         }
 
-        // Page routing - optimized
+        // Page routing with enhanced security
         const route = window.location.hash.replace('#', '') || window.location.pathname.replace('/', '') || 'home';
         const urlParams = new URLSearchParams(window.location.search);
 
@@ -721,7 +749,7 @@
             currentUrl.value = window.location.pathname + window.location.search + window.location.hash;
         }
 
-        // Initialize based on route
+        // Initialize based on route with security checks
         function init() {
             updateCurrentUrl();
             
@@ -765,6 +793,7 @@
                 const token = generateToken();
                 saveToken(token);
                 saveStepProgress(1);
+                setPageAccessTime();
                 
                 updateProgress(1);
                 updateStepIndicator(1);
@@ -793,8 +822,14 @@
         }
 
         function initStep2() {
+            if (!validatePageAccess()) {
+                showError('Access expired. Please start over.');
+                return;
+            }
+
             if (urlParams.get('completed') === '2') {
-                if (!getToken()) {
+                const token = getToken();
+                if (!token) {
                     showError('Token expired. Please start over.');
                     return;
                 }
@@ -802,31 +837,18 @@
                 saveStepProgress(2);
                 updateProgress(2);
                 updateStepIndicator(2);
-                
-                // AUTO GENERATE KEY LANGSUNG SETELAH STEP 2 SELESAI
-                output.textContent = '✅ Step 2/2 completed successfully!\n\n🎉 Auto-generating your API key...\n\n⚡ Please wait...';
+                output.textContent = '✅ Step 2/2 completed successfully!\n\n🎉 Redirecting to key generation...';
                 btnContinue.style.display = 'none';
                 
                 setTimeout(() => {
-                    const token = getToken();
-                    const keyData = autoGenerateKey(token);
-                    currentKey = keyData.key;
-                    
-                    // Langsung tampilkan key tanpa perlu generate manual
-                    output.textContent = `🔑 Key: ${keyData.key}\n\n⏰ Valid until: ${new Date(keyData.expires).toLocaleString()}\n\n🎉 Key auto-generated successfully!\n\n⚠️ This page will expire in 5 minutes for security.`;
-                    btnCopy.style.display = 'block';
-                    
-                    // Start countdown untuk page expiry
-                    startCountdown(keyData.pageExpires);
-                    
-                    // Update URL ke generate page
-                    window.location.href = window.location.pathname.includes('/step2') ? `/generate-key-secure-xyz?token=${token}` : `#generate-key-secure-xyz?token=${token}`;
-                }, 2000);
+                    window.location.href = window.location.pathname.includes('/step2') ? '/get-your-key' : '#get-your-key';
+                }, 1500);
                 return;
             }
             
-            if (!getToken()) {
-                showError('No token found. Complete Step 1/2 first.');
+            const token = getToken();
+            if (!token) {
+                showError('No token found or token expired. Complete Step 1/2 first.');
                 return;
             }
             
@@ -835,7 +857,7 @@
             btnContinue.textContent = '🛡️ Step 2/2 - Final Verification';
             output.textContent = '📋 Step 2 of 2: Final Verification\n\n✅ Step 1/2: Completed\n\n🎯 Click below to complete final verification.';
             
-            btnContinue.onclick = () => {
+           btnContinue.onclick = () => {
                 btnContinue.textContent = 'Redirecting...';
                 btnContinue.classList.add('loading');
                 btnContinue.disabled = true;
@@ -846,6 +868,11 @@
         }
 
         function initGetKey() {
+            if (!validatePageAccess()) {
+                showError('Access expired. Please start over.');
+                return;
+            }
+
             const token = getToken();
             const currentStep = getStepProgress();
             
@@ -874,52 +901,62 @@
         }
 
         function initGenerate() {
+            // Enhanced security validation
             const token = getToken();
             const currentStep = getStepProgress();
+            const tokenData = storage.get(TOKEN_KEY);
             
-            if (!token || currentStep < 2) {
+            if (!token || currentStep < 2 || !tokenData) {
                 showError('Access denied. Complete verification first.');
                 return;
             }
-            
-            // Check if page has expired
-            if (isGeneratePageExpired()) {
-                showExpiredPage();
+
+            // Validate token freshness and prevent manipulation
+            if (!validatePageAccess() || Date.now() > tokenData.expires) {
+                showError('Session expired. Please start over.');
                 return;
             }
+
+            // Check if user is trying to refresh or access page multiple times
+            const generatedTime = storage.get(GENERATED_KEY_TIMESTAMP);
+            if (generatedTime) {
+                const timeSinceGeneration = Date.now() - generatedTime;
+                if (timeSinceGeneration < 30000) { // 30 seconds cooldown
+                    showError('Please wait before generating another key.');
+                    return;
+                }
+            }
+            
+            // Start 8-minute timer for this page
+            startPageTimer();
             
             updateProgress(2, 2);
             updateStepIndicator(2, 2);
+            btnContinue.textContent = '✨ Auto-Generate Key';
+            btnContinue.id = 'btnGen';
+            btnContinue.classList.add('glow');
+            output.textContent = '🎉 Ready to generate your API key!\n\n⏰ Auto-generation will start in 3 seconds...\n\n🚀 Or click "Generate Key" to proceed immediately.';
             
-            // Check for existing key
-            const keyData = storage.get(KEY_DATA_KEY);
-            if (keyData) {
-                // Key sudah ada, langsung tampilkan
-                currentKey = keyData.key;
-                const keyExpires = new Date(keyData.expires);
-                const pageExpires = keyData.pageExpires;
-                
-                if (Date.now() < keyExpires.getTime()) {
-                    output.textContent = `🔑 Your API Key: ${keyData.key}\n\n⏰ Key expires: ${keyExpires.toLocaleString()}\n\n🎉 Key is ready to use!\n\n⚠️ This page expires in a few minutes for security.`;
-                    btnCopy.style.display = 'block';
-                    btnContinue.style.display = 'none';
-                    
-                    // Continue countdown if still valid
-                    if (Date.now() < pageExpires) {
-                        startCountdown(pageExpires);
-                    } else {
-                        showExpiredPage();
-                    }
-                } else {
-                    showError('Key has expired. Please start verification again.');
+            // Auto-generate key after 3 seconds
+            setTimeout(() => {
+                if (remainingTime > 0) { // Only if page hasn't expired
+                    generateKey();
                 }
-            } else {
-                // Tidak ada key data, redirect kembali ke step 2
-                showError('No key found. Please complete verification again.');
-            }
+            }, 3000);
+            
+            btnContinue.onclick = () => {
+                if (remainingTime > 0) {
+                    generateKey();
+                }
+            };
         }
 
         function showError(message) {
+            if (pageTimer) {
+                clearInterval(pageTimer);
+            }
+            timerDisplay.style.display = 'none';
+            
             stepIndicator.style.display = 'block';
             stepIndicator.className = 'error-message pulse';
             stepIndicator.textContent = '❌ Error';
@@ -939,15 +976,28 @@
             
             const existingKey = storage.get(`generated_key_${token}`);
             if (existingKey && new Date(existingKey.expires) > new Date()) {
-                currentKey = existingKey.key;
-                output.textContent = `🔑 Key: ${existingKey.key}\n\n⏰ Expires: ${new Date(existingKey.expires).toLocaleString()}\n\n✅ Valid for 24 hours.`;
-                btnCopy.style.display = 'block';
-                btnContinue.style.display = 'none';
+                // Check if key was generated within valid timeframe
+                const keyData = storage.get(GENERATED_KEY_TIMESTAMP);
+                if (keyData && (Date.now() - keyData) <= (24 * 60 * 60 * 1000)) {
+                    currentKey = existingKey.key;
+                    output.textContent = `🔑 Key: ${existingKey.key}\n\n⏰ Expires: ${new Date(existingKey.expires).toLocaleString()}\n\n✅ Valid for 24 hours.`;
+                    btnCopy.style.display = 'block';
+                    btnContinue.style.display = 'none';
+                }
             }
         }
 
         async function generateKey() {
             const btnGen = document.getElementById('btnGen');
+            if (!btnGen) return;
+            
+            // Prevent multiple generations
+            const generatedTime = storage.get(GENERATED_KEY_TIMESTAMP);
+            if (generatedTime && (Date.now() - generatedTime) < 30000) {
+                output.textContent = '⚠️ Please wait 30 seconds before generating another key.';
+                return;
+            }
+            
             btnGen.disabled = true;
             btnGen.textContent = '⚡ Generating...';
             btnGen.classList.add('loading');
@@ -955,55 +1005,96 @@
             try {
                 const token = getToken();
                 const currentStep = getStepProgress();
+                const tokenData = storage.get(TOKEN_KEY);
                 
-                if (!token || currentStep < 2) {
+                // Enhanced validation
+                if (!token || currentStep < 2 || !tokenData) {
                     throw new Error('Invalid access. Please complete all verification steps.');
                 }
+
+                if (!validatePageAccess() || Date.now() > tokenData.expires) {
+                    throw new Error('Session expired. Please start over.');
+                }
+
+                // Validate that enough time has passed since step completion
+                const stepData = storage.get(STEP_KEY);
+                if (!stepData || (Date.now() - stepData.timestamp) < 5000) {
+                    throw new Error('Please wait a moment before generating key.');
+                }
                 
+                // Generate secure random key
                 const randomKey = 'sk-' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
                 const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
                 
                 const keyData = {
                     key: randomKey,
                     expires: expires.toISOString(),
-                    generated: new Date().toISOString()
+                    generated: new Date().toISOString(),
+                    tokenUsed: token,
+                    secure: true
                 };
                 
+                // Store key data and generation timestamp
                 storage.set(`generated_key_${token}`, keyData);
+                storage.set(GENERATED_KEY_TIMESTAMP, Date.now());
                 currentKey = keyData.key;
                 
-                output.textContent = `🔑 Key: ${keyData.key}\n\n⏰ Expires: ${expires.toLocaleString()}\n\n🎉 Key generated successfully!`;
+                output.textContent = `🔑 Key: ${keyData.key}\n\n⏰ Expires: ${expires.toLocaleString()}\n\n🎉 Key generated successfully!\n\n⚠️ This key is valid for 24 hours only.`;
                 btnCopy.style.display = 'block';
                 btnGen.style.display = 'none';
+                
+                // Clear timer as key is generated
+                if (pageTimer) {
+                    clearInterval(pageTimer);
+                }
+                timerDisplay.style.display = 'none';
                 
             } catch (error) {
                 output.textContent = `⚠️ Error: ${error.message}\n\n🔄 Please start over if verification expired.`;
                 setTimeout(() => {
-                    btnGen.textContent = '🔄 Try Again';
-                    btnGen.classList.remove('loading');
-                    btnGen.disabled = false;
+                    if (remainingTime > 0) {
+                        btnGen.textContent = '🔄 Try Again';
+                        btnGen.classList.remove('loading');
+                        btnGen.disabled = false;
+                    }
                 }, 2000);
             }
         }
 
-        // Copy functionality
+        // Enhanced copy functionality
         btnCopy.onclick = async () => {
             if (!currentKey) return;
             
             try {
-                await navigator.clipboard.writeText(currentKey);
-                btnCopy.textContent = '✅ Copied!';
-                btnCopy.style.background = 'linear-gradient(135deg, #059669, #10b981)';
-            } catch (error) {
-                // Fallback for browsers that don't support clipboard API
+                // Create a temporary textarea for copying (fallback method)
                 const textArea = document.createElement('textarea');
                 textArea.value = currentKey;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                textArea.style.top = '-999999px';
                 document.body.appendChild(textArea);
+                textArea.focus();
                 textArea.select();
-                document.execCommand('copy');
+                
+                const successful = document.execCommand('copy');
                 document.body.removeChild(textArea);
-                btnCopy.textContent = '✅ Copied!';
-                btnCopy.style.background = 'linear-gradient(135deg, #059669, #10b981)';
+                
+                if (successful) {
+                    btnCopy.textContent = '✅ Copied!';
+                    btnCopy.style.background = 'linear-gradient(135deg, #059669, #10b981)';
+                } else {
+                    throw new Error('Copy failed');
+                }
+            } catch (error) {
+                // Try navigator.clipboard as fallback
+                try {
+                    await navigator.clipboard.writeText(currentKey);
+                    btnCopy.textContent = '✅ Copied!';
+                    btnCopy.style.background = 'linear-gradient(135deg, #059669, #10b981)';
+                } catch (clipboardError) {
+                    btnCopy.textContent = '❌ Copy Failed';
+                    btnCopy.style.background = 'linear-gradient(135deg, #ef4444, #f87171)';
+                }
             }
             
             setTimeout(() => {
@@ -1012,50 +1103,41 @@
             }, 2000);
         };
 
-        // Prevent page refresh abuse
-        window.addEventListener('beforeunload', function(e) {
-            const route = window.location.hash.replace('#', '') || window.location.pathname.replace('/', '');
-            if (route === 'generate-key-secure-xyz') {
-                const keyData = storage.get(KEY_DATA_KEY);
-                if (keyData && !isGeneratePageExpired()) {
-                    e.preventDefault();
-                    e.returnValue = 'Your key session will be lost if you leave this page.';
-                }
-            }
-        });
-
-        // Security: Clear data on window close/tab close
-        window.addEventListener('unload', function() {
-            // Clear sensitive data when leaving the site
-            const route = window.location.hash.replace('#', '') || window.location.pathname.replace('/', '');
-            if (route === 'generate-key-secure-xyz') {
-                clearToken();
-            }
-        });
-
-        // Security: Detect if user tries to manipulate storage
-        const originalSetItem = Storage.prototype.setItem;
-        
-        Storage.prototype.setItem = function(key, value) {
-            if (key.startsWith('clavnnx_') && !key.includes('allowed_')) {
-                console.warn('Unauthorized storage access detected');
-                return;
-            }
-            return originalSetItem.call(this, key, value);
-        };
-
-        // Periodic security check
-        setInterval(() => {
-            const route = window.location.hash.replace('#', '') || window.location.pathname.replace('/', '');
-            if (route === 'generate-key-secure-xyz') {
-                if (isGeneratePageExpired()) {
+        // Enhanced page visibility handling
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                // User switched tabs/minimized - don't pause timer but log the action
+                console.log('Page hidden - timer continues');
+            } else {
+                // User returned - validate session is still valid
+                if (route === 'generate-key-secure-xyz' && !validatePageAccess()) {
                     showExpiredPage();
                 }
             }
-        }, 30000); // Check every 30 seconds
+        });
 
-        // Initialize page
+        // Prevent right-click and common shortcuts on generate page
+        if (route === 'generate-key-secure-xyz') {
+            document.addEventListener('contextmenu', (e) => e.preventDefault());
+            document.addEventListener('keydown', (e) => {
+                // Prevent F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U
+                if (e.key === 'F12' || 
+                    (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) ||
+                    (e.ctrlKey && e.key === 'u')) {
+                    e.preventDefault();
+                }
+            });
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (pageTimer) {
+                clearInterval(pageTimer);
+            }
+        });
+
+        // Initialize page with all security checks
         init();
-    </script>
+</script>
 </body>
 </html>
