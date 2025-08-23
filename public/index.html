@@ -514,8 +514,8 @@
             </div>
         </div>
 
-        <!-- URL Section -->
-        <div class="url-section">
+        <!-- URL Section - Hidden but functional for background processing -->
+        <div class="url-section" style="display: none;">
             <div class="url-label">
                 <span class="icon">🔗</span>
                 Current URL:
@@ -572,6 +572,7 @@
         const TOKEN_KEY = 'clavnnx_token_step1';
         const STEP_KEY = 'clavnnx_current_step';
         const GENERATE_ACCESS_KEY = 'clavnnx_generate_access';
+        const GENERATED_KEY_STORAGE = 'clavnnx_generated_key'; // NEW: Storage key for generated API key
 
         // In-memory storage for generate page session
         let generatePageMemory = {
@@ -636,10 +637,41 @@
             storage.remove(TOKEN_KEY);
             storage.remove(STEP_KEY);
             storage.remove(GENERATE_ACCESS_KEY);
+            storage.remove(GENERATED_KEY_STORAGE); // Clear generated key when clearing session
         }
 
         function generateToken() {
             return `token_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+        }
+
+        // NEW: Generated key management functions
+        function saveGeneratedKey(keyData) {
+            if (keyData) {
+                storage.set(GENERATED_KEY_STORAGE, {
+                    key: keyData.key,
+                    expires: keyData.expires,
+                    generated: Date.now(),
+                    isValid: true
+                });
+            }
+        }
+
+        function getGeneratedKey() {
+            const keyData = storage.get(GENERATED_KEY_STORAGE);
+            if (keyData && keyData.isValid && Date.now() < keyData.expires) {
+                return keyData;
+            }
+            
+            // Clear expired key
+            if (keyData) {
+                storage.remove(GENERATED_KEY_STORAGE);
+            }
+            return null;
+        }
+
+        function hasValidGeneratedKey() {
+            const keyData = getGeneratedKey();
+            return keyData && keyData.key;
         }
 
         // Generate page access management
@@ -898,15 +930,53 @@
                 return;
             }
 
-            // Initialize generate page with auto-generation
+            // Initialize generate page
             updateProgress(2, 2);
             updateStepIndicator(2, 2);
             
             // Start countdown
             startCountdown();
             
-            // Auto-generate key immediately
-            autoGenerateKey();
+            // MODIFIED: Check for existing key before generating new one
+            const existingKey = getGeneratedKey();
+            if (existingKey) {
+                // Show existing key instead of generating new one
+                showExistingKey(existingKey);
+            } else {
+                // Auto-generate key only if no existing key
+                autoGenerateKey();
+            }
+        }
+
+        // NEW: Function to display existing key (prevents spam generation)
+        function showExistingKey(keyData) {
+            // Hide generation buttons
+            btnContinue.style.display = 'none';
+            btnCopy.style.display = 'block';
+            
+            // Show existing key message
+            stepIndicator.style.display = 'block';
+            stepIndicator.className = 'success-message';
+            stepIndicator.textContent = '✅ API Key Loaded';
+            
+            // Calculate remaining time for the key
+            const keyExpiresDate = new Date(keyData.expires);
+            const remainingKeyTime = Math.max(0, keyData.expires - Date.now());
+            const keyHours = Math.floor(remainingKeyTime / (1000 * 60 * 60));
+            const keyMinutes = Math.floor((remainingKeyTime % (1000 * 60 * 60)) / (1000 * 60));
+            
+            currentKey = keyData.key;
+            
+            output.textContent = `🔑 Your API Key: ${keyData.key}\n\n⏰ Expires: ${keyExpiresDate.toLocaleString()}\n\n⚡ Status: ACTIVE (${keyHours}h ${keyMinutes}m remaining)\n\n🛡️ Refresh Protection: Active`;
+            
+            // Copy button functionality
+            btnCopy.textContent = '📋 Copy Key';
+            
+            // Add visual indicator that this is an existing key
+            output.style.border = '2px solid #f59e0b';
+            setTimeout(() => {
+                output.style.border = '1px solid rgba(75, 85, 99, 0.4)';
+            }, 3000);
         }
 
         function showExpiredPage() {
@@ -943,15 +1013,13 @@
         }
 
         async function autoGenerateKey() {
-            // Show auto-generating status
+            // Hide all UI elements during background generation
             btnContinue.style.display = 'none';
             btnCopy.style.display = 'none';
+            stepIndicator.style.display = 'none';
             
-            stepIndicator.style.display = 'block';
-            stepIndicator.className = 'step-indicator loading';
-            stepIndicator.textContent = '🔄 Auto-generating your API key...';
-            
-            output.textContent = '⚡ Auto-Generating Your API Key...\n\n🔐 Please wait while we securely generate your unique API key.\n\n⏱️ This process is automatic and secure.';
+            // Show minimal status without Generate URL frame
+            output.textContent = '🔐 Preparing your secure API key...\n\n⏱️ Please wait...';
             
             try {
                 const token = getToken();
@@ -968,11 +1036,19 @@
                 
                 currentKey = mockKey;
                 
-                // Show success
-                stepIndicator.className = 'success-message pulse';
-                stepIndicator.textContent = '✅ API Key Generated Successfully!';
+                // MODIFIED: Save the generated key to prevent regeneration on refresh
+                const keyData = {
+                    key: mockKey,
+                    expires: mockExpires.getTime()
+                };
+                saveGeneratedKey(keyData);
                 
-                output.textContent = `🔑 Your API Key: ${mockKey}\n\n⏰ Expires: ${mockExpires.toLocaleString()}\n\n✅ Key generated and validated successfully!\n\n⚠️ Important: This key is valid for 24 hours.\n\n🔧 Note: Using mock generation (backend not deployed)`;
+                // Show success without explicit Generate URL frame
+                stepIndicator.style.display = 'block';
+                stepIndicator.className = 'success-message pulse';
+                stepIndicator.textContent = '✅ API Key Ready!';
+                
+                output.textContent = `🔑 Your API Key: ${mockKey}\n\n⏰ Expires: ${mockExpires.toLocaleString()}\n\n✅ Key validated successfully!\n\n⚠️ Important: This key is valid for 24 hours.\n\n🛡️ Refresh Protection: Active`;
                 
                 // Show copy button
                 btnCopy.style.display = 'block';
@@ -983,46 +1059,6 @@
                 setTimeout(() => {
                     output.style.border = '1px solid rgba(75, 85, 99, 0.4)';
                 }, 2000);
-                
-                /* 
-                // REAL BACKEND CALL (uncomment when backend is deployed)
-                const response = await fetch(`/getkey?token=${token}`);
-                
-                // Check if response is HTML (error page) instead of JSON
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    throw new Error('Backend API not available. Please ensure server is running.');
-                }
-                
-                const data = await response.json();
-                
-                if (response.ok && data.key) {
-                    currentKey = data.key;
-                    const expiresDate = new Date(data.expires);
-                    
-                    // Show success
-                    stepIndicator.className = 'success-message pulse';
-                    stepIndicator.textContent = '✅ API Key Generated Successfully!';
-                    
-                    output.textContent = `🔑 Your API Key: ${data.key}\n\n⏰ Expires: ${expiresDate.toLocaleString()}\n\n✅ Key generated and validated successfully!\n\n⚠️ Important: This key is valid for 24 hours.`;
-                    
-                    // Show copy button
-                    btnCopy.style.display = 'block';
-                    btnCopy.textContent = '📋 Copy API Key';
-                    
-                    // Also show the key in a more prominent way if it's new
-                    if (!data.isExisting) {
-                        // Flash effect for new key
-                        output.style.border = '2px solid #10b981';
-                        setTimeout(() => {
-                            output.style.border = '1px solid rgba(75, 85, 99, 0.4)';
-                        }, 2000);
-                    }
-                    
-                } else {
-                    throw new Error(data.error || 'Failed to generate key');
-                }
-                */
                 
             } catch (error) {
                 console.error('Key generation error:', error);
@@ -1102,21 +1138,22 @@
             }
             
             setTimeout(() => {
-                btnCopy.textContent = '📋 Copy API Key';
+                btnCopy.textContent = hasValidGeneratedKey() ? '📋 Copy Existing Key' : '📋 Copy API Key';
                 btnCopy.style.background = 'linear-gradient(135deg, #10b981, #34d399)';
             }, 2000);
         };
 
-        // Prevent page refresh and back/forward navigation on generate page
+        // MODIFIED: Enhanced refresh protection - prevent navigation away from generate page
         function preventGeneratePageManipulation() {
             if (route === 'generate-key-secure-xyz') {
-                // Disable refresh
+                // Disable refresh warning only if we have a valid key cached
                 window.addEventListener('beforeunload', (e) => {
-                    if (!generatePageMemory.isExpired) {
+                    if (!generatePageMemory.isExpired && !hasValidGeneratedKey()) {
                         e.preventDefault();
                         e.returnValue = 'Refreshing this page will reset your key generation session.';
                         return e.returnValue;
                     }
+                    // Allow refresh if key is cached - it will show existing key
                 });
 
                 // Handle back/forward navigation
@@ -1192,7 +1229,13 @@
             if (isGeneratePageExpired() && route === 'generate-key-secure-xyz') {
                 showExpiredPage();
             }
+            
+            // Clean up expired generated keys
+            const existingKey = storage.get(GENERATED_KEY_STORAGE);
+            if (existingKey && Date.now() >= existingKey.expires) {
+                storage.remove(GENERATED_KEY_STORAGE);
+            }
         }, 60000); // Check every minute
     </script>
 </body>
-</html>
+    </html>
