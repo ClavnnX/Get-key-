@@ -301,8 +301,15 @@
                 saveToken(token);
                 saveStepProgress(2);
                 
+                console.log('Step 2 completed - Token generated:', {
+                    token: token,
+                    saved_localStorage: localStorage.getItem(TOKEN_STORAGE_KEY),
+                    saved_sessionStorage: sessionStorage.getItem(TOKEN_STORAGE_KEY),
+                    step_saved: localStorage.getItem(STEP_STORAGE_KEY)
+                });
+                
                 updateStepIndicator(2);
-                output.textContent = `Step 2 completed successfully! ✅\n\nStep 1: ✅ Completed\nStep 2: ✅ Completed\n\nToken generated: ${token}\n\nRedirecting to Step 3...`;
+                output.textContent = `Step 2 completed successfully! ✅\n\nStep 1: ✅ Completed\nStep 2: ✅ Completed\n\n🎉 TOKEN GENERATED: ${token}\n\nThis token will be used for key generation.\nSave this token if needed!\n\nRedirecting to Step 3...`;
                 btnContinue.style.display = 'none';
                 
                 setTimeout(() => {
@@ -311,7 +318,7 @@
                     } else {
                         window.location.href = `#step3`;
                     }
-                }, 3000);
+                }, 4000); // Longer delay to show token
                 return;
             }
             
@@ -379,13 +386,24 @@
             const token = getToken();
             const currentStep = getStepProgress();
             
+            console.log('Get Your Key validation:', {
+                token: token,
+                currentStep: currentStep,
+                hasToken: !!token,
+                stepComplete: currentStep >= 3,
+                localStorage_token: localStorage.getItem(TOKEN_STORAGE_KEY),
+                sessionStorage_token: sessionStorage.getItem(TOKEN_STORAGE_KEY),
+                localStorage_step: localStorage.getItem(STEP_STORAGE_KEY),
+                sessionStorage_step: sessionStorage.getItem(STEP_STORAGE_KEY)
+            });
+            
             if (!token || currentStep < 3) {
                 stepIndicator.style.display = 'block';
                 stepIndicator.className = 'error-message';
                 stepIndicator.textContent = '❌ Invalid Access';
                 
                 btnContinue.textContent = 'Start Over';
-                output.textContent = 'Get Your Key\n\n❌ INVALID TOKEN OR INCOMPLETE STEPS\n\nYou need to complete all verification steps to access this page.\n\nRequired:\n- Complete Step 1/3\n- Complete Step 2/3 (generates token)\n- Complete Step 3/3\n\nClick "Start Over" to begin the verification process.';
+                output.textContent = `Get Your Key\n\n❌ INVALID ACCESS\n\nDebug Information:\nToken: ${token || 'NONE'}\nCurrent Step: ${currentStep}/3\nToken Required: YES (from Step 2/3)\nSteps Required: 3/3 completed\n\nMissing:\n${!token ? '- Token from Step 2/3\n' : ''}${currentStep < 3 ? '- Complete all 3 steps\n' : ''}\nClick "Start Over" to begin verification.`;
                 
                 btnContinue.addEventListener('click', () => {
                     clearToken();
@@ -403,7 +421,7 @@
             btnContinue.textContent = 'Generate Your API Key';
             btnContinue.style.background = '#28a745';
             
-            output.textContent = `Get Your Key\n\n✅ VALID TOKEN DETECTED\n\nToken: ${token}\nAll Steps: ✅ Completed\n\nYou can now generate your API key!\n\nClick the button below to proceed to key generation.`;
+            output.textContent = `Get Your Key\n\n✅ VALID ACCESS CONFIRMED\n\nToken: ${token}\nSteps Completed: ${currentStep}/3\nAll Requirements: ✅ MET\n\nYou can now generate your API key!\n\nClick the button below to proceed to key generation.`;
             
             btnContinue.addEventListener('click', () => {
                 btnContinue.textContent = 'Loading...';
@@ -425,12 +443,23 @@
             const token = getToken();
             const currentStep = getStepProgress();
             
+            console.log('Generate page validation:', {
+                token: token,
+                currentStep: currentStep,
+                hasToken: !!token,
+                stepComplete: currentStep >= 3
+            });
+            
+            // SIMPLIFIED VALIDATION - only check if token exists and step >= 3
             if (!token || currentStep < 3) {
                 stepIndicator.style.display = 'block';
                 stepIndicator.className = 'error-message';
                 stepIndicator.textContent = '❌ Access Denied';
                 
-                output.textContent = 'Error: Invalid access to generate key page.\n\nPlease complete all verification steps first.';
+                output.textContent = 'Error: Invalid access to generate key page.\n\nMissing requirements:\n' + 
+                    (!token ? '- No token found (complete Step 2/3)\n' : '') +
+                    (currentStep < 3 ? '- Steps incomplete (complete all 3 steps)\n' : '') +
+                    '\nPlease complete all verification steps first.';
                 btnContinue.textContent = 'Start Over';
                 btnContinue.addEventListener('click', () => {
                     clearToken();
@@ -517,8 +546,20 @@
                 const token = getToken();
                 const currentStep = getStepProgress();
                 
-                if (!token || currentStep < 3) {
-                    throw new Error('Invalid token or incomplete verification steps.');
+                console.log('Generate key validation:', {
+                    token: token,
+                    currentStep: currentStep,
+                    hasToken: !!token,
+                    stepComplete: currentStep >= 3
+                });
+                
+                // SIMPLIFIED VALIDATION - only check basic requirements
+                if (!token) {
+                    throw new Error('No token found. Please complete Step 2/3 to generate token.');
+                }
+                
+                if (currentStep < 3) {
+                    throw new Error('Incomplete verification. Please complete all 3 steps.');
                 }
                 
                 // Generate API key
@@ -528,14 +569,15 @@
                 const keyData = {
                     key: randomKey,
                     expires: expires.toISOString(),
-                    generated: new Date().toISOString()
+                    generated: new Date().toISOString(),
+                    generatedWith: token
                 };
                 
                 localStorage.setItem(`generated_key_${token}`, JSON.stringify(keyData));
                 
                 currentKey = keyData.key;
                 
-                output.textContent = `Key: ${keyData.key}\n\nExpires: ${expires.toLocaleString()}\n\nValid for 24 hours from generation.\n\nKey generated successfully! 🎉`;
+                output.textContent = `Key: ${keyData.key}\n\nExpires: ${expires.toLocaleString()}\n\nValid for 24 hours from generation.\n\nKey generated successfully! 🎉\n\nGenerated with token: ${token}`;
                 btnCopy.style.display = 'block';
                 btnGen.style.display = 'none';
                 
@@ -544,19 +586,19 @@
                     timerDiv.style.display = 'none';
                 }
                 
+                console.log('Key generated successfully:', keyData);
+                
             } catch (error) {
                 console.error('Error generating key:', error);
-                output.textContent = `Error: ${error.message}\n\nPlease complete all verification steps properly.`;
+                output.textContent = `Error: ${error.message}\n\nDebug Info:\nToken: ${getToken() || 'NONE'}\nStep: ${getStepProgress()}\n\nPlease complete all verification steps properly.`;
                 
+                // Don't auto-redirect, let user see the error
                 setTimeout(() => {
-                    clearToken();
-                    window.location.href = '/';
-                }, 3000);
+                    btnGen.textContent = 'Try Again';
+                    btnGen.disabled = false;
+                    btnGen.classList.remove('loading');
+                }, 2000);
             }
-            
-            btnGen.disabled = false;
-            btnGen.textContent = 'Generate Key';
-            btnGen.classList.remove('loading');
         }
 
         btnCopy.addEventListener('click', async () => {
@@ -582,13 +624,20 @@
             }
         });
 
-        // Debug logging
-        console.log('Page loaded:', {
+        // Debug logging - Enhanced
+        console.log('=== PAGE LOADED DEBUG INFO ===');
+        console.log('Current Details:', {
             path: currentPath,
             hash: currentHash,
+            urlParams: Object.fromEntries(urlParams.entries()),
             token: getToken(),
-            currentStep: getStepProgress()
+            currentStep: getStepProgress(),
+            localStorage_token: localStorage.getItem(TOKEN_STORAGE_KEY),
+            sessionStorage_token: sessionStorage.getItem(TOKEN_STORAGE_KEY),
+            localStorage_step: localStorage.getItem(STEP_STORAGE_KEY),
+            sessionStorage_step: sessionStorage.getItem(STEP_STORAGE_KEY)
         });
+        console.log('=== END DEBUG INFO ===');
     </script>
 </body>
-    </html>
+</html>
