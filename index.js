@@ -322,8 +322,8 @@ app.get('/verify', (req, res) => {
         step: 0
       };
       
-      // Redirect to home page with token parameter
-      return res.redirect(`/?token=${newToken}`);
+      // Redirect to step1 with token
+      return res.redirect(`/step1?token=${newToken}`);
     }
     
     // If step parameter is provided, this means user completed a vertise step
@@ -359,7 +359,7 @@ app.get('/verify', (req, res) => {
           return res.redirect(`/step3?token=${token}&completed=true`);
         }
         
-        return res.redirect(`/?token=${token}`);
+        return res.redirect(`/step1?token=${token}`);
       } else {
         return res.status(403).json({
           error: 'Invalid user token'
