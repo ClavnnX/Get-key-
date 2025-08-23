@@ -398,10 +398,13 @@
 
         async function checkExistingKey() {
             try {
+                console.log('Checking existing key with token:', token);
                 const response = await fetch(`/getkey?token=${token}`);
+                console.log('Response status:', response.status);
                 
                 if (response.ok) {
                     const data = await response.json();
+                    console.log('Response data:', data);
                     if (data.key) {
                         currentKey = data.key;
                         const expiry = new Date(data.expires);
@@ -411,9 +414,12 @@
                         btnCopy.style.display = 'block';
                         btnContinue.style.display = 'none';
                     }
+                } else {
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error('Error response:', errorData);
                 }
             } catch (error) {
-                console.log('No existing key found');
+                console.log('No existing key found, error:', error);
             }
         }
 
@@ -424,10 +430,42 @@
             btnGen.classList.add('loading');
             
             try {
+                console.log('Generating key with token:', token);
+                
+                // First, verify token is still valid
+                const verifyResponse = await fetch(`/verify?token=${token}`);
+                console.log('Verify response status:', verifyResponse.status);
+                
+                if (!verifyResponse.ok) {
+                    const verifyError = await verifyResponse.json().catch(() => ({}));
+                    console.error('Token verification failed:', verifyError);
+                    output.textContent = `Error: Token verification failed - ${verifyError.error || 'Unknown error'}`;
+                    btnCopy.style.display = 'none';
+                    return;
+                }
+                
+                const verifyData = await verifyResponse.json();
+                console.log('Token verification data:', verifyData);
+                
+                if (!verifyData.valid) {
+                    output.textContent = 'Error: Token is no longer valid. Please start verification again.';
+                    btnCopy.style.display = 'none';
+                    setTimeout(() => {
+                        clearToken();
+                        window.location.href = '/';
+                    }, 3000);
+                    return;
+                }
+                
+                // Now try to generate key
+                console.log('Token verified, generating key...');
                 const response = await fetch(`/getkey?token=${token}`);
-                const data = await response.json();
+                console.log('Generate key response status:', response.status);
                 
                 if (response.ok) {
+                    const data = await response.json();
+                    console.log('Key generated successfully:', data);
+                    
                     currentKey = data.key;
                     const expiry = new Date(data.expires);
                     const keyType = data.isExisting ? 'Existing key loaded (anti-refresh protection)' : 'Key generated successfully!';
@@ -436,11 +474,14 @@
                     btnCopy.style.display = 'block';
                     btnGen.style.display = 'none';
                 } else {
-                    output.textContent = `Error: ${data.error || 'Failed to generate key'}`;
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error('Key generation failed:', errorData);
+                    output.textContent = `Error: ${errorData.error || 'Failed to generate key'}\n\nToken: ${token}\nStatus: ${response.status}`;
                     btnCopy.style.display = 'none';
                 }
             } catch (error) {
-                output.textContent = `Error: Unable to connect to server. Please try again.`;
+                console.error('Network error:', error);
+                output.textContent = `Error: Unable to connect to server. Please try again.\n\nError details: ${error.message}`;
                 btnCopy.style.display = 'none';
             }
             
