@@ -1,15 +1,28 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "index.js",
-      "use": "@vercel/node"
-    }
-  ],
   "routes": [
     {
+      "src": "/",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/step1",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/step2",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/step3",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/generate-key-secure-xyz",
+      "dest": "/index.html"
+    },
+    {
       "src": "/(.*)",
-      "dest": "/index.js"
+      "dest": "/index.html"
     }
   ]
 }
