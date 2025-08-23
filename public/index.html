@@ -282,37 +282,39 @@
 
         function initializePage() {
             const route = currentHash || currentPath.replace('/', '') || 'home';
+            console.log('Initializing page, route:', route, 'path:', currentPath, 'hash:', currentHash);
             
-            if (route === 'home' || route === '') {
+            if (route === 'home' || route === '' || currentPath === '/') {
+                console.log('Loading home page');
                 initializeHomePage();
-            } else if (route === 'step1') {
+            } else if (route === 'step1' || currentPath === '/step1') {
+                console.log('Loading step1 page');
                 initializeStep1Page();
-            } else if (route === 'step2') {
+            } else if (route === 'step2' || currentPath === '/step2') {
+                console.log('Loading step2 page');
                 initializeStep2Page();
-            } else if (route === 'step3') {
+            } else if (route === 'step3' || currentPath === '/step3') {
+                console.log('Loading step3 page');
                 initializeStep3Page();
-            } else if (route === 'generate-key-secure-xyz') {
+            } else if (route === 'generate-key-secure-xyz' || currentPath === '/generate-key-secure-xyz') {
+                console.log('Loading generate key page');
                 initializeGeneratePage();
-            } else if (currentPath === '/') {
+            } else {
+                console.log('Unknown route, defaulting to home');
                 initializeHomePage();
-            } else if (currentPath === '/step1') {
-                initializeStep1Page();
-            } else if (currentPath === '/step2') {
-                initializeStep2Page();
-            } else if (currentPath === '/step3') {
-                initializeStep3Page();
-            } else if (currentPath === '/generate-key-secure-xyz') {
-                initializeGeneratePage();
             }
         }
 
         function initializeHomePage() {
+            console.log('Initializing Home Page');
             if (!token) {
                 token = generateToken();
                 saveToken(token);
             }
             
             const currentStep = getStepProgress();
+            console.log('Current step:', currentStep);
+            
             if (currentStep > 0) {
                 updateStepIndicator(currentStep);
             }
@@ -321,11 +323,18 @@
             output.textContent = 'Complete verification steps to get your API key\n\nClick the button below to start the verification process.';
             
             btnContinue.addEventListener('click', () => {
+                console.log('Home button clicked, current step:', currentStep);
+                
                 if (currentStep >= 3) {
                     // Check if all steps were properly completed through Vertise
                     if (validateVertiseCompletion(1) && validateVertiseCompletion(2) && validateVertiseCompletion(3) &&
                         validateStepRedirection(1) && validateStepRedirection(2) && validateStepRedirection(3)) {
-                        window.location.href = `#generate-key-secure-xyz?token=${token}`;
+                        // Try both routing methods
+                        if (window.location.pathname === '/') {
+                            window.location.href = `/generate-key-secure-xyz?token=${token}`;
+                        } else {
+                            window.location.href = `#generate-key-secure-xyz?token=${token}`;
+                        }
                     } else {
                         // Reset if any step was bypassed
                         output.textContent = 'Some verification steps were not completed properly.\n\nPlease complete all steps through the proper verification process.';
@@ -335,7 +344,23 @@
                         }, 3000);
                     }
                 } else {
-                    window.location.href = `#step1?token=${token}`;
+                    // Navigate to step 1 - try both routing methods
+                    console.log('Navigating to step 1 with token:', token);
+                    btnContinue.textContent = 'Loading...';
+                    btnContinue.disabled = true;
+                    
+                    output.textContent = 'Redirecting to Step 1...';
+                    
+                    setTimeout(() => {
+                        console.log('Current pathname:', window.location.pathname);
+                        if (window.location.pathname === '/') {
+                            console.log('Using path routing to step1');
+                            window.location.href = `/step1?token=${token}`;
+                        } else {
+                            console.log('Using hash routing to step1');
+                            window.location.href = `#step1?token=${token}`;
+                        }
+                    }, 1000);
                 }
             });
         }
@@ -360,7 +385,12 @@
                 btnContinue.style.display = 'none';
                 
                 setTimeout(() => {
-                    window.location.href = `/step2?token=${token}`;
+                    // Try both routing methods for better compatibility
+                    if (window.location.pathname.includes('/step1')) {
+                        window.location.href = `/step2?token=${token}`;
+                    } else {
+                        window.location.href = `#step2?token=${token}`;
+                    }
                 }, 2000);
                 return;
             }
@@ -406,7 +436,12 @@
                 btnContinue.style.display = 'none';
                 
                 setTimeout(() => {
-                    window.location.href = `/step3?token=${token}`;
+                    // Try both routing methods for better compatibility
+                    if (window.location.pathname.includes('/step2')) {
+                        window.location.href = `/step3?token=${token}`;
+                    } else {
+                        window.location.href = `#step3?token=${token}`;
+                    }
                 }, 2000);
                 return;
             }
@@ -458,8 +493,13 @@
                 // FIXED: Immediately redirect to generate key page after completing step 3
                 setTimeout(() => {
                     // Remove the completion parameter and redirect to generate key
-                    const cleanUrl = `${window.location.origin}/generate-key-secure-xyz?token=${token}`;
-                    window.location.href = cleanUrl;
+                    if (window.location.pathname.includes('/step3')) {
+                        const cleanUrl = `/generate-key-secure-xyz?token=${token}`;
+                        window.location.href = cleanUrl;
+                    } else {
+                        const cleanUrl = `#generate-key-secure-xyz?token=${token}`;
+                        window.location.href = cleanUrl;
+                    }
                 }, 2000);
                 return;
             }
@@ -477,7 +517,11 @@
                 
                 // Auto redirect to generate key page
                 setTimeout(() => {
-                    window.location.href = `/generate-key-secure-xyz?token=${token}`;
+                    if (window.location.pathname.includes('/step3')) {
+                        window.location.href = `/generate-key-secure-xyz?token=${token}`;
+                    } else {
+                        window.location.href = `#generate-key-secure-xyz?token=${token}`;
+                    }
                 }, 1500);
                 return;
             }
