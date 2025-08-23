@@ -37,12 +37,20 @@
             margin-bottom: 15px;
             font-weight: bold;
         }
-        #btnContinue, #btnGen {
+        #btnContinue, #btnGen, #btnTakeKey {
             background: #007bff;
             color: white;
         }
-        #btnContinue:hover, #btnGen:hover {
+        #btnContinue:hover, #btnGen:hover, #btnTakeKey:hover {
             background: #0056b3;
+        }
+        #btnTakeKey {
+            background: #28a745;
+            display: none;
+            margin-top: 10px;
+        }
+        #btnTakeKey:hover {
+            background: #1e7e34;
         }
         #btnCopy {
             background: #28a745;
@@ -68,6 +76,15 @@
             opacity: 0.6;
             pointer-events: none;
         }
+        .timer {
+            background: #dc3545;
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 15px;
+            display: none;
+        }
         @media (max-width: 600px) {
             body { padding: 10px; }
             .container { padding: 20px; }
@@ -78,110 +95,225 @@
     <div class="container">
         <h1>ClavnnX Get key</h1>
         <button id="btnContinue">Complete the step</button>
+        <div class="timer" id="timer">Generate key link expires in: <span id="timeLeft">5:00</span></div>
         <div id="out">Click "Complete the step" to proceed through verification steps</div>
+        <button id="btnTakeKey" style="display: none;">Take the key</button>
         <button id="btnCopy" style="display: none;">Copy Key</button>
     </div>
 
     <script>
         const btnContinue = document.getElementById('btnContinue');
+        const btnTakeKey = document.getElementById('btnTakeKey');
         const btnCopy = document.getElementById('btnCopy');
         const output = document.getElementById('out');
+        const timerDiv = document.getElementById('timer');
+        const timeLeftSpan = document.getElementById('timeLeft');
         let currentKey = '';
+        let timerInterval = null;
+        let timeRemaining = 0;
 
-        // Check if we're on verify page (has token parameter)
+        // Get current page info
+        const currentPath = window.location.pathname;
         const urlParams = new URLSearchParams(window.location.search);
         const token = urlParams.get('token');
-        
-        if (token) {
-            // We're on verify page, verify the token
-            verifyToken(token);
-        } else {
-            // We're on start page, show continue button step 1/3
+        const completed = urlParams.get('completed');
+
+        // Initialize page based on current path
+        initializePage();
+
+        function initializePage() {
+            if (currentPath === '/') {
+                initializeHomePage();
+            } else if (currentPath === '/step1') {
+                initializeStep1Page();
+            } else if (currentPath === '/step2') {
+                initializeStep2Page();
+            } else if (currentPath === '/step3') {
+                initializeStep3Page();
+            } else if (currentPath === '/generate-key-secure-xyz') {
+                initializeGeneratePage();
+            }
+        }
+
+        function initializeHomePage() {
             btnContinue.textContent = 'Complete the step';
             output.textContent = 'Complete verification steps to get your API key';
             
             btnContinue.addEventListener('click', () => {
-                // Link vertise pertama akan diisi user nanti
-                // const vertiseLink1 = 'YOUR_VERTISE_LINK_1_HERE';
-                // window.location.href = vertiseLink1;
-                
-                // Untuk testing sementara, langsung ke /verify
                 window.location.href = '/verify';
             });
         }
 
-        async function verifyToken(token) {
+        function initializeStep1Page() {
+            if (!token) {
+                window.location.href = '/';
+                return;
+            }
+            
+            verifyTokenAndShowStep(1);
+            btnContinue.textContent = 'Step 1/3';
+            
+            btnContinue.addEventListener('click', () => {
+                // Replace with actual Vertise link for step 1
+                // const vertiseLink1 = 'YOUR_VERTISE_LINK_1_HERE';
+                // window.location.href = vertiseLink1;
+                
+                // For testing - direct completion
+                window.location.href = `/verify?token=${token}&step=1&bypass=1c3c210b0a6101cfb3b20619b480a70598dbca6e0b60567c73a6472557d077c7`;
+            });
+        }
+
+        function initializeStep2Page() {
+            if (!token) {
+                window.location.href = '/';
+                return;
+            }
+            
+            verifyTokenAndShowStep(2);
+            btnContinue.textContent = 'Step 2/3';
+            
+            btnContinue.addEventListener('click', () => {
+                // Replace with actual Vertise link for step 2
+                // const vertiseLink2 = 'YOUR_VERTISE_LINK_2_HERE';
+                // window.location.href = vertiseLink2;
+                
+                // For testing - direct completion
+                window.location.href = `/verify?token=${token}&step=2&bypass=1c3c210b0a6101cfb3b20619b480a70598dbca6e0b60567c73a6472557d077c7`;
+            });
+        }
+
+        function initializeStep3Page() {
+            if (!token) {
+                window.location.href = '/';
+                return;
+            }
+            
+            if (completed === 'true') {
+                // All steps completed, show "Take the key" button
+                btnContinue.style.display = 'none';
+                btnTakeKey.style.display = 'block';
+                output.textContent = 'All verification steps completed! Click "Take the key" to generate your API key.';
+                
+                btnTakeKey.addEventListener('click', () => {
+                    window.location.href = '/generate-key-secure-xyz?token=' + token;
+                });
+            } else {
+                verifyTokenAndShowStep(3);
+                btnContinue.textContent = 'Step 3/3';
+                
+                btnContinue.addEventListener('click', () => {
+                    // Replace with actual Vertise link for step 3
+                    // const vertiseLink3 = 'YOUR_VERTISE_LINK_3_HERE';
+                    // window.location.href = vertiseLink3;
+                    
+                    // For testing - direct completion
+                    window.location.href = `/verify?token=${token}&step=3&bypass=1c3c210b0a6101cfb3b20619b480a70598dbca6e0b60567c73a6472557d077c7`;
+                });
+            }
+        }
+
+        function initializeGeneratePage() {
+            if (!token) {
+                window.location.href = '/';
+                return;
+            }
+
+            // Show timer
+            timerDiv.style.display = 'block';
+            timeRemaining = 5 * 60; // 5 minutes in seconds
+            startTimer();
+            
+            btnContinue.textContent = 'Generate Key';
+            btnContinue.id = 'btnGen';
+            output.textContent = 'Ready to generate your API key! Click "Generate Key" below.\n\nNote: This page will expire in 5 minutes for security.';
+            
+            // Check for existing key first (anti-refresh protection)
+            checkExistingKey();
+            
+            btnContinue.addEventListener('click', async () => {
+                await generateKey();
+            });
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                
+                const minutes = Math.floor(timeRemaining / 60);
+                const seconds = timeRemaining % 60;
+                timeLeftSpan.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    // Redirect to home when expired
+                    output.textContent = 'Generate key access has expired. Please complete verification steps again.';
+                    btnContinue.style.display = 'none';
+                    timerDiv.textContent = 'EXPIRED - Please start over';
+                    
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 3000);
+                }
+            }, 1000);
+        }
+
+        async function verifyTokenAndShowStep(step) {
             try {
                 const response = await fetch(`/verify?token=${token}`);
                 const data = await response.json();
                 
-                if (response.ok && data.valid) {
-                    const currentStep = data.step;
-                    
-                    if (currentStep === 0) {
-                        // User belum complete step apapun, show step 1/3
-                        btnContinue.textContent = 'Continue 1/3';
-                        output.textContent = 'Complete verification step 1 of 3';
-                        
-                        btnContinue.addEventListener('click', () => {
-                            // Link vertise pertama akan diisi user nanti
-                            // const vertiseLink1 = 'YOUR_VERTISE_LINK_1_HERE';
-                            // window.location.href = vertiseLink1;
-                            
-                            // Untuk testing sementara
-                            window.location.href = `/verify?token=${token}&step=1&bypass=dac4c4fd65791af6212f7b69f1a28f97259082835ee9d0eddca7f95732275509`;
-                        });
-                        
-                    } else if (currentStep === 1) {
-                        // User sudah complete step 1, show step 2/3
-                        btnContinue.textContent = 'Continue 2/3';
-                        output.textContent = 'Complete verification step 2 of 3';
-                        
-                        btnContinue.addEventListener('click', () => {
-                            // Link vertise kedua akan diisi user nanti
-                            // const vertiseLink2 = 'YOUR_VERTISE_LINK_2_HERE';
-                            // window.location.href = vertiseLink2;
-                            
-                            // Untuk testing sementara
-                            window.location.href = `/verify?token=${token}&step=2&bypass=dac4c4fd65791af6212f7b69f1a28f97259082835ee9d0eddca7f95732275509`;
-                        });
-                        
-                    } else if (currentStep === 2) {
-                        // User sudah complete step 2, show step 3/3
-                        btnContinue.textContent = 'Continue 3/3';
-                        output.textContent = 'Complete final verification step 3 of 3';
-                        
-                        btnContinue.addEventListener('click', () => {
-                            // Link vertise ketiga akan diisi user nanti
-                            // const vertiseLink3 = 'YOUR_VERTISE_LINK_3_HERE';
-                            // window.location.href = vertiseLink3;
-                            
-                            // Untuk testing sementara
-                            window.location.href = `/verify?token=${token}&step=3&bypass=dac4c4fd65791af6212f7b69f1a28f97259082835ee9d0eddca7f95732275509`;
-                        });
-                        
-                    } else if (currentStep >= 3) {
-                        // User sudah complete semua step, show generate key button
-                        btnContinue.textContent = 'Generate Key';
-                        btnContinue.id = 'btnGen';
-                        output.textContent = 'All verification steps completed! Click "Generate Key" to get your API key.';
-                        
-                        btnContinue.addEventListener('click', async () => {
-                            await generateKey(token);
-                        });
-                    }
-                } else {
-                    // Token is invalid
-                    btnContinue.style.display = 'none';
+                if (!response.ok || !data.valid) {
                     output.textContent = 'Error: Invalid or expired verification token. Please start again.';
+                    btnContinue.style.display = 'none';
+                    return;
                 }
+                
+                const currentStep = data.step;
+                const requiredStep = step - 1;
+                
+                if (currentStep < requiredStep) {
+                    output.textContent = `Error: Please complete previous steps first. Current progress: Step ${currentStep}/3`;
+                    btnContinue.style.display = 'none';
+                    return;
+                }
+                
+                // Show appropriate message based on step
+                if (step === 1) {
+                    output.textContent = 'Complete verification step 1 of 3\n\nClick the button to proceed with Vertise verification';
+                } else if (step === 2) {
+                    output.textContent = 'Step 1 completed! Ready for step 2.\n\nComplete verification step 2 of 3';
+                } else if (step === 3) {
+                    output.textContent = 'Step 2 completed! Ready for final step.\n\nComplete final verification step 3 of 3';
+                }
+                
             } catch (error) {
-                btnContinue.style.display = 'none';
                 output.textContent = 'Error: Unable to verify token. Please try again.';
+                btnContinue.style.display = 'none';
             }
         }
 
-        async function generateKey(token) {
+        async function checkExistingKey() {
+            try {
+                const response = await fetch(`/getkey?token=${token}`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.key) {
+                        currentKey = data.key;
+                        const expiry = new Date(data.expires);
+                        const keyType = data.isExisting ? 'Existing key loaded (anti-refresh protection)' : 'Key generated successfully!';
+                        
+                        output.textContent = `Key: ${data.key}\n\nExpires: ${expiry.toLocaleString()}\n\nValid for 24 hours from generation.\n\n${keyType}`;
+                        btnCopy.style.display = 'block';
+                        btnContinue.style.display = 'none';
+                    }
+                }
+            } catch (error) {
+                console.log('No existing key found');
+            }
+        }
+
+        async function generateKey() {
             const btnGen = document.getElementById('btnGen');
             btnGen.disabled = true;
             btnGen.textContent = 'Generating...';
@@ -194,8 +326,11 @@
                 if (response.ok) {
                     currentKey = data.key;
                     const expiry = new Date(data.expires);
-                    output.textContent = `Key: ${data.key}\n\nExpires: ${expiry.toLocaleString()}\n\nValid for 24 hours from generation.`;
+                    const keyType = data.isExisting ? 'Existing key loaded (anti-refresh protection)' : 'Key generated successfully!';
+                    
+                    output.textContent = `Key: ${data.key}\n\nExpires: ${expiry.toLocaleString()}\n\nValid for 24 hours from generation.\n\n${keyType}`;
                     btnCopy.style.display = 'block';
+                    btnGen.style.display = 'none';
                 } else {
                     output.textContent = `Error: ${data.error || 'Failed to generate key'}`;
                     btnCopy.style.display = 'none';
