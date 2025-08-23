@@ -129,22 +129,22 @@
         const TOKEN_STORAGE_KEY = 'clavnnx_token_step1';
         const STEP_STORAGE_KEY = 'clavnnx_current_step';
 
-        // Token management - 8 minutes validity from step 1
+        // Storage operations - optimized
         function saveToken(token) {
             if (token) {
                 const tokenData = {
                     token: token,
                     created: Date.now(),
-                    expires: Date.now() + (8 * 60 * 1000) // 8 menit dalam milliseconds
+                    expires: Date.now() + (8 * 60 * 1000)
                 };
                 
-                localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(tokenData));
-                sessionStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(tokenData));
-                
-                console.log('Token saved with 8 minute expiry:', {
-                    token: token,
-                    expiresAt: new Date(tokenData.expires).toLocaleString()
-                });
+                try {
+                    const tokenJson = JSON.stringify(tokenData);
+                    localStorage.setItem(TOKEN_STORAGE_KEY, tokenJson);
+                    sessionStorage.setItem(TOKEN_STORAGE_KEY, tokenJson);
+                } catch (e) {
+                    console.warn('Storage error:', e);
+                }
             }
         }
 
@@ -274,7 +274,7 @@
                 
                 setTimeout(() => {
                     window.location.href = `https://direct-link.net/1385845/QhuxogBGSmxB?return=${encodeURIComponent(returnUrl)}`;
-                }, 2000);
+                }, 1000);
             });
         }
 
@@ -304,7 +304,7 @@
                     } else {
                         window.location.href = `#step2`;
                     }
-                }, 4000); // Show token for 4 seconds
+                }, 2000);
                 return;
             }
             
@@ -323,7 +323,7 @@
                 
                 setTimeout(() => {
                     window.location.href = `https://direct-link.net/1385845/QhuxogBGSmxB?return=${encodeURIComponent(returnUrl)}`;
-                }, 2000);
+                }, 1000);
             });
         }
 
@@ -394,7 +394,7 @@
                 
                 setTimeout(() => {
                     window.location.href = `https://link-target.net/1385845/05NfA4wGJcIe?return=${encodeURIComponent(returnUrl)}`;
-                }, 2000);
+                }, 1000);
             });
         }
 
