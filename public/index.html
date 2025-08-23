@@ -1,1 +1,1163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClavnnX Key System</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0f0f23, #1a1a3e, #0f0f23);
+            min-height: 100vh;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background-attachment: fixed;
+        }
 
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(0, 150, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(0, 150, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 40% 60%, rgba(0, 150, 255, 0.05) 0%, transparent 50%);
+            z-index: -1;
+        }
+
+        .main-container {
+            width: 100%;
+            max-width: 480px;
+            background: rgba(30, 30, 45, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 
+                0 25px 50px -12px rgba(0, 0, 0, 0.25),
+                0 0 0 1px rgba(255, 255, 255, 0.05),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            padding: 40px 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .main-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0, 150, 255, 0.5), transparent);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #0096ff, #00d4ff);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            color: #9ca3af;
+            font-size: 16px;
+            font-weight: 400;
+            margin-bottom: 20px;
+        }
+
+        .progress-section {
+            margin-bottom: 30px;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .progress-label {
+            color: #d1d5db;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .progress-step {
+            color: #6b7280;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background: rgba(55, 65, 81, 0.6);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #0096ff, #00d4ff);
+            border-radius: 4px;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .step-indicator {
+            background: linear-gradient(135deg, #1e40af, #3b82f6);
+            color: white;
+            padding: 16px 20px;
+            border-radius: 16px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: 600;
+            font-size: 15px;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+        }
+
+        .url-section {
+            margin-bottom: 24px;
+        }
+
+        .url-label {
+            color: #9ca3af;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .url-input {
+            width: 100%;
+            background: rgba(55, 65, 81, 0.5);
+            border: 1px solid rgba(75, 85, 99, 0.6);
+            border-radius: 12px;
+            padding: 14px 16px;
+            color: #e5e7eb;
+            font-size: 15px;
+            font-weight: 400;
+            outline: none;
+            transition: all 0.3s ease;
+            font-family: 'Inter', monospace;
+        }
+
+        .url-input:focus {
+            border-color: #0096ff;
+            background: rgba(55, 65, 81, 0.8);
+            box-shadow: 0 0 0 3px rgba(0, 150, 255, 0.1);
+        }
+
+        .main-button {
+            width: 100%;
+            padding: 16px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 16px;
+            cursor: pointer;
+            margin-bottom: 16px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            letter-spacing: 0.5px;
+        }
+
+        .main-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.6s;
+        }
+
+        .main-button:hover::before {
+            transform: translateX(100%);
+        }
+
+        #btnContinue, #btnGen {
+            background: linear-gradient(135deg, #0096ff, #00d4ff);
+            color: white;
+            box-shadow: 0 8px 25px rgba(0, 150, 255, 0.3);
+        }
+
+        #btnContinue:hover, #btnGen:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(0, 150, 255, 0.4);
+        }
+
+        #btnContinue:active, #btnGen:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 15px rgba(0, 150, 255, 0.3);
+        }
+
+        #btnTakeKey {
+            background: linear-gradient(135deg, #10b981, #34d399);
+            color: white;
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+            display: none;
+        }
+
+        #btnTakeKey:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(16, 185, 129, 0.4);
+        }
+
+        #btnCopy {
+            background: linear-gradient(135deg, #10b981, #34d399);
+            color: white;
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+            display: none;
+        }
+
+        #btnCopy:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(16, 185, 129, 0.4);
+        }
+
+        .output-section {
+            margin-bottom: 20px;
+        }
+
+        #out {
+            background: rgba(17, 24, 39, 0.8);
+            border: 1px solid rgba(75, 85, 99, 0.4);
+            border-radius: 16px;
+            padding: 24px;
+            min-height: 120px;
+            font-family: 'Inter', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-all;
+            color: #e5e7eb;
+            position: relative;
+            backdrop-filter: blur(10px);
+        }
+
+        #out::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0, 150, 255, 0.3), transparent);
+        }
+
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+            position: relative;
+        }
+
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 24px;
+            height: 24px;
+            margin: -12px 0 0 -12px;
+            border: 2px solid rgba(0, 150, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #0096ff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .success-message {
+            background: linear-gradient(135deg, #10b981, #34d399);
+            color: white;
+            padding: 16px 20px;
+            border-radius: 16px;
+            text-align: center;
+            margin-bottom: 16px;
+            font-weight: 600;
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.2);
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, #ef4444, #f87171);
+            color: white;
+            padding: 16px 20px;
+            border-radius: 16px;
+            text-align: center;
+            margin-bottom: 16px;
+            font-weight: 600;
+            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.2);
+        }
+
+        .expired-message {
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            color: white;
+            padding: 16px 20px;
+            border-radius: 16px;
+            text-align: center;
+            margin-bottom: 16px;
+            font-weight: 600;
+            box-shadow: 0 8px 25px rgba(245, 158, 11, 0.2);
+        }
+
+        .countdown-section {
+            background: rgba(17, 24, 39, 0.6);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .countdown-title {
+            color: #ef4444;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .countdown-timer {
+            font-size: 24px;
+            font-weight: 700;
+            color: #ef4444;
+            font-family: 'Courier New', monospace;
+        }
+
+        .urls-section {
+            margin-top: 30px;
+            background: rgba(17, 24, 39, 0.6);
+            border: 1px solid rgba(75, 85, 99, 0.3);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+        }
+
+        .urls-title {
+            color: #0096ff;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+        }
+
+        .url-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(75, 85, 99, 0.2);
+        }
+
+        .url-item:last-child {
+            border-bottom: none;
+        }
+
+        .url-step-label {
+            color: #9ca3af;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .url-step-value {
+            background: rgba(55, 65, 81, 0.8);
+            color: #0096ff;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+        }
+
+        .icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 600px) {
+            body {
+                padding: 15px;
+            }
+            
+            .main-container {
+                padding: 30px 24px;
+                border-radius: 20px;
+            }
+
+            .logo {
+                font-size: 28px;
+            }
+
+            .subtitle {
+                font-size: 14px;
+            }
+
+            .main-button {
+                padding: 14px 20px;
+                font-size: 15px;
+            }
+
+            #out {
+                padding: 20px;
+                min-height: 100px;
+                font-size: 13px;
+            }
+
+            .urls-section {
+                padding: 20px;
+            }
+
+            .countdown-timer {
+                font-size: 20px;
+            }
+        }
+
+        /* Pulse animation for active elements */
+        .pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: .8;
+            }
+        }
+
+        /* Glow effect for important elements */
+        .glow {
+            box-shadow: 0 0 20px rgba(0, 150, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Header Section -->
+        <div class="header">
+            <div class="logo">ClavnnX Key System</div>
+            <div class="subtitle">Secure Multi-Step Verification System</div>
+        </div>
+
+        <!-- Progress Section -->
+        <div class="progress-section">
+            <div class="progress-header">
+                <span class="progress-label">Progress</span>
+                <span class="progress-step" id="progressStep">Step 0/2</span>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Step Indicator -->
+        <div class="step-indicator" id="stepIndicator" style="display: none;"></div>
+
+        <!-- Countdown Section (for expired page) -->
+        <div class="countdown-section" id="countdownSection" style="display: none;">
+            <div class="countdown-title">⏰ Page Access Expired</div>
+            <div class="countdown-timer" id="countdownTimer">00:00</div>
+            <div style="margin-top: 10px; color: #9ca3af; font-size: 14px;">
+                Please start verification again
+            </div>
+        </div>
+
+        <!-- URL Section -->
+        <div class="url-section">
+            <div class="url-label">
+                <span class="icon">🔗</span>
+                Current URL:
+            </div>
+            <input type="text" class="url-input" id="currentUrl" value="/" readonly>
+        </div>
+
+        <!-- Main Action Button -->
+        <button id="btnContinue" class="main-button">Complete the step</button>
+
+        <!-- Output Section -->
+        <div class="output-section">
+            <div id="out">Complete verification steps to get your API key</div>
+        </div>
+
+        <!-- Additional Buttons -->
+        <button id="btnTakeKey" class="main-button" style="display: none;">Take the key</button>
+        <button id="btnCopy" class="main-button" style="display: none;">Copy Key</button>
+
+        <!-- URLs Information -->
+        <div class="urls-section">
+            <div class="urls-title">
+                <span class="icon">⚙️</span>
+                URLs for Vertise Integration:
+            </div>
+            <div class="url-item">
+                <span class="url-step-label">Step 1:</span>
+                <span class="url-step-value">/step1</span>
+            </div>
+            <div class="url-item">
+                <span class="url-step-label">Step 2:</span>
+                <span class="url-step-value">/step2</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Cache DOM elements for better performance
+        const btnContinue = document.getElementById('btnContinue');
+        const btnTakeKey = document.getElementById('btnTakeKey');
+        const btnCopy = document.getElementById('btnCopy');
+        const output = document.getElementById('out');
+        const stepIndicator = document.getElementById('stepIndicator');
+        const progressBar = document.getElementById('progressBar');
+        const progressStep = document.getElementById('progressStep');
+        const currentUrl = document.getElementById('currentUrl');
+        const countdownSection = document.getElementById('countdownSection');
+        const countdownTimer = document.getElementById('countdownTimer');
+        let currentKey = '';
+        let generatePageStartTime = null;
+        let countdownInterval = null;
+
+        // Storage keys
+        const TOKEN_KEY = 'clavnnx_token_step1';
+        const STEP_KEY = 'clavnnx_current_step';
+        const GENERATE_ACCESS_KEY = 'clavnnx_generate_access';
+
+        // In-memory storage for generate page session
+        let generatePageMemory = {
+            accessTime: null,
+            isExpired: false
+        };
+
+        // Optimized storage operations
+        const storage = {
+            set: (key, value) => {
+                try {
+                    const data = JSON.stringify(value);
+                    localStorage.setItem(key, data);
+                    sessionStorage.setItem(key, data);
+                } catch (e) {
+                    console.warn('Storage failed:', e);
+                }
+            },
+            get: (key) => {
+                try {
+                    return JSON.parse(localStorage.getItem(key) || sessionStorage.getItem(key) || 'null');
+                } catch (e) {
+                    return null;
+                }
+            },
+            remove: (key) => {
+                localStorage.removeItem(key);
+                sessionStorage.removeItem(key);
+            }
+        };
+
+        // Token management
+        function saveToken(token) {
+            if (token) {
+                storage.set(TOKEN_KEY, {
+                    token: token,
+                    created: Date.now(),
+                    expires: Date.now() + (60 * 60 * 1000) // 60 minutes for token
+                });
+            }
+        }
+
+        function getToken() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tokenFromUrl = urlParams.get('token');
+            
+            if (tokenFromUrl) {
+                saveToken(tokenFromUrl);
+                return tokenFromUrl;
+            }
+            
+            const tokenData = storage.get(TOKEN_KEY);
+            if (tokenData && Date.now() < tokenData.expires) {
+                return tokenData.token;
+            }
+            
+            clearToken();
+            return null;
+        }
+
+        function clearToken() {
+            storage.remove(TOKEN_KEY);
+            storage.remove(STEP_KEY);
+            storage.remove(GENERATE_ACCESS_KEY);
+        }
+
+        function generateToken() {
+            return `token_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+        }
+
+        // Generate page access management
+        function saveGenerateAccess() {
+            const now = Date.now();
+            const accessData = {
+                accessTime: now,
+                expires: now + (8 * 60 * 1000) // 8 minutes
+            };
+            
+            storage.set(GENERATE_ACCESS_KEY, accessData);
+            generatePageMemory.accessTime = now;
+            generatePageMemory.isExpired = false;
+        }
+
+        function getGenerateAccess() {
+            const accessData = storage.get(GENERATE_ACCESS_KEY);
+            if (accessData && Date.now() < accessData.expires) {
+                generatePageMemory.accessTime = accessData.accessTime;
+                generatePageMemory.isExpired = false;
+                return accessData;
+            }
+            
+            generatePageMemory.isExpired = true;
+            return null;
+        }
+
+        function isGeneratePageExpired() {
+            const accessData = getGenerateAccess();
+            return !accessData || generatePageMemory.isExpired;
+        }
+
+        function getRemainingTime() {
+            const accessData = storage.get(GENERATE_ACCESS_KEY);
+            if (!accessData) return 0;
+            
+            const remaining = accessData.expires - Date.now();
+            return Math.max(0, remaining);
+        }
+
+        // Step management
+        function saveStepProgress(step) {
+            storage.set(STEP_KEY, step);
+        }
+
+        function getStepProgress() {
+            const step = storage.get(STEP_KEY) || 0;
+            return Math.max(0, Math.min(2, parseInt(step)));
+        }
+
+        function updateProgress(currentStep, totalSteps = 2) {
+            const percentage = (currentStep / totalSteps) * 100;
+            progressBar.style.width = percentage + '%';
+            progressStep.textContent = `Step ${currentStep}/${totalSteps}`;
+        }
+
+        function updateStepIndicator(currentStep, totalSteps = 2) {
+            stepIndicator.style.display = 'block';
+            if (currentStep >= totalSteps) {
+                stepIndicator.className = 'success-message pulse';
+                stepIndicator.textContent = '✅ All Steps Completed! Ready to generate key';
+            } else {
+                stepIndicator.className = 'step-indicator pulse';
+                stepIndicator.textContent = `Step ${currentStep}/${totalSteps} Completed`;
+            }
+        }
+
+        // Countdown functionality
+        function startCountdown() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+
+            countdownInterval = setInterval(() => {
+                const remaining = getRemainingTime();
+                
+                if (remaining <= 0) {
+                    clearInterval(countdownInterval);
+                    countdownTimer.textContent = '00:00';
+                    generatePageMemory.isExpired = true;
+                    return;
+                }
+
+                const minutes = Math.floor(remaining / (1000 * 60));
+                const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+                
+                countdownTimer.textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        // Page routing - optimized
+        const route = window.location.hash.replace('#', '') || window.location.pathname.replace('/', '') || 'home';
+        const urlParams = new URLSearchParams(window.location.search);
+
+        // Update current URL display
+        function updateCurrentUrl() {
+            currentUrl.value = window.location.pathname + window.location.search + window.location.hash;
+        }
+
+        // Initialize based on route
+        function init() {
+            updateCurrentUrl();
+            
+            switch(route) {
+                case 'step1':
+                    initStep1();
+                    break;
+                case 'step2':  
+                    initStep2();
+                    break;
+                case 'get-your-key':
+                    initGetKey();
+                    break;
+                case 'generate-key-secure-xyz':
+                    initGenerate();
+                    break;
+                default:
+                    initHome();
+            }
+        }
+
+        function initHome() {
+            const currentStep = getStepProgress();
+            updateProgress(currentStep);
+            if (currentStep > 0) updateStepIndicator(currentStep);
+            
+            btnContinue.textContent = '🚀 Start Step 1/2';
+            
+            btnContinue.onclick = () => {
+                btnContinue.textContent = 'Redirecting...';
+                btnContinue.classList.add('loading');
+                btnContinue.disabled = true;
+                
+                const returnUrl = `${window.location.origin}/step1?completed=1`;
+                window.location.href = `https://direct-link.net/1385845/QhuxogBGSmxB?return=${encodeURIComponent(returnUrl)}`;
+            };
+        }
+
+        function initStep1() {
+            if (urlParams.get('completed') === '1') {
+                const token = generateToken();
+                saveToken(token);
+                saveStepProgress(1);
+                
+                updateProgress(1);
+                updateStepIndicator(1);
+                output.textContent = '✅ Step 1/2 completed successfully!\n\n🔄 Redirecting to Step 2/2...';
+                btnContinue.style.display = 'none';
+                
+                setTimeout(() => {
+                    window.location.href = window.location.pathname.includes('/step1') ? '/step2' : '#step2';
+                }, 1500);
+                return;
+            }
+            
+            updateProgress(Math.max(getStepProgress(), 0));
+            updateStepIndicator(Math.max(getStepProgress(), 0));
+            btnContinue.textContent = '🔑 Step 1/2 - Generate Token';
+            output.textContent = '📋 Step 1 of 2: Token Generation Step\n\n🎯 Click the button below to complete Step 1/2.';
+            
+            btnContinue.onclick = () => {
+                btnContinue.textContent = 'Redirecting...';
+                btnContinue.classList.add('loading');
+                btnContinue.disabled = true;
+                
+                const returnUrl = `${window.location.origin}/step1?completed=1`;
+                window.location.href = `https://direct-link.net/1385845/QhuxogBGSmxB?return=${encodeURIComponent(returnUrl)}`;
+            };
+        }
+
+        function initStep2() {
+            if (urlParams.get('completed') === '2') {
+                if (!getToken()) {
+                    showError('Token expired. Please start over.');
+                    return;
+                }
+                
+                saveStepProgress(2);
+                updateProgress(2);
+                updateStepIndicator(2);
+                output.textContent = '✅ Step 2/2 completed successfully!\n\n🎉 Redirecting to key generation...';
+                btnContinue.style.display = 'none';
+                
+                setTimeout(() => {
+                    window.location.href = window.location.pathname.includes('/step2') ? '/get-your-key' : '#get-your-key';
+                }, 1500);
+                return;
+            }
+            
+            if (!getToken()) {
+                showError('No token found. Complete Step 1/2 first.');
+                return;
+            }
+            
+            updateProgress(Math.max(getStepProgress(), 1));
+            updateStepIndicator(Math.max(getStepProgress(), 1));
+            btnContinue.textContent = '🛡️ Step 2/2 - Final Verification';
+            output.textContent = '📋 Step 2 of 2: Final Verification\n\n✅ Step 1/2: Completed\n\n🎯 Click below to complete final verification.';
+            
+            btnContinue.onclick = () => {
+                btnContinue.textContent = 'Redirecting...';
+                btnContinue.classList.add('loading');
+                btnContinue.disabled = true;
+                
+                const returnUrl = `${window.location.origin}/step2?completed=2`;
+                window.location.href = `https://link-target.net/1385845/05NfA4wGJcIe?return=${encodeURIComponent(returnUrl)}`;
+            };
+        }
+
+        function initGetKey() {
+            const token = getToken();
+            const currentStep = getStepProgress();
+            
+            if (!token || currentStep < 2) {
+                showError('Invalid access. Complete all steps first.');
+                return;
+            }
+            
+            updateProgress(2, 2);
+            updateStepIndicator(2, 2);
+            btnContinue.textContent = '🎉 Generate Your API Key';
+            btnContinue.classList.add('glow');
+            output.textContent = '🔓 Get Your Key\n\n✅ VALID ACCESS CONFIRMED\n\n🎯 You can now generate your API key!';
+            
+            btnContinue.onclick = () => {
+                btnContinue.textContent = 'Loading...';
+                btnContinue.classList.add('loading');
+                btnContinue.disabled = true;
+                
+                // Save generate page access time
+                saveGenerateAccess();
+                
+                setTimeout(() => {
+                    window.location.href = window.location.pathname.includes('/get-your-key') 
+                        ? `/generate-key-secure-xyz?token=${token}` 
+                        : `#generate-key-secure-xyz?token=${token}`;
+                }, 800);
+            };
+        }
+
+        function initGenerate() {
+            const token = getToken();
+            const currentStep = getStepProgress();
+            
+            // First check if token and step are valid
+            if (!token || currentStep < 2) {
+                showError('Access denied. Complete verification first.');
+                return;
+            }
+
+            // Check if generate page access has expired (8 minutes)
+            if (isGeneratePageExpired()) {
+                showExpiredPage();
+                return;
+            }
+
+            // Initialize generate page with auto-generation
+            updateProgress(2, 2);
+            updateStepIndicator(2, 2);
+            
+            // Start countdown
+            startCountdown();
+            
+            // Auto-generate key immediately
+            autoGenerateKey();
+        }
+
+        function showExpiredPage() {
+            // Show countdown section
+            countdownSection.style.display = 'block';
+            
+            // Hide main elements
+            btnContinue.style.display = 'none';
+            btnCopy.style.display = 'none';
+            
+            // Show expired message
+            stepIndicator.style.display = 'block';
+            stepIndicator.className = 'expired-message pulse';
+            stepIndicator.textContent = '⏰ Generate Page Access Expired';
+            
+            output.textContent = '🚫 Generate Key Access Expired\n\n⏰ The 8-minute access window has expired.\n\n🔄 Please complete verification steps again to generate a new key.';
+            
+            // Update progress to show completion but expired
+            updateProgress(2, 2);
+            progressStep.textContent = 'Step 2/2 - EXPIRED';
+            
+            // Show restart button
+            const restartBtn = document.createElement('button');
+            restartBtn.className = 'main-button';
+            restartBtn.style.background = 'linear-gradient(135deg, #f59e0b, #fbbf24)';
+            restartBtn.textContent = '🔄 Start Over';
+            restartBtn.onclick = () => {
+                clearToken();
+                window.location.href = '/';
+            };
+            
+            // Insert restart button after output
+            output.parentNode.insertBefore(restartBtn, output.nextSibling);
+        }
+
+        async function autoGenerateKey() {
+            // Show auto-generating status
+            btnContinue.style.display = 'none';
+            btnCopy.style.display = 'none';
+            
+            stepIndicator.style.display = 'block';
+            stepIndicator.className = 'step-indicator loading';
+            stepIndicator.textContent = '🔄 Auto-generating your API key...';
+            
+            output.textContent = '⚡ Auto-Generating Your API Key...\n\n🔐 Please wait while we securely generate your unique API key.\n\n⏱️ This process is automatic and secure.';
+            
+            try {
+                const token = getToken();
+                
+                // Simulate secure key generation process
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // Make API call to backend
+                const response = await fetch(`/getkey?token=${token}`);
+                const data = await response.json();
+                
+                if (response.ok && data.key) {
+                    currentKey = data.key;
+                    const expiresDate = new Date(data.expires);
+                    
+                    // Show success
+                    stepIndicator.className = 'success-message pulse';
+                    stepIndicator.textContent = '✅ API Key Generated Successfully!';
+                    
+                    output.textContent = `🔑 Your API Key: ${data.key}\n\n⏰ Expires: ${expiresDate.toLocaleString()}\n\n✅ Key generated and validated successfully!\n\n⚠️ Important: This key is valid for 24 hours.`;
+                    
+                    // Show copy button
+                    btnCopy.style.display = 'block';
+                    btnCopy.textContent = '📋 Copy API Key';
+                    
+                    // Also show the key in a more prominent way if it's new
+                    if (!data.isExisting) {
+                        // Flash effect for new key
+                        output.style.border = '2px solid #10b981';
+                        setTimeout(() => {
+                            output.style.border = '1px solid rgba(75, 85, 99, 0.4)';
+                        }, 2000);
+                    }
+                    
+                } else {
+                    throw new Error(data.error || 'Failed to generate key');
+                }
+                
+            } catch (error) {
+                console.error('Key generation error:', error);
+                
+                stepIndicator.className = 'error-message pulse';
+                stepIndicator.textContent = '❌ Key Generation Failed';
+                
+                output.textContent = `⚠️ Error: ${error.message}\n\n🔄 This might happen if:\n- Token has expired\n- Network connection issue\n- Server is temporarily unavailable\n\n💡 Please try starting the verification process again.`;
+                
+                // Show retry button
+                const retryBtn = document.createElement('button');
+                retryBtn.className = 'main-button';
+                retryBtn.style.background = 'linear-gradient(135deg, #f59e0b, #fbbf24)';
+                retryBtn.textContent = '🔄 Start Over';
+                retryBtn.onclick = () => {
+                    clearToken();
+                    window.location.href = '/';
+                };
+                
+                // Insert retry button after output
+                output.parentNode.insertBefore(retryBtn, output.nextSibling);
+            }
+        }
+
+        function showError(message) {
+            stepIndicator.style.display = 'block';
+            stepIndicator.className = 'error-message pulse';
+            stepIndicator.textContent = '❌ Error';
+            
+            output.textContent = `⚠️ Error: ${message}\n\n🔄 Click "Start Over" to begin verification.`;
+            btnContinue.textContent = '🔄 Start Over';
+            btnContinue.className = 'main-button';
+            btnContinue.onclick = () => {
+                clearToken();
+                window.location.href = '/';
+            };
+        }
+
+        // Copy functionality
+        btnCopy.onclick = async () => {
+            if (!currentKey) return;
+            
+            try {
+                await navigator.clipboard.writeText(currentKey);
+                btnCopy.textContent = '✅ Copied!';
+                btnCopy.style.background = 'linear-gradient(135deg, #059669, #10b981)';
+                
+                // Show success feedback in output
+                const originalText = output.textContent;
+                output.textContent = originalText + '\n\n✅ API Key copied to clipboard!';
+                
+                setTimeout(() => {
+                    output.textContent = originalText;
+                }, 3000);
+                
+            } catch (error) {
+                // Fallback for browsers that don't support clipboard API
+                const textArea = document.createElement('textarea');
+                textArea.value = currentKey;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                textArea.style.top = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                
+                try {
+                    document.execCommand('copy');
+                    btnCopy.textContent = '✅ Copied!';
+                    btnCopy.style.background = 'linear-gradient(135deg, #059669, #10b981)';
+                } catch (err) {
+                    btnCopy.textContent = '❌ Copy Failed';
+                    btnCopy.style.background = 'linear-gradient(135deg, #ef4444, #f87171)';
+                }
+                
+                document.body.removeChild(textArea);
+            }
+            
+            setTimeout(() => {
+                btnCopy.textContent = '📋 Copy API Key';
+                btnCopy.style.background = 'linear-gradient(135deg, #10b981, #34d399)';
+            }, 2000);
+        };
+
+        // Prevent page refresh and back/forward navigation on generate page
+        function preventGeneratePageManipulation() {
+            if (route === 'generate-key-secure-xyz') {
+                // Disable refresh
+                window.addEventListener('beforeunload', (e) => {
+                    if (!generatePageMemory.isExpired) {
+                        e.preventDefault();
+                        e.returnValue = 'Refreshing this page will reset your key generation session.';
+                        return e.returnValue;
+                    }
+                });
+
+                // Handle back/forward navigation
+                window.addEventListener('popstate', (e) => {
+                    if (!generatePageMemory.isExpired) {
+                        // Push the same state back to prevent navigation
+                        history.pushState(null, null, window.location.href);
+                    }
+                });
+                
+                // Push initial state to history
+                history.pushState(null, null, window.location.href);
+            }
+        }
+
+        // Detect page visibility changes (tab switching, minimize, etc.)
+        function handleVisibilityChange() {
+            if (route === 'generate-key-secure-xyz') {
+                if (document.hidden) {
+                    // Page is hidden, pause countdown but continue timing
+                    console.log('Page hidden, continuing background timer');
+                } else {
+                    // Page is visible again, check if expired
+                    if (isGeneratePageExpired()) {
+                        showExpiredPage();
+                    }
+                }
+            }
+        }
+
+        // Enhanced security measures
+        function initSecurityMeasures() {
+            // Prevent right-click context menu on generate page
+            if (route === 'generate-key-secure-xyz') {
+                document.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                });
+                
+                // Prevent common keyboard shortcuts
+                document.addEventListener('keydown', (e) => {
+                    // Prevent F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U, Ctrl+R, F5
+                    if (e.key === 'F12' || 
+                        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) ||
+                        (e.ctrlKey && e.key === 'u') ||
+                        (e.ctrlKey && e.key === 'r') ||
+                        e.key === 'F5') {
+                        e.preventDefault();
+                        return false;
+                    }
+                });
+            }
+        }
+
+        // Cleanup function
+        function cleanup() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+        }
+
+        // Event listeners
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('beforeunload', cleanup);
+
+        // Initialize page
+        init();
+        preventGeneratePageManipulation();
+        initSecurityMeasures();
+
+        // Auto-cleanup expired data every minute
+        setInterval(() => {
+            if (isGeneratePageExpired() && route === 'generate-key-secure-xyz') {
+                showExpiredPage();
+            }
+        }, 60000); // Check every minute
+    </script>
+</body>
+</html>
