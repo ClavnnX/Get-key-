@@ -135,7 +135,7 @@
         const TOKEN_STORAGE_KEY = 'clavnnx_verify_token';
         const STEP_STORAGE_KEY = 'clavnnx_current_step';
         const VERTISE_COMPLETION_KEY = 'clavnnx_vertise_completion';
-        const STEP_REDIRECT_KEY = 'clavnnx_step_redirect'; // Track redirections to Vertise
+        const STEP_REDIRECT_KEY = 'clavnnx_step_redirect';
 
         // Token management functions
         function saveToken(token) {
@@ -431,8 +431,9 @@
                 return;
             }
             
-            // Check if returning from Vertise with proper completion
+            // FIXED: Check if returning from Vertise with proper completion
             if (urlParams.get('vertise_completed') === '3') {
+                // Save the completion first
                 saveStepProgress(3);
                 saveVertiseCompletion(3, { returnUrl: window.location.href });
                 markRedirectionCompleted(3);
@@ -441,25 +442,30 @@
                 output.textContent = 'All verification steps completed! ✅\n\nStep 1: ✅ Completed\nStep 2: ✅ Completed  \nStep 3: ✅ Completed\n\nRedirecting to generate your API key...';
                 btnContinue.style.display = 'none';
                 
-                // Auto redirect to generate key page after completing step 3
+                // FIXED: Immediately redirect to generate key page after completing step 3
                 setTimeout(() => {
-                    window.location.href = `/generate-key-secure-xyz?token=${token}`;
+                    // Remove the completion parameter and redirect to generate key
+                    const cleanUrl = `${window.location.origin}/generate-key-secure-xyz?token=${token}`;
+                    window.location.href = cleanUrl;
                 }, 2000);
                 return;
             }
             
             const currentStep = getStepProgress();
             
-            // Check if already completed properly
-            if (currentStep >= 3 && validateVertiseCompletion(3) && validateStepRedirection(3)) {
-                updateStepIndicator(3);
-                btnContinue.style.display = 'none';
-                btnTakeKey.style.display = 'block';
-                output.textContent = 'All verification steps completed! ✅\n\nStep 1: ✅ Completed\nStep 2: ✅ Completed  \nStep 3: ✅ Completed\n\nClick "Take the key" to generate your API key.';
+            // FIXED: Check if all steps are already completed - redirect to generate key
+            if (currentStep >= 3 && 
+                validateVertiseCompletion(1) && validateVertiseCompletion(2) && validateVertiseCompletion(3) &&
+                validateStepRedirection(1) && validateStepRedirection(2) && validateStepRedirection(3)) {
                 
-                btnTakeKey.addEventListener('click', () => {
-                    window.location.href = '/generate-key-secure-xyz?token=' + token;
-                });
+                updateStepIndicator(3);
+                output.textContent = 'All verification steps completed! ✅\n\nStep 1: ✅ Completed\nStep 2: ✅ Completed  \nStep 3: ✅ Completed\n\nRedirecting to generate your API key...';
+                btnContinue.style.display = 'none';
+                
+                // Auto redirect to generate key page
+                setTimeout(() => {
+                    window.location.href = `/generate-key-secure-xyz?token=${token}`;
+                }, 1500);
                 return;
             }
             
@@ -469,13 +475,14 @@
             output.textContent = 'Step 3 of 3: Final Verification\n\nStep 1: ✅ Completed\nStep 2: ✅ Completed\n\nClick the button below to complete the final verification step.';
             
             btnContinue.addEventListener('click', () => {
-                // IMPORTANT: Save redirection BEFORE going to Vertise
+                // Save redirection BEFORE going to Vertise
                 saveStepRedirection(3);
                 
                 output.textContent = 'Step 3 starting... You will be redirected to complete verification.\n\nAfter completing the task, you will automatically be redirected to generate your API key.';
                 btnContinue.textContent = 'Redirecting...';
                 btnContinue.disabled = true;
                 
+                // FIXED: Return URL should come back to step3 first, then auto-redirect
                 const returnUrl = `${window.location.origin}/step3?token=${token}&vertise_completed=3`;
                 
                 setTimeout(() => {
