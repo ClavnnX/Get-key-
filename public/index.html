@@ -102,14 +102,6 @@
             text-align: center;
             margin-bottom: 15px;
         }
-        .error-message {
-            background: #dc3545;
-            color: white;
-            padding: 10px;
-            border-radius: 8px;
-            text-align: center;
-            margin-bottom: 15px;
-        }
         @media (max-width: 600px) {
             body { padding: 10px; }
             .container { padding: 20px; }
@@ -142,16 +134,10 @@
         // Storage keys
         const TOKEN_STORAGE_KEY = 'clavnnx_verify_token';
         const STEP_STORAGE_KEY = 'clavnnx_current_step';
-        const VERTISE_TIMESTAMP_KEY = 'clavnnx_vertise_timestamps';
-        const BYPASS_ATTEMPT_KEY = 'clavnnx_bypass_attempts';
+        const VERTISE_COMPLETION_KEY = 'clavnnx_vertise_completion';
+        const STEP_REDIRECT_KEY = 'clavnnx_step_redirect'; // Track redirections to Vertise
 
-        // Token management
-        function generateToken() {
-            const timestamp = Date.now();
-            const randomStr = Math.random().toString(36).substring(2, 15);
-            return `token_${timestamp}_${randomStr}`;
-        }
-
+        // Token management functions
         function saveToken(token) {
             if (token) {
                 localStorage.setItem(TOKEN_STORAGE_KEY, token);
@@ -171,22 +157,27 @@
             return localStorage.getItem(TOKEN_STORAGE_KEY) || sessionStorage.getItem(TOKEN_STORAGE_KEY);
         }
 
-        function clearSession() {
+        function clearToken() {
             localStorage.removeItem(TOKEN_STORAGE_KEY);
             sessionStorage.removeItem(TOKEN_STORAGE_KEY);
             localStorage.removeItem(STEP_STORAGE_KEY);
             sessionStorage.removeItem(STEP_STORAGE_KEY);
-            localStorage.removeItem(VERTISE_TIMESTAMP_KEY);
-            sessionStorage.removeItem(VERTISE_TIMESTAMP_KEY);
-            localStorage.removeItem(BYPASS_ATTEMPT_KEY);
-            sessionStorage.removeItem(BYPASS_ATTEMPT_KEY);
+            localStorage.removeItem(VERTISE_COMPLETION_KEY);
+            sessionStorage.removeItem(VERTISE_COMPLETION_KEY);
+            localStorage.removeItem(STEP_REDIRECT_KEY);
+            sessionStorage.removeItem(STEP_REDIRECT_KEY);
         }
 
-        // Step progress with anti-bypass protection
+        function generateToken() {
+            const timestamp = Date.now();
+            const randomStr = Math.random().toString(36).substring(2, 15);
+            return `token_${timestamp}_${randomStr}`;
+        }
+
+        // Step management with anti-bypass protection
         function saveStepProgress(step) {
             localStorage.setItem(STEP_STORAGE_KEY, step.toString());
             sessionStorage.setItem(STEP_STORAGE_KEY, step.toString());
-            console.log('Step progress saved:', step);
         }
 
         function getStepProgress() {
@@ -194,98 +185,84 @@
             return parseInt(step);
         }
 
-        // Vertise completion tracking with timestamps
-        function saveVertiseCompletion(step) {
-            const timestamps = getVertiseTimestamps();
-            timestamps[step] = Date.now();
-            localStorage.setItem(VERTISE_TIMESTAMP_KEY, JSON.stringify(timestamps));
-            sessionStorage.setItem(VERTISE_TIMESTAMP_KEY, JSON.stringify(timestamps));
-            console.log(`Vertise step ${step} completed at:`, new Date());
+        // Vertise completion tracking with proper validation
+        function saveVertiseCompletion(step, validationData) {
+            const completions = getVertiseCompletions();
+            completions[step] = {
+                timestamp: Date.now(),
+                userAgent: navigator.userAgent,
+                referrer: document.referrer,
+                validationCode: generateValidationCode(step),
+                ...validationData
+            };
+            
+            localStorage.setItem(VERTISE_COMPLETION_KEY, JSON.stringify(completions));
+            sessionStorage.setItem(VERTISE_COMPLETION_KEY, JSON.stringify(completions));
         }
 
-        function getVertiseTimestamps() {
-            const stored = localStorage.getItem(VERTISE_TIMESTAMP_KEY) || sessionStorage.getItem(VERTISE_TIMESTAMP_KEY);
+        function getVertiseCompletions() {
+            const stored = localStorage.getItem(VERTISE_COMPLETION_KEY) || sessionStorage.getItem(VERTISE_COMPLETION_KEY);
             return stored ? JSON.parse(stored) : {};
         }
 
+        // Generate unique validation code to prevent manipulation
+        function generateValidationCode(step) {
+            const timestamp = Date.now();
+            const userAgent = navigator.userAgent.slice(0, 20);
+            const random = Math.random().toString(36).substring(2, 8);
+            return btoa(`${step}_${timestamp}_${userAgent}_${random}`);
+        }
+
         function validateVertiseCompletion(step) {
-            const timestamps = getVertiseTimestamps();
-            if (!timestamps[step]) return false;
+            const completions = getVertiseCompletions();
+            if (!completions[step]) return false;
             
-            // Check if completion was recent (within 1 hour)
-            const timeDiff = Date.now() - timestamps[step];
-            const maxAllowedTime = 60 * 60 * 1000; // 1 hour
+            // Check if completion was recent (within reasonable time)
+            const timeDiff = Date.now() - completions[step].timestamp;
+            const maxAllowedTime = 2 * 60 * 60 * 1000; // 2 hours
             
-            return timeDiff <= maxAllowedTime;
+            return timeDiff <= maxAllowedTime && completions[step].validationCode;
         }
 
-        // Bypass attempt tracking
-        function recordBypassAttempt() {
-            const attempts = getBypassAttempts();
-            attempts.push({
+        // Track step redirections to Vertise (anti-bypass mechanism)
+        function saveStepRedirection(step) {
+            const redirections = getStepRedirections();
+            redirections[step] = {
                 timestamp: Date.now(),
-                userAgent: navigator.userAgent,
-                url: window.location.href,
-                referrer: document.referrer
-            });
+                redirected: true,
+                completed: false
+            };
             
-            localStorage.setItem(BYPASS_ATTEMPT_KEY, JSON.stringify(attempts));
-            sessionStorage.setItem(BYPASS_ATTEMPT_KEY, JSON.stringify(attempts));
+            localStorage.setItem(STEP_REDIRECT_KEY, JSON.stringify(redirections));
+            sessionStorage.setItem(STEP_REDIRECT_KEY, JSON.stringify(redirections));
         }
 
-        function getBypassAttempts() {
-            const stored = localStorage.getItem(BYPASS_ATTEMPT_KEY) || sessionStorage.getItem(BYPASS_ATTEMPT_KEY);
-            return stored ? JSON.parse(stored) : [];
+        function markRedirectionCompleted(step) {
+            const redirections = getStepRedirections();
+            if (redirections[step]) {
+                redirections[step].completed = true;
+                redirections[step].completedAt = Date.now();
+                
+                localStorage.setItem(STEP_REDIRECT_KEY, JSON.stringify(redirections));
+                sessionStorage.setItem(STEP_REDIRECT_KEY, JSON.stringify(redirections));
+            }
         }
 
-        // Check if user is trying to bypass (accessing step pages directly without proper flow)
-        function detectBypassAttempt() {
-            const currentPath = window.location.pathname;
-            const urlParams = new URLSearchParams(window.location.search);
-            const token = getToken();
-            const currentStep = getStepProgress();
+        function getStepRedirections() {
+            const stored = localStorage.getItem(STEP_REDIRECT_KEY) || sessionStorage.getItem(STEP_REDIRECT_KEY);
+            return stored ? JSON.parse(stored) : {};
+        }
+
+        function validateStepRedirection(step) {
+            const redirections = getStepRedirections();
+            if (!redirections[step]) return false;
             
-            // If accessing step pages
-            if (currentPath.includes('/step')) {
-                const stepNumber = parseInt(currentPath.replace('/step', ''));
-                
-                // Check if this is a legitimate return from Vertise
-                const vertiseCompleted = urlParams.get('vertise_completed');
-                if (vertiseCompleted && parseInt(vertiseCompleted) === stepNumber) {
-                    return false; // Legitimate return from Vertise
-                }
-                
-                // Check if user has proper step progression
-                if (stepNumber > currentStep + 1) {
-                    recordBypassAttempt();
-                    return true; // Bypass attempt detected
-                }
-                
-                // Check if user has completed previous steps properly
-                if (stepNumber > 1) {
-                    for (let i = 1; i < stepNumber; i++) {
-                        if (!validateVertiseCompletion(i)) {
-                            recordBypassAttempt();
-                            return true; // Previous steps not completed properly
-                        }
-                    }
-                }
-            }
-            
-            // If accessing generate page without completing all steps
-            if (currentPath === '/generate-key-secure-xyz') {
-                if (currentStep < 3 || !validateVertiseCompletion(1) || !validateVertiseCompletion(2) || !validateVertiseCompletion(3)) {
-                    recordBypassAttempt();
-                    return true;
-                }
-            }
-            
-            return false;
+            // Must have been redirected AND completed
+            return redirections[step].redirected && redirections[step].completed;
         }
 
         function updateStepIndicator(currentStep, totalSteps = 3) {
             stepIndicator.style.display = 'block';
-            stepIndicator.className = 'step-indicator';
             stepIndicator.textContent = `Progress: Step ${currentStep}/${totalSteps} Completed`;
             
             if (currentStep >= totalSteps) {
@@ -294,18 +271,15 @@
             }
         }
 
-        // Main page initialization
+        // Get current page info
+        const currentPath = window.location.pathname;
+        const urlParams = new URLSearchParams(window.location.search);
+        let token = getToken();
+
+        // Initialize page based on current path
+        initializePage();
+
         function initializePage() {
-            const currentPath = window.location.pathname;
-            console.log('Initializing page:', currentPath);
-            
-            // Detect bypass attempts
-            if (detectBypassAttempt()) {
-                showBypassDetected();
-                return;
-            }
-            
-            // Route to appropriate page handler
             if (currentPath === '/') {
                 initializeHomePage();
             } else if (currentPath === '/step1') {
@@ -316,84 +290,57 @@
                 initializeStep3Page();
             } else if (currentPath === '/generate-key-secure-xyz') {
                 initializeGeneratePage();
-            } else {
-                initializeHomePage(); // Default to homepage for unknown paths
             }
         }
 
-        function showBypassDetected() {
-            stepIndicator.style.display = 'block';
-            stepIndicator.className = 'error-message';
-            stepIndicator.textContent = '🚫 Bypass Attempt Detected';
-            
-            btnContinue.textContent = 'Start From Beginning';
-            btnContinue.style.background = '#dc3545';
-            
-            const attempts = getBypassAttempts();
-            output.textContent = `Bypass attempt detected! 🚨\n\nYou must complete all verification steps in proper order.\n\nAttempting to skip steps is not allowed.\n\nBypass attempts logged: ${attempts.length}\n\nClick below to start the proper verification process.`;
-            
-            btnContinue.addEventListener('click', () => {
-                clearSession();
-                window.location.href = '/';
-            });
-        }
-
-        // Page handlers
         function initializeHomePage() {
-            let token = getToken();
             if (!token) {
                 token = generateToken();
                 saveToken(token);
-                console.log('Generated new token:', token);
             }
             
             const currentStep = getStepProgress();
-            
             if (currentStep > 0) {
                 updateStepIndicator(currentStep);
-                
-                if (currentStep >= 3 && validateVertiseCompletion(1) && validateVertiseCompletion(2) && validateVertiseCompletion(3)) {
-                    btnContinue.textContent = 'Generate API Key';
-                    output.textContent = `Welcome back! All steps completed ✅\n\n✅ Step 1/3: Completed\n✅ Step 2/3: Completed\n✅ Step 3/3: Completed\n\nClick below to generate your API key.`;
-                    
-                    btnContinue.addEventListener('click', () => {
-                        window.location.href = `/generate-key-secure-xyz?token=${token}`;
-                    });
-                } else {
-                    btnContinue.textContent = `Continue Step ${currentStep + 1}/3`;
-                    output.textContent = `Welcome back! Progress: ${currentStep}/3 steps completed.\n\nClick below to continue verification process.`;
-                    
-                    btnContinue.addEventListener('click', () => {
-                        window.location.href = `/step${currentStep + 1}?token=${token}`;
-                    });
-                }
-            } else {
-                btnContinue.textContent = 'Start Verification Process';
-                output.textContent = 'Welcome to ClavnnX API Key Generator\n\nTo get your API key, you must complete 3 verification steps.\n\nEach step requires completing a verification task.\n\nClick below to start the verification process.';
-                
-                btnContinue.addEventListener('click', () => {
-                    window.location.href = `/step1?token=${token}`;
-                });
             }
+            
+            btnContinue.textContent = 'Complete the step';
+            output.textContent = 'Complete verification steps to get your API key\n\nClick the button below to start the verification process.';
+            
+            btnContinue.addEventListener('click', () => {
+                if (currentStep >= 3) {
+                    // Check if all steps were properly completed through Vertise
+                    if (validateVertiseCompletion(1) && validateVertiseCompletion(2) && validateVertiseCompletion(3) &&
+                        validateStepRedirection(1) && validateStepRedirection(2) && validateStepRedirection(3)) {
+                        window.location.href = `/generate-key-secure-xyz?token=${token}`;
+                    } else {
+                        // Reset if any step was bypassed
+                        output.textContent = 'Some verification steps were not completed properly.\n\nPlease complete all steps through the proper verification process.';
+                        setTimeout(() => {
+                            clearToken();
+                            window.location.reload();
+                        }, 3000);
+                    }
+                } else {
+                    window.location.href = `/step1?token=${token}`;
+                }
+            });
         }
 
         function initializeStep1Page() {
-            const token = getToken();
-            const urlParams = new URLSearchParams(window.location.search);
-            
             if (!token) {
-                output.textContent = 'Error: No verification token found. Please start from homepage.';
-                btnContinue.textContent = 'Go to Homepage';
-                btnContinue.addEventListener('click', () => {
-                    window.location.href = '/';
-                });
-                return;
+                token = generateToken();
+                saveToken(token);
             }
+            
+            const currentStep = getStepProgress();
+            updateStepIndicator(Math.max(currentStep, 0));
             
             // Check if returning from Vertise
             if (urlParams.get('vertise_completed') === '1') {
                 saveStepProgress(1);
-                saveVertiseCompletion(1);
+                saveVertiseCompletion(1, { returnUrl: window.location.href });
+                markRedirectionCompleted(1);
                 
                 updateStepIndicator(1);
                 output.textContent = 'Step 1 completed successfully! ✅\n\nRedirecting to Step 2...';
@@ -405,12 +352,14 @@
                 return;
             }
             
-            updateStepIndicator(0);
             btnContinue.textContent = 'Step 1/3 - Complete Verification';
-            output.textContent = 'Step 1 of 3: First Verification\n\nClick the button below to complete the first verification step.\n\nYou will be redirected to complete the verification task.\n\nAfter completing the task, you will return here automatically.';
+            output.textContent = 'Step 1 of 3: Verification Process\n\nClick the button below to complete the first verification step.\n\nAfter clicking, you will be redirected to complete the verification task.';
             
             btnContinue.addEventListener('click', () => {
-                output.textContent = 'Redirecting to verification task...\n\nPlease complete the task and you will return automatically.';
+                // Save that we're redirecting to Vertise for this step
+                saveStepRedirection(1);
+                
+                output.textContent = 'Step 1 starting... You will be redirected to complete verification.\n\nAfter completing the task, you will return to step 2.';
                 btnContinue.textContent = 'Redirecting...';
                 btnContinue.disabled = true;
                 
@@ -423,15 +372,12 @@
         }
 
         function initializeStep2Page() {
-            const token = getToken();
-            const urlParams = new URLSearchParams(window.location.search);
-            const currentStep = getStepProgress();
-            
-            if (!token || currentStep < 1 || !validateVertiseCompletion(1)) {
-                output.textContent = 'Error: Step 1 must be completed first.\n\nPlease complete Step 1 before accessing Step 2.';
-                btnContinue.textContent = 'Go to Step 1';
+            if (!token) {
+                output.textContent = 'Error: No verification token found. Please start the verification process again.';
+                btnContinue.textContent = 'Start Over';
                 btnContinue.addEventListener('click', () => {
-                    window.location.href = `/step1?token=${token || generateToken()}`;
+                    clearToken();
+                    window.location.href = '/';
                 });
                 return;
             }
@@ -439,10 +385,11 @@
             // Check if returning from Vertise
             if (urlParams.get('vertise_completed') === '2') {
                 saveStepProgress(2);
-                saveVertiseCompletion(2);
+                saveVertiseCompletion(2, { returnUrl: window.location.href });
+                markRedirectionCompleted(2);
                 
                 updateStepIndicator(2);
-                output.textContent = 'Step 2 completed successfully! ✅\n\n✅ Step 1: Completed\n✅ Step 2: Completed\n\nRedirecting to Step 3...';
+                output.textContent = 'Step 2 completed successfully! ✅\n\nStep 1: ✅ Completed\nStep 2: ✅ Completed\n\nRedirecting to Step 3...';
                 btnContinue.style.display = 'none';
                 
                 setTimeout(() => {
@@ -451,12 +398,17 @@
                 return;
             }
             
-            updateStepIndicator(1);
+            const currentStep = getStepProgress();
+            updateStepIndicator(Math.max(currentStep, 1));
+            
             btnContinue.textContent = 'Step 2/3 - Complete Verification';
-            output.textContent = 'Step 2 of 3: Second Verification\n\n✅ Step 1: Completed\n\nClick the button below to complete the second verification step.';
+            output.textContent = 'Step 2 of 3: Verification Process\n\nStep 1 completed successfully! ✅\n\nClick the button below to complete the second verification step.';
             
             btnContinue.addEventListener('click', () => {
-                output.textContent = 'Redirecting to verification task...\n\nPlease complete the task and you will return automatically.';
+                // Save that we're redirecting to Vertise for this step
+                saveStepRedirection(2);
+                
+                output.textContent = 'Step 2 starting... You will be redirected to complete verification.\n\nAfter completing the task, you will return to step 3.';
                 btnContinue.textContent = 'Redirecting...';
                 btnContinue.disabled = true;
                 
@@ -469,55 +421,58 @@
         }
 
         function initializeStep3Page() {
-            const token = getToken();
-            const urlParams = new URLSearchParams(window.location.search);
-            const currentStep = getStepProgress();
-            
-            if (!token || currentStep < 2 || !validateVertiseCompletion(1) || !validateVertiseCompletion(2)) {
-                let missingStep = !validateVertiseCompletion(1) ? 1 : 2;
-                output.textContent = `Error: Previous steps must be completed first.\n\nPlease complete Step ${missingStep} before accessing this page.`;
-                btnContinue.textContent = `Go to Step ${missingStep}`;
+            if (!token) {
+                output.textContent = 'Error: No verification token found. Please start the verification process again.';
+                btnContinue.textContent = 'Start Over';
                 btnContinue.addEventListener('click', () => {
-                    window.location.href = `/step${missingStep}?token=${token || generateToken()}`;
+                    clearToken();
+                    window.location.href = '/';
                 });
                 return;
             }
             
-            // Check if returning from Vertise
+            // Check if returning from Vertise with proper completion
             if (urlParams.get('vertise_completed') === '3') {
                 saveStepProgress(3);
-                saveVertiseCompletion(3);
+                saveVertiseCompletion(3, { returnUrl: window.location.href });
+                markRedirectionCompleted(3);
                 
                 updateStepIndicator(3);
                 btnContinue.style.display = 'none';
                 btnTakeKey.style.display = 'block';
-                output.textContent = 'All verification steps completed! ✅\n\n✅ Step 1: Completed\n✅ Step 2: Completed\n✅ Step 3: Completed\n\nClick "Take the key" to generate your API key.';
+                output.textContent = 'All verification steps completed! ✅\n\nStep 1: ✅ Completed\nStep 2: ✅ Completed  \nStep 3: ✅ Completed\n\nClick "Take the key" to generate your API key.';
                 
                 btnTakeKey.addEventListener('click', () => {
-                    window.location.href = `/generate-key-secure-xyz?token=${token}`;
+                    window.location.href = '/generate-key-secure-xyz?token=' + token;
                 });
                 return;
             }
             
-            // Check if already completed all steps
-            if (currentStep >= 3 && validateVertiseCompletion(3)) {
+            const currentStep = getStepProgress();
+            
+            // Check if already completed properly
+            if (currentStep >= 3 && validateVertiseCompletion(3) && validateStepRedirection(3)) {
                 updateStepIndicator(3);
                 btnContinue.style.display = 'none';
                 btnTakeKey.style.display = 'block';
-                output.textContent = 'All verification steps completed! ✅\n\n✅ Step 1: Completed\n✅ Step 2: Completed\n✅ Step 3: Completed\n\nClick "Take the key" to generate your API key.';
+                output.textContent = 'All verification steps completed! ✅\n\nStep 1: ✅ Completed\nStep 2: ✅ Completed  \nStep 3: ✅ Completed\n\nClick "Take the key" to generate your API key.';
                 
                 btnTakeKey.addEventListener('click', () => {
-                    window.location.href = `/generate-key-secure-xyz?token=${token}`;
+                    window.location.href = '/generate-key-secure-xyz?token=' + token;
                 });
                 return;
             }
             
-            updateStepIndicator(2);
-            btnContinue.textContent = 'Step 3/3 - Complete Final Verification';
-            output.textContent = 'Step 3 of 3: Final Verification\n\n✅ Step 1: Completed\n✅ Step 2: Completed\n\nClick the button below to complete the final verification step.';
+            updateStepIndicator(Math.max(currentStep, 2));
+            
+            btnContinue.textContent = 'Step 3/3 - Complete Verification';
+            output.textContent = 'Step 3 of 3: Final Verification\n\nStep 1: ✅ Completed\nStep 2: ✅ Completed\n\nClick the button below to complete the final verification step.';
             
             btnContinue.addEventListener('click', () => {
-                output.textContent = 'Redirecting to final verification task...\n\nPlease complete the task and you will return automatically.';
+                // IMPORTANT: Save redirection BEFORE going to Vertise
+                saveStepRedirection(3);
+                
+                output.textContent = 'Step 3 starting... You will be redirected to complete verification.\n\nAfter completing the task, you will return to generate your key.';
                 btnContinue.textContent = 'Redirecting...';
                 btnContinue.disabled = true;
                 
@@ -530,20 +485,33 @@
         }
 
         function initializeGeneratePage() {
-            const token = getToken();
+            if (!token) {
+                output.textContent = 'Error: No verification token found. Please complete all verification steps first.';
+                btnContinue.textContent = 'Start Over';
+                btnContinue.addEventListener('click', () => {
+                    clearToken();
+                    window.location.href = '/';
+                });
+                return;
+            }
+
             const currentStep = getStepProgress();
             
-            // Strict validation
-            if (!token || currentStep < 3 || !validateVertiseCompletion(1) || !validateVertiseCompletion(2) || !validateVertiseCompletion(3)) {
-                output.textContent = 'Error: All verification steps must be completed before generating key.\n\nPlease complete all 3 verification steps properly.';
-                btnContinue.textContent = 'Start Verification';
+            // STRICT VALIDATION - Check both completion AND redirection tracking
+            if (currentStep < 3 || 
+                !validateVertiseCompletion(1) || !validateVertiseCompletion(2) || !validateVertiseCompletion(3) ||
+                !validateStepRedirection(1) || !validateStepRedirection(2) || !validateStepRedirection(3)) {
+                
+                output.textContent = 'Error: All verification steps must be completed through the proper process.\n\nDetected incomplete or bypassed verification.\n\nPlease complete all steps properly.';
+                btnContinue.textContent = 'Start Over';
                 btnContinue.addEventListener('click', () => {
-                    clearSession();
+                    clearToken();
                     window.location.href = '/';
                 });
                 return;
             }
             
+            // Show final step indicator
             updateStepIndicator(3);
             
             // Show timer
@@ -551,11 +519,11 @@
             timeRemaining = 15 * 60; // 15 minutes
             startTimer();
             
-            btnContinue.textContent = 'Generate API Key';
+            btnContinue.textContent = 'Generate Key';
             btnContinue.id = 'btnGen';
-            output.textContent = 'Ready to generate your API key! 🎉\n\nAll verification steps completed:\n✅ Step 1/3: Completed\n✅ Step 2/3: Completed\n✅ Step 3/3: Completed\n\nClick "Generate API Key" below to get your key.\n\nNote: This page will expire in 15 minutes for security.';
+            output.textContent = `Ready to generate your API key! 🎉\n\nAll verification steps completed:\n✅ Step 1/3: Completed\n✅ Step 2/3: Completed\n✅ Step 3/3: Completed\n\nClick "Generate Key" below to get your API key.\n\nNote: This page will expire in 15 minutes for security.`;
             
-            // Check for existing key
+            // Check for existing key first
             checkExistingKey();
             
             btnContinue.addEventListener('click', async () => {
@@ -573,12 +541,12 @@
                 
                 if (timeRemaining <= 0) {
                     clearInterval(timerInterval);
-                    output.textContent = 'Generate key session has expired for security.\n\nPlease complete verification steps again.';
+                    output.textContent = 'Generate key access has expired. Please complete verification steps again.';
                     btnContinue.style.display = 'none';
                     timerDiv.textContent = 'EXPIRED - Please start over';
                     
                     setTimeout(() => {
-                        clearSession();
+                        clearToken();
                         window.location.href = '/';
                     }, 3000);
                 }
@@ -587,16 +555,14 @@
 
         async function checkExistingKey() {
             try {
-                const token = getToken();
                 const existingKey = localStorage.getItem(`generated_key_${token}`);
-                
                 if (existingKey) {
                     const keyData = JSON.parse(existingKey);
                     const expiry = new Date(keyData.expires);
                     
                     if (expiry > new Date()) {
                         currentKey = keyData.key;
-                        output.textContent = `Your API Key: ${keyData.key}\n\nExpires: ${expiry.toLocaleString()}\n\nValid for 24 hours from generation.\n\nKey retrieved successfully! 🎉`;
+                        output.textContent = `Key: ${keyData.key}\n\nExpires: ${expiry.toLocaleString()}\n\nValid for 24 hours from generation.\n\nExisting key loaded (anti-refresh protection)`;
                         btnCopy.style.display = 'block';
                         btnContinue.style.display = 'none';
                         
@@ -608,7 +574,7 @@
                     }
                 }
             } catch (error) {
-                console.log('No existing valid key found');
+                console.log('No existing key found');
             }
         }
 
@@ -619,30 +585,31 @@
             btnGen.classList.add('loading');
             
             try {
-                const token = getToken();
                 const currentStep = getStepProgress();
                 
-                // Final security check
-                if (currentStep < 3 || !validateVertiseCompletion(1) || !validateVertiseCompletion(2) || !validateVertiseCompletion(3)) {
-                    throw new Error('All verification steps must be completed through proper Vertise flow');
+                // Final validation before key generation
+                if (currentStep < 3 || 
+                    !validateVertiseCompletion(1) || !validateVertiseCompletion(2) || !validateVertiseCompletion(3) ||
+                    !validateStepRedirection(1) || !validateStepRedirection(2) || !validateStepRedirection(3)) {
+                    
+                    throw new Error('All verification steps must be completed through proper Vertise flow. Bypass attempt detected.');
                 }
                 
-                // Generate key
+                // Generate API key
                 const randomKey = 'sk-' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
                 const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
                 
                 const keyData = {
                     key: randomKey,
                     expires: expires.toISOString(),
-                    generated: new Date().toISOString(),
-                    token: token
+                    generated: new Date().toISOString()
                 };
                 
                 localStorage.setItem(`generated_key_${token}`, JSON.stringify(keyData));
                 
                 currentKey = keyData.key;
                 
-                output.textContent = `Your API Key: ${keyData.key}\n\nExpires: ${expires.toLocaleString()}\n\nValid for 24 hours from generation.\n\nKey generated successfully! 🎉`;
+                output.textContent = `Key: ${keyData.key}\n\nExpires: ${expires.toLocaleString()}\n\nValid for 24 hours from generation.\n\nKey generated successfully! 🎉`;
                 btnCopy.style.display = 'block';
                 btnGen.style.display = 'none';
                 
@@ -653,16 +620,16 @@
                 
             } catch (error) {
                 console.error('Error generating key:', error);
-                output.textContent = `Error: ${error.message}\n\nPlease start the verification process again.`;
+                output.textContent = `Error: ${error.message}\n\nPlease complete all verification steps properly.`;
                 
                 setTimeout(() => {
-                    clearSession();
+                    clearToken();
                     window.location.href = '/';
                 }, 3000);
             }
             
             btnGen.disabled = false;
-            btnGen.textContent = 'Generate API Key';
+            btnGen.textContent = 'Generate Key';
             btnGen.classList.remove('loading');
         }
 
@@ -689,16 +656,13 @@
             }
         });
 
-        // Initialize the page
-        initializePage();
-
         // Debug logging
-        console.log('Page initialized:', {
-            path: window.location.pathname,
-            step: getStepProgress(),
-            token: getToken(),
-            vertiseTimestamps: getVertiseTimestamps(),
-            bypassAttempts: getBypassAttempts().length
+        console.log('Page loaded:', {
+            path: currentPath,
+            token: token,
+            currentStep: getStepProgress(),
+            vertiseCompletions: getVertiseCompletions(),
+            stepRedirections: getStepRedirections()
         });
     </script>
 </body>
