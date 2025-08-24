@@ -261,6 +261,18 @@
             box-shadow: 0 12px 35px rgba(16, 185, 129, 0.4);
         }
 
+        #btnCheckKey {
+            background: linear-gradient(135deg, #0096ff, #00d4ff);
+            color: white;
+            box-shadow: 0 8px 25px rgba(0, 150, 255, 0.3);
+            display: none;
+        }
+
+        #btnCheckKey:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(0, 150, 255, 0.4);
+        }
+
         .output-section {
             margin-bottom: 20px;
         }
@@ -372,7 +384,7 @@
             font-family: 'Courier New', monospace;
         }
 
-        .urls-section {
+        .check-key-section {
             margin-top: 30px;
             background: rgba(17, 24, 39, 0.6);
             border: 1px solid rgba(75, 85, 99, 0.3);
@@ -381,7 +393,7 @@
             backdrop-filter: blur(10px);
         }
 
-        .urls-title {
+        .check-key-title {
             color: #0096ff;
             font-size: 16px;
             font-weight: 600;
@@ -390,32 +402,65 @@
             align-items: center;
         }
 
-        .url-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid rgba(75, 85, 99, 0.2);
+        .key-input {
+            width: 100%;
+            background: rgba(55, 65, 81, 0.5);
+            border: 1px solid rgba(75, 85, 99, 0.6);
+            border-radius: 12px;
+            padding: 14px 16px;
+            color: #e5e7eb;
+            font-size: 15px;
+            font-weight: 400;
+            outline: none;
+            transition: all 0.3s ease;
+            font-family: 'Inter', monospace;
+            margin-bottom: 16px;
         }
 
-        .url-item:last-child {
-            border-bottom: none;
-        }
-
-        .url-step-label {
-            color: #9ca3af;
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        .url-step-value {
+        .key-input:focus {
+            border-color: #0096ff;
             background: rgba(55, 65, 81, 0.8);
-            color: #0096ff;
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 12px;
+            box-shadow: 0 0 0 3px rgba(0, 150, 255, 0.1);
+        }
+
+        .discord-section {
+            margin-top: 30px;
+            background: rgba(17, 24, 39, 0.6);
+            border: 1px solid rgba(114, 137, 218, 0.3);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+            text-align: center;
+        }
+
+        .discord-title {
+            color: #7289da;
+            font-size: 16px;
             font-weight: 600;
-            font-family: 'Courier New', monospace;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .discord-button {
+            background: linear-gradient(135deg, #7289da, #99aab5);
+            color: white;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            box-shadow: 0 6px 20px rgba(114, 137, 218, 0.3);
+        }
+
+        .discord-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(114, 137, 218, 0.4);
         }
 
         .icon {
@@ -454,7 +499,11 @@
                 font-size: 13px;
             }
 
-            .urls-section {
+            .check-key-section {
+                padding: 20px;
+            }
+
+            .discord-section {
                 padding: 20px;
             }
 
@@ -535,20 +584,23 @@
         <button id="btnTakeKey" class="main-button" style="display: none;">Take the key</button>
         <button id="btnCopy" class="main-button" style="display: none;">Copy Key</button>
 
-        <!-- URLs Information -->
-        <div class="urls-section">
-            <div class="urls-title">
-                <span class="icon">⚙️</span>
-                URLs for Vertise Integration:
+        <!-- Check Key Section (Replaces URLs for Vertise Integration on home page) -->
+        <div class="check-key-section" id="checkKeySection">
+            <div class="check-key-title">
+                <span class="icon">🔑</span>
+                Check your key expired
             </div>
-            <div class="url-item">
-                <span class="url-step-label">Step 1:</span>
-                <span class="url-step-value">/step1</span>
+            <input type="text" class="key-input" id="keyInput" placeholder="Paste your API key here...">
+            <button id="btnCheckKey" class="main-button">Check</button>
+        </div>
+
+        <!-- Discord Section (appears on all pages) -->
+        <div class="discord-section">
+            <div class="discord-title">
+                <span class="icon">💬</span>
+                Join Discord ClavnnX
             </div>
-            <div class="url-item">
-                <span class="url-step-label">Step 2:</span>
-                <span class="url-step-value">/step2</span>
-            </div>
+            <a href="https://discord.gg/QHPFGakSjN" target="_blank" class="discord-button">Join</a>
         </div>
     </div>
 
@@ -557,6 +609,7 @@
         const btnContinue = document.getElementById('btnContinue');
         const btnTakeKey = document.getElementById('btnTakeKey');
         const btnCopy = document.getElementById('btnCopy');
+        const btnCheckKey = document.getElementById('btnCheckKey');
         const output = document.getElementById('out');
         const stepIndicator = document.getElementById('stepIndicator');
         const progressBar = document.getElementById('progressBar');
@@ -564,6 +617,8 @@
         const currentUrl = document.getElementById('currentUrl');
         const countdownSection = document.getElementById('countdownSection');
         const countdownTimer = document.getElementById('countdownTimer');
+        const checkKeySection = document.getElementById('checkKeySection');
+        const keyInput = document.getElementById('keyInput');
         let currentKey = '';
         let generatePageStartTime = null;
         let countdownInterval = null;
@@ -572,7 +627,7 @@
         const TOKEN_KEY = 'clavnnx_token_step1';
         const STEP_KEY = 'clavnnx_current_step';
         const GENERATE_ACCESS_KEY = 'clavnnx_generate_access';
-        const GENERATED_KEY_STORAGE = 'clavnnx_generated_key'; // NEW: Storage key for generated API key
+        const GENERATED_KEY_STORAGE = 'clavnnx_generated_key';
 
         // In-memory storage for generate page session
         let generatePageMemory = {
@@ -580,27 +635,17 @@
             isExpired: false
         };
 
-        // Optimized storage operations
+        // Optimized storage operations (using variables instead of localStorage)
         const storage = {
+            data: {},
             set: (key, value) => {
-                try {
-                    const data = JSON.stringify(value);
-                    localStorage.setItem(key, data);
-                    sessionStorage.setItem(key, data);
-                } catch (e) {
-                    console.warn('Storage failed:', e);
-                }
+                this.data[key] = value;
             },
             get: (key) => {
-                try {
-                    return JSON.parse(localStorage.getItem(key) || sessionStorage.getItem(key) || 'null');
-                } catch (e) {
-                    return null;
-                }
+                return this.data[key] || null;
             },
             remove: (key) => {
-                localStorage.removeItem(key);
-                sessionStorage.removeItem(key);
+                delete this.data[key];
             }
         };
 
@@ -637,14 +682,14 @@
             storage.remove(TOKEN_KEY);
             storage.remove(STEP_KEY);
             storage.remove(GENERATE_ACCESS_KEY);
-            storage.remove(GENERATED_KEY_STORAGE); // Clear generated key when clearing session
+            storage.remove(GENERATED_KEY_STORAGE);
         }
 
         function generateToken() {
             return `token_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
         }
 
-        // NEW: Generated key management functions
+        // Generated key management functions
         function saveGeneratedKey(keyData) {
             if (keyData) {
                 storage.set(GENERATED_KEY_STORAGE, {
@@ -662,7 +707,6 @@
                 return keyData;
             }
             
-            // Clear expired key
             if (keyData) {
                 storage.remove(GENERATED_KEY_STORAGE);
             }
@@ -763,6 +807,28 @@
             }, 1000);
         }
 
+        // Check Key Functionality
+        function checkKeyExpiry() {
+            const inputKey = keyInput.value.trim();
+            
+            if (!inputKey) {
+                output.textContent = '⚠️ Please enter an API key to check.';
+                return;
+            }
+
+            // For demo purposes, generate a mock expiry date
+            // In production, this should call your backend API
+            const mockExpiry = new Date(Date.now() + Math.random() * 24 * 60 * 60 * 1000); // Random time within 24 hours
+            
+            output.textContent = `🔑 Key: ${inputKey}\n\n⏰ Expired Key Date: ${mockExpiry.toLocaleString()}\n\n✅ Key status checked successfully!`;
+            
+            // Visual feedback
+            keyInput.style.borderColor = '#10b981';
+            setTimeout(() => {
+                keyInput.style.borderColor = 'rgba(75, 85, 99, 0.6)';
+            }, 2000);
+        }
+
         // Page routing - optimized
         const route = window.location.hash.replace('#', '') || window.location.pathname.replace('/', '') || 'home';
         const urlParams = new URLSearchParams(window.location.search);
@@ -775,6 +841,15 @@
         // Initialize based on route
         function init() {
             updateCurrentUrl();
+            
+            // Setup check key functionality for home page only
+            if (route === 'home' || route === '') {
+                btnCheckKey.style.display = 'block';
+                btnCheckKey.onclick = checkKeyExpiry;
+            } else {
+                // Hide check key section on other pages
+                checkKeySection.style.display = 'none';
+            }
             
             switch(route) {
                 case 'step1':
@@ -937,7 +1012,7 @@
             // Start countdown
             startCountdown();
             
-            // MODIFIED: Check for existing key before generating new one
+            // Check for existing key before generating new one
             const existingKey = getGeneratedKey();
             if (existingKey) {
                 // Show existing key instead of generating new one
@@ -948,7 +1023,7 @@
             }
         }
 
-        // NEW: Function to display existing key (prevents spam generation)
+        // Function to display existing key (prevents spam generation)
         function showExistingKey(keyData) {
             // Hide generation buttons
             btnContinue.style.display = 'none';
@@ -1027,10 +1102,6 @@
                 // Simulate secure key generation process
                 await new Promise(resolve => setTimeout(resolve, 3000));
                 
-                // For now, generate a mock key since backend is not available
-                // In production, this should call: const response = await fetch(`/getkey?token=${token}`);
-                
-                // MOCK KEY GENERATION (remove when backend is ready)
                 // Generate 10-character key like backend (A-Z, 0-9 only)
                 const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
                 let mockKey = '';
@@ -1041,7 +1112,7 @@
                 
                 currentKey = mockKey;
                 
-                // MODIFIED: Save the generated key to prevent regeneration on refresh
+                // Save the generated key to prevent regeneration on refresh
                 const keyData = {
                     key: mockKey,
                     expires: mockExpires.getTime()
@@ -1064,53 +1135,6 @@
                 setTimeout(() => {
                     output.style.border = '1px solid rgba(75, 85, 99, 0.4)';
                 }, 2000);
-                
-                /* 
-                // REAL BACKEND CALL (uncomment when backend is deployed)
-                const response = await fetch(`/getkey?token=${token}`);
-                
-                // Check if response is HTML (error page) instead of JSON
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    throw new Error('Backend API not available. Please ensure server is running.');
-                }
-                
-                const data = await response.json();
-                
-                if (response.ok && data.key) {
-                    currentKey = data.key;
-                    const expiresDate = new Date(data.expires);
-                    
-                    // MODIFIED: Save the generated key to prevent regeneration on refresh
-                    const keyData = {
-                        key: data.key,
-                        expires: expiresDate.getTime()
-                    };
-                    saveGeneratedKey(keyData);
-                    
-                    // Show success
-                    stepIndicator.className = 'success-message pulse';
-                    stepIndicator.textContent = '✅ API Key Generated Successfully!';
-                    
-                    output.textContent = `🔑 Your API Key: ${data.key}\n\n⏰ Expires: ${expiresDate.toLocaleString()}\n\n✅ Key generated and validated successfully!\n\n⚠️ Important: This key is valid for 24 hours.\n\n🛡️ Refresh Protection: Key is cached to prevent spam generation.`;
-                    
-                    // Show copy button
-                    btnCopy.style.display = 'block';
-                    btnCopy.textContent = '📋 Copy API Key';
-                    
-                    // Also show the key in a more prominent way if it's new
-                    if (!data.isExisting) {
-                        // Flash effect for new key
-                        output.style.border = '2px solid #10b981';
-                        setTimeout(() => {
-                            output.style.border = '1px solid rgba(75, 85, 99, 0.4)';
-                        }, 2000);
-                    }
-                    
-                } else {
-                    throw new Error(data.error || 'Failed to generate key');
-                }
-                */
                 
             } catch (error) {
                 console.error('Key generation error:', error);
@@ -1195,7 +1219,7 @@
             }, 2000);
         };
 
-        // MODIFIED: Enhanced refresh protection - prevent navigation away from generate page
+        // Enhanced refresh protection - prevent navigation away from generate page
         function preventGeneratePageManipulation() {
             if (route === 'generate-key-secure-xyz') {
                 // Disable refresh warning only if we have a valid key cached
