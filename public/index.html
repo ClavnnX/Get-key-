@@ -649,165 +649,160 @@
             return keyPattern.test(key.trim());
         }
 
-        // Enhanced server validation function with better error handling and accurate timestamp
+        // FIXED: Enhanced server validation function - properly connects to index.js
         async function validateKeyWithServer(key) {
             console.log('🔍 Starting key validation for:', key);
             
             try {
-                // Multiple URL attempts with detailed logging
-                const urls = [
-                    `/validate?key=${encodeURIComponent(key)}`,
-                    `${window.location.origin}/validate?key=${encodeURIComponent(key)}`,
-                    `./validate?key=${encodeURIComponent(key)}`
-                ];
+                // Get current timestamp for accurate validation
+                const validationStartTime = new Date();
+                const timeZone = 'Asia/Jakarta';
+                const startTimeString = validationStartTime.toLocaleString('id-ID', {
+                    timeZone: timeZone,
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                });
                 
-                let lastError = null;
-                let attempts = 0;
+                console.log(`🕐 Validation started at: ${startTimeString}`);
                 
-                for (let i = 0; i < urls.length; i++) {
-                    attempts++;
-                    try {
-                        console.log(`🌐 Attempt ${attempts}: Trying URL:`, urls[i]);
-                        
-                        const controller = new AbortController();
-                        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
-                        
-                        const response = await fetch(urls[i], {
-                            method: 'GET',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json',
-                                'Cache-Control': 'no-cache',
-                                'X-Requested-With': 'XMLHttpRequest'
-                            },
-                            signal: controller.signal
-                        });
-                        
-                        clearTimeout(timeoutId);
-                        console.log(`📊 Response status: ${response.status} ${response.statusText}`);
-                        console.log(`📋 Response headers:`, Object.fromEntries(response.headers.entries()));
-                        
-                        // Handle different HTTP status codes
-                        if (!response.ok) {
-                            if (response.status === 404) {
-                                throw new Error(`Endpoint not found (404). Server may not be properly configured.`);
-                            } else if (response.status === 500) {
-                                throw new Error(`Server error (500). Please try again later.`);
-                            } else if (response.status >= 400) {
-                                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                            }
-                        }
-                        
-                        // Get response as text first to inspect it
-                        const responseText = await response.text();
-                        console.log('📄 Raw response text:', responseText.substring(0, 200) + (responseText.length > 200 ? '...' : ''));
-                        
-                        // Check if response is empty
-                        if (!responseText || responseText.trim() === '') {
-                            throw new Error('Empty response from server');
-                        }
-                        
-                        // Check if response looks like HTML (error page)
-                        if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
-                            throw new Error('Server returned HTML error page instead of JSON');
-                        }
-                        
-                        // Try to parse JSON with enhanced error handling
-                        let data;
-                        try {
-                            data = JSON.parse(responseText);
-                            console.log('✅ Successfully parsed JSON:', data);
-                        } catch (parseError) {
-                            console.error('❌ JSON parse error:', parseError);
-                            console.log('🔧 Attempting to clean malformed JSON...');
-                            
-                            // Try to extract JSON from potentially malformed response
-                            const jsonMatch = responseText.match(/\{[^}]*\}/);
-                            if (jsonMatch) {
-                                try {
-                                    data = JSON.parse(jsonMatch[0]);
-                                    console.log('🔧 Recovered JSON:', data);
-                                } catch (secondParseError) {
-                                    throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}...`);
-                                }
-                            } else {
-                                throw new Error(`Response is not valid JSON: ${responseText.substring(0, 100)}...`);
-                            }
-                        }
-                        
-                        // Validate response structure
-                        if (!data || typeof data !== 'object') {
-                            throw new Error('Invalid response format - not an object');
-                        }
-                        
-                        // Normalize status field
-                        if (!data.status) {
-                            // Try to infer status from other fields
-                            if (data.error) {
-                                data.status = 'ERROR';
-                                data.message = data.error;
-                            } else if (data.valid === true) {
-                                data.status = 'VALID';
-                            } else if (data.valid === false) {
-                                data.status = 'INVALID';
-                            } else {
-                                data.status = 'ERROR';
-                                data.message = 'Unknown response format';
-                            }
-                        }
-                        
-                        // Add timestamp to response for accuracy
-                        data.server_timestamp = new Date().toISOString();
-                        data.validation_attempt = attempts;
-                        
-                        console.log('✅ Final validated response:', data);
-                        return data;
-                        
-                    } catch (error) {
-                        console.error(`❌ Error with URL ${i + 1}:`, error.message);
-                        lastError = error;
-                        
-                        // If it's a timeout, don't try other URLs immediately
-                        if (error.name === 'AbortError') {
-                            console.log('⏱️ Request timed out, trying next URL...');
-                        }
-                        
-                        // Continue to next URL if not the last one
-                        if (i < urls.length - 1) {
-                            console.log(`🔄 Trying next URL...`);
-                            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before next attempt
-                            continue;
-                        }
+                // FIXED: Use the correct endpoint that matches index.js
+                const validateUrl = `/validate?key=${encodeURIComponent(key)}`;
+                console.log(`🌐 Calling validation endpoint: ${validateUrl}`);
+                
+                // Create AbortController for timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => {
+                    console.log('⏱️ Request timeout after 15 seconds');
+                    controller.abort();
+                }, 15000);
+                
+                // Make the request to index.js /validate endpoint
+                const response = await fetch(validateUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'Cache-Control': 'no-cache',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                console.log(`📊 Response status: ${response.status} ${response.statusText}`);
+                console.log(`📋 Response headers:`, Object.fromEntries(response.headers.entries()));
+                
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        throw new Error('Validation endpoint not found. Server may not be running.');
+                    } else if (response.status === 500) {
+                        throw new Error('Server error occurred. Please try again later.');
+                    } else {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                     }
                 }
                 
-                // If all URLs failed, throw the last error
-                throw lastError || new Error('All validation endpoints failed');
+                // Get response text first
+                const responseText = await response.text();
+                console.log('📄 Raw response:', responseText);
+                
+                if (!responseText || responseText.trim() === '') {
+                    throw new Error('Empty response from server');
+                }
+                
+                // Parse JSON response
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                    console.log('✅ Parsed JSON response:', data);
+                } catch (parseError) {
+                    console.error('❌ JSON parse error:', parseError);
+                    throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}...`);
+                }
+                
+                // Validate response structure - FIXED to match index.js response format
+                if (!data || typeof data !== 'object') {
+                    throw new Error('Invalid response format');
+                }
+                
+                // Get completion timestamp
+                const validationEndTime = new Date();
+                const endTimeString = validationEndTime.toLocaleString('id-ID', {
+                    timeZone: timeZone,
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                });
+                
+                const processingTime = ((validationEndTime - validationStartTime) / 1000).toFixed(2);
+                console.log(`🏁 Validation completed at: ${endTimeString} (${processingTime}s)`);
+                
+                // FIXED: Map response status to standardized format matching index.js
+                let normalizedStatus = 'ERROR';
+                if (data.status) {
+                    normalizedStatus = data.status.toUpperCase();
+                } else if (data.error) {
+                    normalizedStatus = 'ERROR';
+                } else {
+                    normalizedStatus = 'ERROR';
+                }
+                
+                const result = {
+                    status: normalizedStatus,
+                    message: data.message || data.error || 'Key validation completed',
+                    timestamp: endTimeString,
+                    processingTime: processingTime,
+                    server_response: data
+                };
+                
+                console.log('📋 Final validation result:', result);
+                return result;
                 
             } catch (error) {
-                console.error('💥 Complete validation failure:', error);
+                console.error('💥 Validation error:', error);
                 
-                // Return a structured error response with accurate timestamp
+                // Get error timestamp
+                const errorTime = new Date().toLocaleString('id-ID', {
+                    timeZone: 'Asia/Jakarta',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                });
+                
                 return {
                     status: 'ERROR',
-                    message: `Server validation failed: ${error.message}`,
+                    message: `Validation failed: ${error.message}`,
                     error_type: error.name === 'AbortError' ? 'TIMEOUT' : 'NETWORK_ERROR',
-                    timestamp: new Date().toISOString(),
+                    timestamp: errorTime,
                     suggestions: [
-                        'Check if server is running',
+                        'Check if server is running properly',
                         'Verify network connection',
                         'Try again in a few moments',
-                        'Contact administrator if problem persists'
+                        'Contact support if problem persists'
                     ]
                 };
             }
         }
 
-        // Enhanced checkKeyExpiry function with accurate timestamp and better error handling
+        // FIXED: Enhanced checkKeyExpiry function with proper server connection
         async function checkKeyExpiry() {
             const inputKey = keyInput.value.trim().toUpperCase();
             
-            // Get accurate local timestamp
+            // Get start timestamp
             const startTime = new Date();
             const localTimestamp = startTime.toLocaleString('id-ID', {
                 timeZone: 'Asia/Jakarta',
@@ -820,7 +815,7 @@
                 hour12: false
             });
             
-            console.log('🕐 Validation started at:', localTimestamp);
+            console.log('🕐 Key check started at:', localTimestamp);
             
             // Clear previous styling
             keyInput.classList.remove('valid', 'invalid');
@@ -833,9 +828,9 @@
                 return;
             }
 
-            // Validate key format (fixed - removed detailed format text as requested)
+            // Validate key format
             if (!isValidKeyFormat(inputKey)) {
-                output.textContent = '❌ INVALID KEY FORMAT\n\n⚠️ Please enter a valid ClavnnX API key.';
+                output.textContent = '❌ INVALID KEY FORMAT\n\n⚠️ Please enter a valid ClavnnX API key (10 uppercase characters/numbers).';
                 keyInput.classList.add('invalid');
                 keyInput.style.borderColor = '#ef4444';
                 output.style.border = '2px solid #ef4444';
@@ -852,13 +847,13 @@
             btnCheckKey.textContent = 'Checking...';
             btnCheckKey.classList.add('loading');
 
-            output.textContent = `🔍 Validating key with server...\n\n⏱️ Started at: ${localTimestamp}\n\n🌐 Connecting to validation service...`;
+            output.textContent = `🔍 Validating key with server...\n\n⏱️ Started at: ${localTimestamp}\n\n🌐 Connecting to validation service...\n\n🔑 Key: ${inputKey}`;
 
             try {
-                // Validate with server
+                // FIXED: Call the validateKeyWithServer function that connects to index.js
                 const validationResult = await validateKeyWithServer(inputKey);
                 
-                // Get completion timestamp with accurate formatting
+                // Get completion timestamp
                 const endTime = new Date();
                 const completionTime = endTime.toLocaleString('id-ID', {
                     timeZone: 'Asia/Jakarta',
@@ -871,18 +866,20 @@
                     hour12: false
                 });
                 
-                const processingTime = ((endTime - startTime) / 1000).toFixed(2);
+                const processingTime = validationResult.processingTime || ((endTime - startTime) / 1000).toFixed(2);
                 
                 console.log('🏁 Validation completed at:', completionTime);
                 console.log('⏱️ Processing time:', processingTime + 's');
+                console.log('📊 Server response:', validationResult);
                 
                 let statusText = '';
                 let statusEmoji = '';
                 let borderColor = '';
                 let inputClass = '';
                 let statusDetails = '';
+                let keyExpiryInfo = '';
                 
-                // Handle different response statuses with enhanced details
+                // FIXED: Handle different response statuses that match index.js responses
                 switch (validationResult.status?.toUpperCase()) {
                     case 'VALID':
                     case 'ACTIVE':
@@ -891,6 +888,7 @@
                         borderColor = '#10b981';
                         inputClass = 'valid';
                         statusDetails = 'This key is currently active and can be used for API requests.';
+                        keyExpiryInfo = '⏰ This key is active and has remaining time.';
                         break;
                         
                     case 'EXPIRED':
@@ -898,7 +896,8 @@
                         statusEmoji = '⏰';
                         borderColor = '#ef4444';
                         inputClass = 'invalid';
-                        statusDetails = 'This key has expired and cannot be used. Please generate a new key.';
+                        statusDetails = 'This key has expired and cannot be used for API requests.';
+                        keyExpiryInfo = '⏰ Key expired - Please generate a new key.';
                         break;
                         
                     case 'INVALID':
@@ -907,7 +906,8 @@
                         statusEmoji = '🚫';
                         borderColor = '#ef4444';
                         inputClass = 'invalid';
-                        statusDetails = 'This key was not found in our system. Please check if you entered it correctly.';
+                        statusDetails = 'This key was not found in the system database.';
+                        keyExpiryInfo = '❌ Key not found - Please check if you entered it correctly.';
                         break;
                         
                     case 'ERROR':
@@ -917,25 +917,26 @@
                         borderColor = '#f59e0b';
                         inputClass = 'invalid';
                         statusDetails = validationResult.message || 'Unable to validate key at this time.';
+                        keyExpiryInfo = '⚠️ Unable to check key expiry status.';
                         break;
                 }
                 
-                // Build comprehensive result message with accurate timestamps
+                // FIXED: Build comprehensive result message with accurate expiry information
                 let resultMessage = `🔑 Key: ${inputKey}\n\n${statusEmoji} Status: ${statusText}\n\n`;
                 
                 if (validationResult.status?.toUpperCase() === 'VALID' || validationResult.status?.toUpperCase() === 'ACTIVE') {
-                    resultMessage += `✅ Key validation successful!\n\n📊 Details:\n- ${statusDetails}\n- Processing time: ${processingTime}s\n- Validation attempts: ${validationResult.validation_attempt || 1}\n\n🕐 Checked at: ${completionTime}\n\n💡 This key is ready for use.`;
+                    resultMessage += `✅ Key validation successful!\n\n📊 Details:\n- Status: ${statusDetails}\n- ${keyExpiryInfo}\n- Processing time: ${processingTime}s\n- Server response: Connected\n\n🕐 Checked at: ${completionTime}\n\n💡 This key is ready for use in API requests.`;
                 } else if (validationResult.status?.toUpperCase() === 'EXPIRED') {
-                    resultMessage += `❌ Key validation failed!\n\n📊 Details:\n- ${statusDetails}\n- Processing time: ${processingTime}s\n\n🕐 Checked at: ${completionTime}\n\n💡 Generate a new key to continue using the service.`;
+                    resultMessage += `❌ Key has expired!\n\n📊 Details:\n- Status: ${statusDetails}\n- ${keyExpiryInfo}\n- Processing time: ${processingTime}s\n- Server response: Key found but expired\n\n🕐 Checked at: ${completionTime}\n\n💡 Generate a new key to continue using the service.`;
                 } else if (validationResult.status?.toUpperCase() === 'INVALID' || validationResult.status?.toUpperCase() === 'NOT_FOUND') {
-                    resultMessage += `❌ Key not found!\n\n📊 Details:\n- ${statusDetails}\n- Processing time: ${processingTime}s\n\n🕐 Checked at: ${completionTime}\n\n💡 Please verify the key or generate a new one.`;
+                    resultMessage += `❌ Key not found!\n\n📊 Details:\n- Status: ${statusDetails}\n- ${keyExpiryInfo}\n- Processing time: ${processingTime}s\n- Server response: Key not in database\n\n🕐 Checked at: ${completionTime}\n\n💡 Please verify the key or generate a new one.`;
                 } else {
-                    resultMessage += `⚠️ Validation error!\n\n📊 Details:\n- ${statusDetails}\n- Processing time: ${processingTime}s\n- Error type: ${validationResult.error_type || 'UNKNOWN'}\n\n🕐 Checked at: ${completionTime}\n\n🔄 Troubleshooting:\n`;
+                    resultMessage += `⚠️ Validation error!\n\n📊 Details:\n- Status: ${statusDetails}\n- ${keyExpiryInfo}\n- Processing time: ${processingTime}s\n- Error type: ${validationResult.error_type || 'UNKNOWN'}\n\n🕐 Checked at: ${completionTime}\n\n🔄 Troubleshooting:\n`;
                     
                     if (validationResult.suggestions && Array.isArray(validationResult.suggestions)) {
                         resultMessage += validationResult.suggestions.map(suggestion => `- ${suggestion}`).join('\n');
                     } else {
-                        resultMessage += '- Check your internet connection\n- Try again in a few moments\n- Contact support if problem persists';
+                        resultMessage += '- Check your internet connection\n- Ensure server is running\n- Try again in a few moments\n- Contact support if problem persists';
                     }
                 }
                 
@@ -955,12 +956,12 @@
                     success: ['VALID', 'ACTIVE'].includes(validationResult.status?.toUpperCase())
                 });
                 
-                // Reset styling after 5 seconds
+                // Reset styling after 8 seconds
                 setTimeout(() => {
                     keyInput.style.borderColor = 'rgba(75, 85, 99, 0.6)';
                     output.style.border = '1px solid rgba(75, 85, 99, 0.4)';
                     keyInput.classList.remove('valid', 'invalid');
-                }, 8000); // Increased to 8 seconds for better visibility
+                }, 8000);
                 
             } catch (error) {
                 const errorTime = new Date().toLocaleString('id-ID', {
@@ -976,7 +977,7 @@
                 
                 console.error('💥 Unexpected validation error:', error);
                 
-                output.textContent = `🔑 Key: ${inputKey}\n\n💥 Status: SYSTEM ERROR\n\n❌ An unexpected error occurred during validation.\n\n📊 Details:\n- Error: ${error.message}\n- Time: ${errorTime}\n\n🔧 This is likely a system issue. Please:\n- Check your internet connection\n- Try again in a few moments\n- Contact administrator if problem persists`;
+                output.textContent = `🔑 Key: ${inputKey}\n\n💥 Status: SYSTEM ERROR\n\n❌ An unexpected error occurred during validation.\n\n📊 Details:\n- Error: ${error.message}\n- Time: ${errorTime}\n- Connection: Failed to reach server\n\n🔧 This is likely a system issue. Please:\n- Check if the server is running\n- Verify your internet connection\n- Try again in a few moments\n- Contact administrator if problem persists`;
                 
                 keyInput.classList.add('invalid');
                 keyInput.style.borderColor = '#ef4444';
