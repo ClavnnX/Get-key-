@@ -157,39 +157,6 @@
             box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
         }
 
-        .url-section {
-            margin-bottom: 24px;
-        }
-
-        .url-label {
-            color: #9ca3af;
-            font-size: 14px;
-            font-weight: 500;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-        }
-
-        .url-input {
-            width: 100%;
-            background: rgba(55, 65, 81, 0.5);
-            border: 1px solid rgba(75, 85, 99, 0.6);
-            border-radius: 12px;
-            padding: 14px 16px;
-            color: #e5e7eb;
-            font-size: 15px;
-            font-weight: 400;
-            outline: none;
-            transition: all 0.3s ease;
-            font-family: 'Inter', monospace;
-        }
-
-        .url-input:focus {
-            border-color: #0096ff;
-            background: rgba(55, 65, 81, 0.8);
-            box-shadow: 0 0 0 3px rgba(0, 150, 255, 0.1);
-        }
-
         .main-button {
             width: 100%;
             padding: 16px 24px;
@@ -543,15 +510,6 @@
             </div>
         </div>
 
-        <!-- URL Section - Hidden but functional for background processing -->
-        <div class="url-section" style="display: none;">
-            <div class="url-label">
-                <span class="icon">🔗</span>
-                Current URL:
-            </div>
-            <input type="text" class="url-input" id="currentUrl" value="/" readonly>
-        </div>
-
         <!-- Main Action Button -->
         <button id="btnContinue" class="main-button">Complete the step</button>
 
@@ -585,7 +543,6 @@
         const stepIndicator = document.getElementById('stepIndicator');
         const progressBar = document.getElementById('progressBar');
         const progressStep = document.getElementById('progressStep');
-        const currentUrl = document.getElementById('currentUrl');
         const countdownSection = document.getElementById('countdownSection');
         const countdownTimer = document.getElementById('countdownTimer');
         let currentKey = '';
@@ -596,7 +553,7 @@
         const TOKEN_KEY = 'clavnnx_token_step1';
         const STEP_KEY = 'clavnnx_current_step';
         const GENERATE_ACCESS_KEY = 'clavnnx_generate_access';
-        const GENERATED_KEY_STORAGE = 'clavnnx_generated_key'; // NEW: Storage key for generated API key
+        const GENERATED_KEY_STORAGE = 'clavnnx_generated_key';
 
         // In-memory storage for generate page session
         let generatePageMemory = {
@@ -661,14 +618,14 @@
             storage.remove(TOKEN_KEY);
             storage.remove(STEP_KEY);
             storage.remove(GENERATE_ACCESS_KEY);
-            storage.remove(GENERATED_KEY_STORAGE); // Clear generated key when clearing session
+            storage.remove(GENERATED_KEY_STORAGE);
         }
 
         function generateToken() {
             return `token_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
         }
 
-        // NEW: Generated key management functions
+        // Generated key management functions
         function saveGeneratedKey(keyData) {
             if (keyData) {
                 storage.set(GENERATED_KEY_STORAGE, {
@@ -791,15 +748,8 @@
         const route = window.location.hash.replace('#', '') || window.location.pathname.replace('/', '') || 'home';
         const urlParams = new URLSearchParams(window.location.search);
 
-        // Update current URL display
-        function updateCurrentUrl() {
-            currentUrl.value = window.location.pathname + window.location.search + window.location.hash;
-        }
-
         // Initialize based on route
         function init() {
-            updateCurrentUrl();
-            
             switch(route) {
                 case 'step1':
                     initStep1();
@@ -854,7 +804,7 @@
             
             updateProgress(Math.max(getStepProgress(), 0));
             updateStepIndicator(Math.max(getStepProgress(), 0));
-            btnContinue.textContent = '🔑 Step 1/2 - Generate Token';
+            btnContinue.textContent = '🔑 Step 1/2 - Complete';
             output.textContent = '📋 Step 1 of 2: Token Generation Step\n\n🎯 Click the button below to complete Step 1/2.';
             
             btnContinue.onclick = () => {
@@ -875,29 +825,22 @@
                 }
                 
                 saveStepProgress(2);
-                updateProgress(2);
-                updateStepIndicator(2);
-                output.textContent = '✅ Step 2/2 completed successfully!\n\n🎉 Auto-redirecting to key generation...';
+                updateProgress(2, 2);
+                updateStepIndicator(2, 2);
+                output.textContent = '✅ Step 2/2 completed successfully!\n\n🔄 Redirecting to key generation...';
                 btnContinue.style.display = 'none';
                 
-                // Save generate page access immediately
-                saveGenerateAccess();
-                
                 setTimeout(() => {
-                    window.location.href = `/generate-key-secure-xyz?token=${getToken()}`;
-                }, 2000);
-                return;
-            }
-            
-            if (!getToken()) {
-                showError(' Dont cheat finish it or use bypass completed the Step 1/2 first.');
+                    window.location.href = '/get-your-key';
+                }, 1500);
                 return;
             }
             
             updateProgress(Math.max(getStepProgress(), 1));
             updateStepIndicator(Math.max(getStepProgress(), 1));
-            btnContinue.textContent = '🛡️ Step 2/2 - Final Verification';
-            output.textContent = '📋 Step 2 of 2: Final Verification\n\n✅ Step 1/2: Completed\n\n🎯 Click below to complete final verification.';
+            btnContinue.textContent = '🔑 Step 2/2 - Final';
+            
+            output.textContent = '📋 Step 2 of 2: Final Verification Step\n\n✅ Step 1/2: Completed\n\n🎯 Click the button below to complete Step 2/2.';
             
             btnContinue.onclick = () => {
                 btnContinue.textContent = 'Redirecting...';
@@ -905,7 +848,7 @@
                 btnContinue.disabled = true;
                 
                 const returnUrl = `${window.location.origin}/step2?completed=2`;
-                window.location.href = `https://en.shrinke.me/scriptrblox2?return=${encodeURIComponent(returnUrl)}`;
+                window.location.href = `https://en.shrinke.me/scriptrblox?return=${encodeURIComponent(returnUrl)}`;
             };
         }
 
@@ -961,7 +904,7 @@
             // Start countdown
             startCountdown();
             
-            // MODIFIED: Check for existing key before generating new one
+            // Check for existing key before generating new one
             const existingKey = getGeneratedKey();
             if (existingKey) {
                 // Show existing key instead of generating new one
@@ -972,7 +915,7 @@
             }
         }
 
-        // NEW: Function to display existing key (prevents spam generation)
+        // Function to display existing key (prevents spam generation)
         function showExistingKey(keyData) {
             // Hide generation buttons
             btnContinue.style.display = 'none';
@@ -1042,7 +985,7 @@
             btnCopy.style.display = 'none';
             stepIndicator.style.display = 'none';
             
-            // Show minimal status without Generate URL frame
+            // Show minimal status
             output.textContent = '🔐 Preparing your secure key...\n\n⏱️ Please wait...';
             
             try {
@@ -1051,10 +994,6 @@
                 // Simulate secure key generation process
                 await new Promise(resolve => setTimeout(resolve, 3000));
                 
-                // For now, generate a mock key since backend is not available
-                // In production, this should call: const response = await fetch(`/getkey?token=${token}`);
-                
-                // MOCK KEY GENERATION (remove when backend is ready)
                 // Generate 10-character key like backend (A-Z, 0-9 only)
                 const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
                 let mockKey = '';
@@ -1065,14 +1004,14 @@
                 
                 currentKey = mockKey;
                 
-                // MODIFIED: Save the generated key to prevent regeneration on refresh
+                // Save the generated key to prevent regeneration on refresh
                 const keyData = {
                     key: mockKey,
                     expires: mockExpires.getTime()
                 };
                 saveGeneratedKey(keyData);
                 
-                // Show success without explicit Generate URL frame
+                // Show success
                 stepIndicator.style.display = 'block';
                 stepIndicator.className = 'success-message pulse';
                 stepIndicator.textContent = '✅ API Key Ready!';
@@ -1088,53 +1027,6 @@
                 setTimeout(() => {
                     output.style.border = '1px solid rgba(75, 85, 99, 0.4)';
                 }, 2000);
-                
-                /* 
-                // REAL BACKEND CALL (uncomment when backend is deployed)
-                const response = await fetch(`/getkey?token=${token}`);
-                
-                // Check if response is HTML (error page) instead of JSON
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    throw new Error('Backend API not available. Please ensure server is running.');
-                }
-                
-                const data = await response.json();
-                
-                if (response.ok && data.key) {
-                    currentKey = data.key;
-                    const expiresDate = new Date(data.expires);
-                    
-                    // MODIFIED: Save the generated key to prevent regeneration on refresh
-                    const keyData = {
-                        key: data.key,
-                        expires: expiresDate.getTime()
-                    };
-                    saveGeneratedKey(keyData);
-                    
-                    // Show success
-                    stepIndicator.className = 'success-message pulse';
-                    stepIndicator.textContent = '✅ API Key Generated Successfully!';
-                    
-                    output.textContent = `🔑 Your API Key: ${data.key}\n\n⏰ Expires: ${expiresDate.toLocaleString()}\n\n✅ Key generated and validated successfully!\n\n⚠️ Important: This key is valid for 24 hours.\n\n🛡️ Refresh Protection: Key is cached to prevent spam generation.`;
-                    
-                    // Show copy button
-                    btnCopy.style.display = 'block';
-                    btnCopy.textContent = '📋 Copy API Key';
-                    
-                    // Also show the key in a more prominent way if it's new
-                    if (!data.isExisting) {
-                        // Flash effect for new key
-                        output.style.border = '2px solid #10b981';
-                        setTimeout(() => {
-                            output.style.border = '1px solid rgba(75, 85, 99, 0.4)';
-                        }, 2000);
-                    }
-                    
-                } else {
-                    throw new Error(data.error || 'Failed to generate key');
-                }
-                */
                 
             } catch (error) {
                 console.error('Key generation error:', error);
@@ -1219,7 +1111,7 @@
             }, 2000);
         };
 
-        // MODIFIED: Enhanced refresh protection - prevent navigation away from generate page
+        // Enhanced refresh protection - prevent navigation away from generate page
         function preventGeneratePageManipulation() {
             if (route === 'generate-key-secure-xyz') {
                 // Disable refresh warning only if we have a valid key cached
