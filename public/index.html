@@ -372,50 +372,70 @@
             font-family: 'Courier New', monospace;
         }
 
-        .urls-section {
+        .discord-section {
             margin-top: 30px;
             background: rgba(17, 24, 39, 0.6);
             border: 1px solid rgba(75, 85, 99, 0.3);
             border-radius: 16px;
             padding: 24px;
             backdrop-filter: blur(10px);
+            text-align: center;
         }
 
-        .urls-title {
-            color: #0096ff;
+        .discord-title {
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .discord-button {
+            background: linear-gradient(135deg, #5865F2, #7289DA);
+            color: white;
+            padding: 16px 32px;
             font-size: 16px;
             font-weight: 600;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
+            border: none;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 25px rgba(88, 101, 242, 0.3);
+            text-decoration: none;
+            display: inline-block;
+            position: relative;
+            overflow: hidden;
+            letter-spacing: 0.5px;
+            width: 100%;
+            max-width: 280px;
         }
 
-        .url-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid rgba(75, 85, 99, 0.2);
+        .discord-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.6s;
         }
 
-        .url-item:last-child {
-            border-bottom: none;
+        .discord-button:hover::before {
+            transform: translateX(100%);
         }
 
-        .url-step-label {
-            color: #9ca3af;
-            font-size: 14px;
-            font-weight: 500;
+        .discord-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(88, 101, 242, 0.4);
         }
 
-        .url-step-value {
-            background: rgba(55, 65, 81, 0.8);
-            color: #0096ff;
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: 600;
-            font-family: 'Courier New', monospace;
+        .discord-button:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 15px rgba(88, 101, 242, 0.3);
         }
 
         .icon {
@@ -454,8 +474,17 @@
                 font-size: 13px;
             }
 
-            .urls-section {
+            .discord-section {
                 padding: 20px;
+            }
+
+            .discord-title {
+                font-size: 16px;
+            }
+
+            .discord-button {
+                padding: 14px 28px;
+                font-size: 15px;
             }
 
             .countdown-timer {
@@ -535,20 +564,15 @@
         <button id="btnTakeKey" class="main-button" style="display: none;">Take the key</button>
         <button id="btnCopy" class="main-button" style="display: none;">Copy Key</button>
 
-        <!-- URLs Information -->
-        <div class="urls-section">
-            <div class="urls-title">
-                <span class="icon">⚙️</span>
-                URLs for Vertise Integration:
+        <!-- Discord Information -->
+        <div class="discord-section">
+            <div class="discord-title">
+                <span class="icon">💬</span>
+                Join Discord ClavnnX
             </div>
-            <div class="url-item">
-                <span class="url-step-label">Step 1:</span>
-                <span class="url-step-value">/step1</span>
-            </div>
-            <div class="url-item">
-                <span class="url-step-label">Step 2:</span>
-                <span class="url-step-value">/step2</span>
-            </div>
+            <a href="https://discord.gg/QHPFGakSjN" target="_blank" class="discord-button">
+                Join
+            </a>
         </div>
     </div>
 
