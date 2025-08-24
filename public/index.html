@@ -221,20 +221,20 @@
             transform: translateX(100%);
         }
 
-        .main-button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
         #btnContinue, #btnGen {
             background: linear-gradient(135deg, #0096ff, #00d4ff);
             color: white;
             box-shadow: 0 8px 25px rgba(0, 150, 255, 0.3);
         }
 
-        #btnContinue:hover:not(:disabled), #btnGen:hover:not(:disabled) {
+        #btnContinue:hover, #btnGen:hover {
             transform: translateY(-2px);
             box-shadow: 0 12px 35px rgba(0, 150, 255, 0.4);
+        }
+
+        #btnContinue:active, #btnGen:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 15px rgba(0, 150, 255, 0.3);
         }
 
         #btnTakeKey {
@@ -244,7 +244,7 @@
             display: none;
         }
 
-        #btnTakeKey:hover:not(:disabled) {
+        #btnTakeKey:hover {
             transform: translateY(-2px);
             box-shadow: 0 12px 35px rgba(16, 185, 129, 0.4);
         }
@@ -256,20 +256,9 @@
             display: none;
         }
 
-        #btnCopy:hover:not(:disabled) {
+        #btnCopy:hover {
             transform: translateY(-2px);
             box-shadow: 0 12px 35px rgba(16, 185, 129, 0.4);
-        }
-
-        #btnCheckKey {
-            background: linear-gradient(135deg, #0096ff, #00d4ff);
-            color: white;
-            box-shadow: 0 8px 25px rgba(0, 150, 255, 0.3);
-        }
-
-        #btnCheckKey:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 35px rgba(0, 150, 255, 0.4);
         }
 
         .output-section {
@@ -383,7 +372,7 @@
             font-family: 'Courier New', monospace;
         }
 
-        .check-key-section {
+        .urls-section {
             margin-top: 30px;
             background: rgba(17, 24, 39, 0.6);
             border: 1px solid rgba(75, 85, 99, 0.3);
@@ -392,7 +381,7 @@
             backdrop-filter: blur(10px);
         }
 
-        .check-key-title {
+        .urls-title {
             color: #0096ff;
             font-size: 16px;
             font-weight: 600;
@@ -401,75 +390,32 @@
             align-items: center;
         }
 
-        .key-input {
-            width: 100%;
-            background: rgba(55, 65, 81, 0.5);
-            border: 1px solid rgba(75, 85, 99, 0.6);
-            border-radius: 12px;
-            padding: 14px 16px;
-            color: #e5e7eb;
-            font-size: 15px;
-            font-weight: 400;
-            outline: none;
-            transition: all 0.3s ease;
-            font-family: 'Inter', monospace;
-            margin-bottom: 16px;
-        }
-
-        .key-input:focus {
-            border-color: #0096ff;
-            background: rgba(55, 65, 81, 0.8);
-            box-shadow: 0 0 0 3px rgba(0, 150, 255, 0.1);
-        }
-
-        .key-input.invalid {
-            border-color: #ef4444;
-            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
-        }
-
-        .key-input.valid {
-            border-color: #10b981;
-            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
-        }
-
-        .discord-section {
-            margin-top: 30px;
-            background: rgba(17, 24, 39, 0.6);
-            border: 1px solid rgba(114, 137, 218, 0.3);
-            border-radius: 16px;
-            padding: 24px;
-            backdrop-filter: blur(10px);
-            text-align: center;
-        }
-
-        .discord-title {
-            color: #7289da;
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 16px;
+        .url-item {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            justify-content: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(75, 85, 99, 0.2);
         }
 
-        .discord-button {
-            background: linear-gradient(135deg, #7289da, #99aab5);
-            color: white;
-            padding: 14px 24px;
-            border: none;
-            border-radius: 12px;
-            font-size: 15px;
+        .url-item:last-child {
+            border-bottom: none;
+        }
+
+        .url-step-label {
+            color: #9ca3af;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .url-step-value {
+            background: rgba(55, 65, 81, 0.8);
+            color: #0096ff;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
             font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-            box-shadow: 0 6px 20px rgba(114, 137, 218, 0.3);
-        }
-
-        .discord-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(114, 137, 218, 0.4);
+            font-family: 'Courier New', monospace;
         }
 
         .icon {
@@ -478,6 +424,7 @@
             margin-right: 8px;
         }
 
+        /* Mobile responsiveness */
         @media (max-width: 600px) {
             body {
                 padding: 15px;
@@ -507,11 +454,7 @@
                 font-size: 13px;
             }
 
-            .check-key-section {
-                padding: 20px;
-            }
-
-            .discord-section {
+            .urls-section {
                 padding: 20px;
             }
 
@@ -520,6 +463,7 @@
             }
         }
 
+        /* Pulse animation for active elements */
         .pulse {
             animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
@@ -533,6 +477,7 @@
             }
         }
 
+        /* Glow effect for important elements */
         .glow {
             box-shadow: 0 0 20px rgba(0, 150, 255, 0.3);
         }
@@ -540,11 +485,13 @@
 </head>
 <body>
     <div class="main-container">
+        <!-- Header Section -->
         <div class="header">
             <div class="logo">ClavnnX Key System</div>
             <div class="subtitle">Secure Multi-Step Verification System</div>
         </div>
 
+        <!-- Progress Section -->
         <div class="progress-section">
             <div class="progress-header">
                 <span class="progress-label">Progress</span>
@@ -555,8 +502,10 @@
             </div>
         </div>
 
+        <!-- Step Indicator -->
         <div class="step-indicator" id="stepIndicator" style="display: none;"></div>
 
+        <!-- Countdown Section (for expired page) -->
         <div class="countdown-section" id="countdownSection" style="display: none;">
             <div class="countdown-title">⏰ Page Access Expired</div>
             <div class="countdown-timer" id="countdownTimer">00:00</div>
@@ -565,6 +514,7 @@
             </div>
         </div>
 
+        <!-- URL Section - Hidden but functional for background processing -->
         <div class="url-section" style="display: none;">
             <div class="url-label">
                 <span class="icon">🔗</span>
@@ -573,918 +523,771 @@
             <input type="text" class="url-input" id="currentUrl" value="/" readonly>
         </div>
 
+        <!-- Main Action Button -->
         <button id="btnContinue" class="main-button">Complete the step</button>
 
+        <!-- Output Section -->
         <div class="output-section">
             <div id="out">Complete verification steps to get your API key</div>
         </div>
 
+        <!-- Additional Buttons -->
         <button id="btnTakeKey" class="main-button" style="display: none;">Take the key</button>
         <button id="btnCopy" class="main-button" style="display: none;">Copy Key</button>
 
-        <div class="check-key-section" id="checkKeySection">
-            <div class="check-key-title">
-                <span class="icon">🔑</span>
-                Check your key status
+        <!-- URLs Information -->
+        <div class="urls-section">
+            <div class="urls-title">
+                <span class="icon">⚙️</span>
+                URLs for Vertise Integration:
             </div>
-            <input type="text" class="key-input" id="keyInput" placeholder="Paste your API key here... (Format: 10 uppercase characters/numbers)">
-            <button id="btnCheckKey" class="main-button">Check Key Status</button>
-        </div>
-
-        <div class="discord-section">
-            <div class="discord-title">
-                <span class="icon">💬</span>
-                Join Discord ClavnnX
+            <div class="url-item">
+                <span class="url-step-label">Step 1:</span>
+                <span class="url-step-value">/step1</span>
             </div>
-            <a href="https://discord.gg/QHPFGakSjN" target="_blank" class="discord-button">Join</a>
+            <div class="url-item">
+                <span class="url-step-label">Step 2:</span>
+                <span class="url-step-value">/step2</span>
+            </div>
         </div>
     </div>
 
-<script>
-const btnContinue = document.getElementById('btnContinue');
-const btnTakeKey = document.getElementById('btnTakeKey');
-const btnCopy = document.getElementById('btnCopy');
-const btnCheckKey = document.getElementById('btnCheckKey');
-const output = document.getElementById('out');
-const stepIndicator = document.getElementById('stepIndicator');
-const progressBar = document.getElementById('progressBar');
-const progressStep = document.getElementById('progressStep');
-const currentUrl = document.getElementById('currentUrl');
-const countdownSection = document.getElementById('countdownSection');
-const countdownTimer = document.getElementById('countdownTimer');
-const checkKeySection = document.getElementById('checkKeySection');
-const keyInput = document.getElementById('keyInput');
-let currentKey = '';
-let generatePageStartTime = null;
-let countdownInterval = null;
+    <script>
+        // Cache DOM elements for better performance
+        const btnContinue = document.getElementById('btnContinue');
+        const btnTakeKey = document.getElementById('btnTakeKey');
+        const btnCopy = document.getElementById('btnCopy');
+        const output = document.getElementById('out');
+        const stepIndicator = document.getElementById('stepIndicator');
+        const progressBar = document.getElementById('progressBar');
+        const progressStep = document.getElementById('progressStep');
+        const currentUrl = document.getElementById('currentUrl');
+        const countdownSection = document.getElementById('countdownSection');
+        const countdownTimer = document.getElementById('countdownTimer');
+        let currentKey = '';
+        let generatePageStartTime = null;
+        let countdownInterval = null;
 
-const TOKEN_KEY = 'clavnnx_token_step1';
-const STEP_KEY = 'clavnnx_current_step';
-const GENERATE_ACCESS_KEY = 'clavnnx_generate_access';
-const GENERATED_KEY_STORAGE = 'clavnnx_generated_key';
+        // Storage keys
+        const TOKEN_KEY = 'clavnnx_token_step1';
+        const STEP_KEY = 'clavnnx_current_step';
+        const GENERATE_ACCESS_KEY = 'clavnnx_generate_access';
+        const GENERATED_KEY_STORAGE = 'clavnnx_generated_key'; // NEW: Storage key for generated API key
 
-let generatePageMemory = {
-    accessTime: null,
-    isExpired: false
-};
-
-const storage = {
-    data: {},
-    set: function(key, value) {
-        this.data[key] = value;
-    },
-    get: function(key) {
-        return this.data[key] || null;
-    },
-    remove: function(key) {
-        delete this.data[key];
-    }
-};
-
-// Improved key validation function
-function isValidKeyFormat(key) {
-    if (!key || typeof key !== 'string') return false;
-    
-    // ClavnnX key format: exactly 10 characters, uppercase letters and numbers only
-    const keyPattern = /^[A-Z0-9]{10}$/;
-    return keyPattern.test(key.trim());
-}
-
-// New function to validate key with server
-async function validateKeyWithServer(key) {
-    try {
-        // Try both relative and absolute URL
-        const baseUrl = window.location.origin;
-        const validateUrl = `${baseUrl}/validate?key=${encodeURIComponent(key)}`;
-        
-        console.log('Validating key with URL:', validateUrl);
-        
-        const response = await fetch(validateUrl, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            }
-        });
-        
-        console.log('Response status:', response.status);
-        console.log('Response headers:', response.headers);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        console.log('Server response:', data);
-        return data;
-        
-    } catch (error) {
-        console.error('Error validating key with server:', error);
-        
-        // Try fallback with different URL format
-        try {
-            const fallbackUrl = `/validate?key=${encodeURIComponent(key)}`;
-            console.log('Trying fallback URL:', fallbackUrl);
-            
-            const fallbackResponse = await fetch(fallbackUrl);
-            if (fallbackResponse.ok) {
-                const fallbackData = await fallbackResponse.json();
-                console.log('Fallback response:', fallbackData);
-                return fallbackData;
-            }
-        } catch (fallbackError) {
-            console.error('Fallback also failed:', fallbackError);
-        }
-        
-        // Return error status
-        return {
-            status: 'ERROR',
-            message: `Connection failed: ${error.message}. Please check if server is running.`
+        // In-memory storage for generate page session
+        let generatePageMemory = {
+            accessTime: null,
+            isExpired: false
         };
-    }
-}
 
-// Improved checkKeyExpiry function
-async function checkKeyExpiry() {
-    const inputKey = keyInput.value.trim().toUpperCase();
-    
-    // Clear previous styling
-    keyInput.classList.remove('valid', 'invalid');
-    output.style.border = '1px solid rgba(75, 85, 99, 0.4)';
-    
-    // Validate input
-    if (!inputKey) {
-        output.textContent = '⚠️ Please enter an API key to check.';
-        keyInput.classList.add('invalid');
-        return;
-    }
+        // Optimized storage operations
+        const storage = {
+            set: (key, value) => {
+                try {
+                    const data = JSON.stringify(value);
+                    localStorage.setItem(key, data);
+                    sessionStorage.setItem(key, data);
+                } catch (e) {
+                    console.warn('Storage failed:', e);
+                }
+            },
+            get: (key) => {
+                try {
+                    return JSON.parse(localStorage.getItem(key) || sessionStorage.getItem(key) || 'null');
+                } catch (e) {
+                    return null;
+                }
+            },
+            remove: (key) => {
+                localStorage.removeItem(key);
+                sessionStorage.removeItem(key);
+            }
+        };
 
-    // Validate key format
-    if (!isValidKeyFormat(inputKey)) {
-        output.textContent = '❌ INVALID KEY FORMAT\n\n📝 Valid key format:\n- Exactly 10 characters\n- Only uppercase letters (A-Z) and numbers (0-9)\n- Example: ABC1234567\n\n⚠️ Please enter a valid ClavnnX API key.';
-        keyInput.classList.add('invalid');
-        keyInput.style.borderColor = '#ef4444';
-        output.style.border = '2px solid #ef4444';
-        
-        setTimeout(() => {
-            keyInput.style.borderColor = 'rgba(75, 85, 99, 0.6)';
-            output.style.border = '1px solid rgba(75, 85, 99, 0.4)';
-        }, 3000);
-        return;
-    }
-
-    // Show loading state
-    btnCheckKey.disabled = true;
-    btnCheckKey.textContent = 'Checking...';
-    btnCheckKey.classList.add('loading');
-    
-    output.textContent = '🔍 Validating key with server...\n\n⏱️ Please wait...';
-
-    try {
-        // Validate with server
-        const validationResult = await validateKeyWithServer(inputKey);
-        
-        let statusText = '';
-        let statusEmoji = '';
-        let borderColor = '';
-        let inputClass = '';
-        
-        switch (validationResult.status) {
-            case 'VALID':
-                statusText = '✅ ACTIVE';
-                statusEmoji = '✅';
-                borderColor = '#10b981';
-                inputClass = 'valid';
-                break;
-                
-            case 'EXPIRED':
-                statusText = '❌ EXPIRED';
-                statusEmoji = '⏰';
-                borderColor = '#ef4444';
-                inputClass = 'invalid';
-                break;
-                
-            case 'INVALID':
-                statusText = '❌ NOT FOUND';
-                statusEmoji = '🚫';
-                borderColor = '#ef4444';
-                inputClass = 'invalid';
-                break;
-                
-            case 'ERROR':
-            default:
-                statusText = '⚠️ CHECK FAILED';
-                statusEmoji = '⚠️';
-                borderColor = '#f59e0b';
-                inputClass = 'invalid';
-                break;
-        }
-        
-        // Update UI based on validation result
-        const currentTime = new Date().toLocaleString();
-        
-        if (validationResult.status === 'VALID') {
-            output.textContent = `🔑 Key: ${inputKey}\n\n${statusEmoji} Status: ${statusText}\n\n✅ Key validation successful!\n\n🕐 Checked at: ${currentTime}\n\n💡 This key is currently active and can be used.`;
-        } else if (validationResult.status === 'EXPIRED') {
-            output.textContent = `🔑 Key: ${inputKey}\n\n${statusEmoji} Status: ${statusText}\n\n❌ This key has expired and cannot be used.\n\n🕐 Checked at: ${currentTime}\n\n💡 Please generate a new key to continue using the service.`;
-        } else if (validationResult.status === 'INVALID') {
-            output.textContent = `🔑 Key: ${inputKey}\n\n${statusEmoji} Status: ${statusText}\n\n❌ This key was not found in our system.\n\n🕐 Checked at: ${currentTime}\n\n💡 Please check if you entered the key correctly or generate a new one.`;
-        } else {
-            output.textContent = `🔑 Key: ${inputKey}\n\n${statusEmoji} Status: ${statusText}\n\n${validationResult.message || 'Unable to validate key at this time.'}\n\n🕐 Checked at: ${currentTime}\n\n🔄 Please try again in a few moments.`;
-        }
-        
-        // Apply styling
-        keyInput.classList.add(inputClass);
-        keyInput.style.borderColor = borderColor;
-        output.style.border = `2px solid ${borderColor}`;
-        
-        // Reset styling after 5 seconds
-        setTimeout(() => {
-            keyInput.style.borderColor = 'rgba(75, 85, 99, 0.6)';
-            output.style.border = '1px solid rgba(75, 85, 99, 0.4)';
-            keyInput.classList.remove('valid', 'invalid');
-        }, 5000);
-        
-    } catch (error) {
-        console.error('Key validation error:', error);
-        
-        output.textContent = `🔑 Key: ${inputKey}\n\n⚠️ Status: VALIDATION ERROR\n\n❌ Unable to validate key due to connection issues.\n\n🔄 Please check your internet connection and try again.\n\nError: ${error.message}`;
-        
-        keyInput.classList.add('invalid');
-        keyInput.style.borderColor = '#ef4444';
-        output.style.border = '2px solid #ef4444';
-        
-        setTimeout(() => {
-            keyInput.style.borderColor = 'rgba(75, 85, 99, 0.6)';
-            output.style.border = '1px solid rgba(75, 85, 99, 0.4)';
-            keyInput.classList.remove('invalid');
-        }, 5000);
-        
-    } finally {
-        // Reset button state
-        btnCheckKey.disabled = false;
-        btnCheckKey.textContent = 'Check Key Status';
-        btnCheckKey.classList.remove('loading');
-    }
-}
-
-// Add input formatting and validation
-keyInput.addEventListener('input', function(e) {
-    // Convert to uppercase and limit to 10 characters
-    let value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-    if (value.length > 10) {
-        value = value.substring(0, 10);
-    }
-    e.target.value = value;
-    
-    // Clear previous validation states
-    keyInput.classList.remove('valid', 'invalid');
-});
-
-// Add Enter key support for check key
-keyInput.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter' && !btnCheckKey.disabled) {
-        checkKeyExpiry();
-    }
-});
-
-function saveToken(token) {
-    if (token) {
-        storage.set(TOKEN_KEY, {
-            token: token,
-            created: Date.now(),
-            expires: Date.now() + (8 * 60 * 1000)
-        });
-    }
-}
-
-function getToken() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const tokenFromUrl = urlParams.get('token');
-    
-    if (tokenFromUrl) {
-        saveToken(tokenFromUrl);
-        return tokenFromUrl;
-    }
-    
-    const tokenData = storage.get(TOKEN_KEY);
-    if (tokenData && Date.now() < tokenData.expires) {
-        return tokenData.token;
-    }
-    
-    clearToken();
-    return null;
-}
-
-function clearToken() {
-    storage.remove(TOKEN_KEY);
-    storage.remove(STEP_KEY);
-    storage.remove(GENERATE_ACCESS_KEY);
-    storage.remove(GENERATED_KEY_STORAGE);
-}
-
-function generateToken() {
-    return `token_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-}
-
-function saveGeneratedKey(keyData) {
-    if (keyData) {
-        storage.set(GENERATED_KEY_STORAGE, {
-            key: keyData.key,
-            expires: keyData.expires,
-            generated: Date.now(),
-            isValid: true
-        });
-    }
-}
-
-function getGeneratedKey() {
-    const keyData = storage.get(GENERATED_KEY_STORAGE);
-    if (keyData && keyData.isValid && Date.now() < keyData.expires) {
-        return keyData;
-    }
-    
-    if (keyData) {
-        storage.remove(GENERATED_KEY_STORAGE);
-    }
-    return null;
-}
-
-function hasValidGeneratedKey() {
-    const keyData = getGeneratedKey();
-    return keyData && keyData.key;
-}
-
-function saveGenerateAccess() {
-    const now = Date.now();
-    const accessData = {
-        accessTime: now,
-        expires: now + (8 * 60 * 1000)
-    };
-    
-    storage.set(GENERATE_ACCESS_KEY, accessData);
-    generatePageMemory.accessTime = now;
-    generatePageMemory.isExpired = false;
-}
-
-function getGenerateAccess() {
-    const accessData = storage.get(GENERATE_ACCESS_KEY);
-    if (accessData && Date.now() < accessData.expires) {
-        generatePageMemory.accessTime = accessData.accessTime;
-        generatePageMemory.isExpired = false;
-        return accessData;
-    }
-    
-    generatePageMemory.isExpired = true;
-    return null;
-}
-
-function isGeneratePageExpired() {
-    const accessData = getGenerateAccess();
-    return !accessData || generatePageMemory.isExpired;
-}
-
-function getRemainingTime() {
-    const accessData = storage.get(GENERATE_ACCESS_KEY);
-    if (!accessData) return 0;
-    
-    const remaining = accessData.expires - Date.now();
-    return Math.max(0, remaining);
-}
-
-function saveStepProgress(step) {
-    storage.set(STEP_KEY, step);
-}
-
-function getStepProgress() {
-    const step = storage.get(STEP_KEY) || 0;
-    return Math.max(0, Math.min(2, parseInt(step)));
-}
-
-function updateProgress(currentStep, totalSteps = 2) {
-    const percentage = (currentStep / totalSteps) * 100;
-    progressBar.style.width = percentage + '%';
-    progressStep.textContent = `Step ${currentStep}/${totalSteps}`;
-}
-
-function updateStepIndicator(currentStep, totalSteps = 2) {
-    stepIndicator.style.display = 'block';
-    if (currentStep >= totalSteps) {
-        stepIndicator.className = 'success-message pulse';
-        stepIndicator.textContent = '✅ All Steps Completed! Ready to generate key';
-    } else {
-        stepIndicator.className = 'step-indicator pulse';
-        stepIndicator.textContent = `Step ${currentStep}/${totalSteps} Completed`;
-    }
-}
-
-function startCountdown() {
-    if (countdownInterval) {
-        clearInterval(countdownInterval);
-    }
-
-    countdownInterval = setInterval(() => {
-        const remaining = getRemainingTime();
-        
-        if (remaining <= 0) {
-            clearInterval(countdownInterval);
-            countdownTimer.textContent = '00:00';
-            generatePageMemory.isExpired = true;
-            return;
+        // Token management
+        function saveToken(token) {
+            if (token) {
+                storage.set(TOKEN_KEY, {
+                    token: token,
+                    created: Date.now(),
+                    expires: Date.now() + (8 * 60 * 1000) // 8 minutes for token
+                });
+            }
         }
 
-        const minutes = Math.floor(remaining / (1000 * 60));
-        const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
-        
-        countdownTimer.textContent = 
-            `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    }, 1000);
-}
-
-const route = window.location.hash.replace('#', '') || window.location.pathname.replace('/', '') || 'home';
-const urlParams = new URLSearchParams(window.location.search);
-
-function updateCurrentUrl() {
-    currentUrl.value = window.location.pathname + window.location.search + window.location.hash;
-}
-
-function init() {
-    updateCurrentUrl();
-    
-    // Show check key section on home page - FIXED VERSION
-    if (route === 'home' || route === '' || route === 'index' || window.location.pathname === '/' || window.location.pathname === '/index.html') {
-        checkKeySection.style.display = 'block';
-        btnCheckKey.style.display = 'block';
-        btnCheckKey.onclick = checkKeyExpiry;
-    } else {
-        checkKeySection.style.display = 'none';
-    }
-    
-    switch(route) {
-        case 'step1':
-            initStep1();
-            break;
-        case 'step2':  
-            initStep2();
-            break;
-        case 'get-your-key':
-            initGetKey();
-            break;
-        case 'generate-key-secure-xyz':
-            initGenerate();
-            break;
-        default:
-            initHome();
-    }
-}
-
-function initHome() {
-    const currentStep = getStepProgress();
-    updateProgress(currentStep);
-    if (currentStep > 0) updateStepIndicator(currentStep);
-    
-    btnContinue.textContent = '🚀 Start Step 1/2';
-    
-    // Make sure check key section is visible on homepage
-    checkKeySection.style.display = 'block';
-    btnCheckKey.style.display = 'block';
-    
-    btnContinue.onclick = () => {
-        btnContinue.textContent = 'Redirecting...';
-        btnContinue.classList.add('loading');
-        btnContinue.disabled = true;
-        
-        const returnUrl = `${window.location.origin}/step1?completed=1`;
-        window.location.href = `https://en.shrinke.me/scriptrblox?return=${encodeURIComponent(returnUrl)}`;
-    };
-}
-
-function initStep1() {
-    checkKeySection.style.display = 'none';
-    
-    if (urlParams.get('completed') === '1') {
-        const token = generateToken();
-        saveToken(token);
-        saveStepProgress(1);
-        
-        updateProgress(1);
-        updateStepIndicator(1);
-        output.textContent = '✅ Step 1/2 completed successfully!\n\n🔄 Redirecting to Step 2/2...';
-        btnContinue.style.display = 'none';
-        
-        setTimeout(() => {
-            window.location.href = window.location.pathname.includes('/step1') ? '/step2' : '#step2';
-        }, 1500);
-        return;
-    }
-    
-    updateProgress(Math.max(getStepProgress(), 0));
-    updateStepIndicator(Math.max(getStepProgress(), 0));
-    btnContinue.textContent = '🔑 Step 1/2 - Generate Token';
-    output.textContent = '📋 Step 1 of 2: Token Generation Step\n\n🎯 Click the button below to complete Step 1/2.';
-    
-    btnContinue.onclick = () => {
-        btnContinue.textContent = 'Redirecting...';
-        btnContinue.classList.add('loading');
-        btnContinue.disabled = true;
-        
-        const returnUrl = `${window.location.origin}/step1?completed=1`;
-        window.location.href = `https://en.shrinke.me/scriptrblox?return=${encodeURIComponent(returnUrl)}`;
-    };
-}
-
-function initStep2() {
-    checkKeySection.style.display = 'none';
-    
-    if (urlParams.get('completed') === '2') {
-        if (!getToken()) {
-            showError('Token expired. Please start over.');
-            return;
-        }
-        
-        saveStepProgress(2);
-        updateProgress(2);
-        updateStepIndicator(2);
-        output.textContent = '✅ Step 2/2 completed successfully!\n\n🎉 Auto-redirecting to key generation...';
-        btnContinue.style.display = 'none';
-        
-        saveGenerateAccess();
-        
-        setTimeout(() => {
-            window.location.href = `/generate-key-secure-xyz?token=${getToken()}`;
-        }, 2000);
-        return;
-    }
-    
-    if (!getToken()) {
-        showError('No token found. Complete Step 1/2 first.');
-        return;
-    }
-    
-    updateProgress(Math.max(getStepProgress(), 1));
-    updateStepIndicator(Math.max(getStepProgress(), 1));
-    btnContinue.textContent = '🛡️ Step 2/2 - Final Verification';
-    output.textContent = '📋 Step 2 of 2: Final Verification\n\n✅ Step 1/2: Completed\n\n🎯 Click below to complete final verification.';
-    
-    btnContinue.onclick = () => {
-        btnContinue.textContent = 'Redirecting...';
-        btnContinue.classList.add('loading');
-        btnContinue.disabled = true;
-        
-        const returnUrl = `${window.location.origin}/step2?completed=2`;
-        window.location.href = `https://en.shrinke.me/scriptrblox2?return=${encodeURIComponent(returnUrl)}`;
-    };
-}
-
-function initGetKey() {
-    checkKeySection.style.display = 'none';
-    
-    const token = getToken();
-    const currentStep = getStepProgress();
-    
-    if (!token || currentStep < 2) {
-        showError('Invalid access. Complete all steps first.');
-        return;
-    }
-    
-    updateProgress(2, 2);
-    updateStepIndicator(2, 2);
-    btnContinue.textContent = '🎉 Generate Your API Key';
-    btnContinue.classList.add('glow');
-    output.textContent = '🔓 Get Your Key\n\n✅ VALID ACCESS CONFIRMED\n\n🎯 You can now generate your API key!';
-    
-    btnContinue.onclick = () => {
-        btnContinue.textContent = 'Loading...';
-        btnContinue.classList.add('loading');
-        btnContinue.disabled = true;
-        
-        saveGenerateAccess();
-        
-        setTimeout(() => {
-            window.location.href = `/generate-key-secure-xyz?token=${token}`;
-        }, 800);
-    };
-}
-
-function initGenerate() {
-    checkKeySection.style.display = 'none';
-    
-    const token = getToken();
-    const currentStep = getStepProgress();
-    
-    if (!token || currentStep < 2) {
-        showError('Access denied. Complete verification first.');
-        return;
-    }
-
-    if (isGeneratePageExpired()) {
-        showExpiredPage();
-        return;
-    }
-
-    updateProgress(2, 2);
-    updateStepIndicator(2, 2);
-    
-    startCountdown();
-    
-    const existingKey = getGeneratedKey();
-    if (existingKey) {
-        showExistingKey(existingKey);
-    } else {
-        autoGenerateKey();
-    }
-}
-
-function showExistingKey(keyData) {
-    btnContinue.style.display = 'none';
-    btnCopy.style.display = 'block';
-    
-    stepIndicator.style.display = 'block';
-    stepIndicator.className = 'success-message';
-    stepIndicator.textContent = '✅ API Key Loaded';
-    
-    const keyExpiresDate = new Date(keyData.expires);
-    const remainingKeyTime = Math.max(0, keyData.expires - Date.now());
-    const keyHours = Math.floor(remainingKeyTime / (1000 * 60 * 60));
-    const keyMinutes = Math.floor((remainingKeyTime % (1000 * 60 * 60)) / (1000 * 60));
-    
-    currentKey = keyData.key;
-    
-    output.textContent = `🔑 Your API Key: ${keyData.key}\n\n⏰ Expires: ${keyExpiresDate.toLocaleString()}\n\n⚡ Status: ACTIVE (${keyHours}h ${keyMinutes}m remaining)\n\n🛡️ Refresh Protection: Active`;
-    
-    btnCopy.textContent = '📋 Copy Key';
-    
-    output.style.border = '2px solid #f59e0b';
-    setTimeout(() => {
-        output.style.border = '1px solid rgba(75, 85, 99, 0.4)';
-    }, 3000);
-}
-
-function showExpiredPage() {
-    countdownSection.style.display = 'block';
-    
-    btnContinue.style.display = 'none';
-    btnCopy.style.display = 'none';
-    
-    stepIndicator.style.display = 'block';
-    stepIndicator.className = 'expired-message pulse';
-    stepIndicator.textContent = '⏰ Generate Page Access Expired';
-    
-    output.textContent = '🚫 Generate Key Access Expired\n\n⏰ The 8-minute access window has expired.\n\n🔄 Please complete verification steps again to generate a new key.';
-    
-    updateProgress(2, 2);
-    progressStep.textContent = 'Step 2/2 - EXPIRED';
-    
-    const restartBtn = document.createElement('button');
-    restartBtn.className = 'main-button';
-    restartBtn.style.background = 'linear-gradient(135deg, #f59e0b, #fbbf24)';
-    restartBtn.textContent = '🔄 Start Over';
-    restartBtn.onclick = () => {
-        clearToken();
-        window.location.href = '/';
-    };
-    
-    output.parentNode.insertBefore(restartBtn, output.nextSibling);
-}
-
-async function autoGenerateKey() {
-    btnContinue.style.display = 'none';
-    btnCopy.style.display = 'none';
-    stepIndicator.style.display = 'none';
-    
-    output.textContent = '🔐 Preparing your secure API key...\n\n⏱️ Please wait...';
-    
-    try {
-        const token = getToken();
-        
-        // Show loading for 3 seconds
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        
-        // Try to get key from server first
-        try {
-            const response = await fetch(`/getkey?token=${encodeURIComponent(token)}`);
+        function getToken() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tokenFromUrl = urlParams.get('token');
             
-            if (response.ok) {
-                const keyData = await response.json();
-                
-                currentKey = keyData.key;
-                
-                const keyDataToSave = {
+            if (tokenFromUrl) {
+                saveToken(tokenFromUrl);
+                return tokenFromUrl;
+            }
+            
+            const tokenData = storage.get(TOKEN_KEY);
+            if (tokenData && Date.now() < tokenData.expires) {
+                return tokenData.token;
+            }
+            
+            clearToken();
+            return null;
+        }
+
+        function clearToken() {
+            storage.remove(TOKEN_KEY);
+            storage.remove(STEP_KEY);
+            storage.remove(GENERATE_ACCESS_KEY);
+            storage.remove(GENERATED_KEY_STORAGE); // Clear generated key when clearing session
+        }
+
+        function generateToken() {
+            return `token_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+        }
+
+        // NEW: Generated key management functions
+        function saveGeneratedKey(keyData) {
+            if (keyData) {
+                storage.set(GENERATED_KEY_STORAGE, {
                     key: keyData.key,
-                    expires: new Date(keyData.expires).getTime()
-                };
-                saveGeneratedKey(keyDataToSave);
+                    expires: keyData.expires,
+                    generated: Date.now(),
+                    isValid: true
+                });
+            }
+        }
+
+        function getGeneratedKey() {
+            const keyData = storage.get(GENERATED_KEY_STORAGE);
+            if (keyData && keyData.isValid && Date.now() < keyData.expires) {
+                return keyData;
+            }
+            
+            // Clear expired key
+            if (keyData) {
+                storage.remove(GENERATED_KEY_STORAGE);
+            }
+            return null;
+        }
+
+        function hasValidGeneratedKey() {
+            const keyData = getGeneratedKey();
+            return keyData && keyData.key;
+        }
+
+        // Generate page access management
+        function saveGenerateAccess() {
+            const now = Date.now();
+            const accessData = {
+                accessTime: now,
+                expires: now + (8 * 60 * 1000) // 8 minutes
+            };
+            
+            storage.set(GENERATE_ACCESS_KEY, accessData);
+            generatePageMemory.accessTime = now;
+            generatePageMemory.isExpired = false;
+        }
+
+        function getGenerateAccess() {
+            const accessData = storage.get(GENERATE_ACCESS_KEY);
+            if (accessData && Date.now() < accessData.expires) {
+                generatePageMemory.accessTime = accessData.accessTime;
+                generatePageMemory.isExpired = false;
+                return accessData;
+            }
+            
+            generatePageMemory.isExpired = true;
+            return null;
+        }
+
+        function isGeneratePageExpired() {
+            const accessData = getGenerateAccess();
+            return !accessData || generatePageMemory.isExpired;
+        }
+
+        function getRemainingTime() {
+            const accessData = storage.get(GENERATE_ACCESS_KEY);
+            if (!accessData) return 0;
+            
+            const remaining = accessData.expires - Date.now();
+            return Math.max(0, remaining);
+        }
+
+        // Step management
+        function saveStepProgress(step) {
+            storage.set(STEP_KEY, step);
+        }
+
+        function getStepProgress() {
+            const step = storage.get(STEP_KEY) || 0;
+            return Math.max(0, Math.min(2, parseInt(step)));
+        }
+
+        function updateProgress(currentStep, totalSteps = 2) {
+            const percentage = (currentStep / totalSteps) * 100;
+            progressBar.style.width = percentage + '%';
+            progressStep.textContent = `Step ${currentStep}/${totalSteps}`;
+        }
+
+        function updateStepIndicator(currentStep, totalSteps = 2) {
+            stepIndicator.style.display = 'block';
+            if (currentStep >= totalSteps) {
+                stepIndicator.className = 'success-message pulse';
+                stepIndicator.textContent = '✅ All Steps Completed! Ready to generate key';
+            } else {
+                stepIndicator.className = 'step-indicator pulse';
+                stepIndicator.textContent = `Step ${currentStep}/${totalSteps} Completed`;
+            }
+        }
+
+        // Countdown functionality
+        function startCountdown() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+
+            countdownInterval = setInterval(() => {
+                const remaining = getRemainingTime();
                 
+                if (remaining <= 0) {
+                    clearInterval(countdownInterval);
+                    countdownTimer.textContent = '00:00';
+                    generatePageMemory.isExpired = true;
+                    return;
+                }
+
+                const minutes = Math.floor(remaining / (1000 * 60));
+                const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+                
+                countdownTimer.textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        // Page routing - optimized
+        const route = window.location.hash.replace('#', '') || window.location.pathname.replace('/', '') || 'home';
+        const urlParams = new URLSearchParams(window.location.search);
+
+        // Update current URL display
+        function updateCurrentUrl() {
+            currentUrl.value = window.location.pathname + window.location.search + window.location.hash;
+        }
+
+        // Initialize based on route
+        function init() {
+            updateCurrentUrl();
+            
+            switch(route) {
+                case 'step1':
+                    initStep1();
+                    break;
+                case 'step2':  
+                    initStep2();
+                    break;
+                case 'get-your-key':
+                    initGetKey();
+                    break;
+                case 'generate-key-secure-xyz':
+                    initGenerate();
+                    break;
+                default:
+                    initHome();
+            }
+        }
+
+        function initHome() {
+            const currentStep = getStepProgress();
+            updateProgress(currentStep);
+            if (currentStep > 0) updateStepIndicator(currentStep);
+            
+            btnContinue.textContent = '🚀 Start Step 1/2';
+            
+            btnContinue.onclick = () => {
+                btnContinue.textContent = 'Redirecting...';
+                btnContinue.classList.add('loading');
+                btnContinue.disabled = true;
+                
+                const returnUrl = `${window.location.origin}/step1?completed=1`;
+                window.location.href = `https://direct-link.net/1385845/QhuxogBGSmxB?return=${encodeURIComponent(returnUrl)}`;
+            };
+        }
+
+        function initStep1() {
+            if (urlParams.get('completed') === '1') {
+                const token = generateToken();
+                saveToken(token);
+                saveStepProgress(1);
+                
+                updateProgress(1);
+                updateStepIndicator(1);
+                output.textContent = '✅ Step 1/2 completed successfully!\n\n🔄 Redirecting to Step 2/2...';
+                btnContinue.style.display = 'none';
+                
+                setTimeout(() => {
+                    window.location.href = window.location.pathname.includes('/step1') ? '/step2' : '#step2';
+                }, 1500);
+                return;
+            }
+            
+            updateProgress(Math.max(getStepProgress(), 0));
+            updateStepIndicator(Math.max(getStepProgress(), 0));
+            btnContinue.textContent = '🔑 Step 1/2 - Generate Token';
+            output.textContent = '📋 Step 1 of 2: Token Generation Step\n\n🎯 Click the button below to complete Step 1/2.';
+            
+            btnContinue.onclick = () => {
+                btnContinue.textContent = 'Redirecting...';
+                btnContinue.classList.add('loading');
+                btnContinue.disabled = true;
+                
+                const returnUrl = `${window.location.origin}/step1?completed=1`;
+                window.location.href = `https://direct-link.net/1385845/QhuxogBGSmxB?return=${encodeURIComponent(returnUrl)}`;
+            };
+        }
+
+        function initStep2() {
+            if (urlParams.get('completed') === '2') {
+                if (!getToken()) {
+                    showError('Token expired. Please start over.');
+                    return;
+                }
+                
+                saveStepProgress(2);
+                updateProgress(2);
+                updateStepIndicator(2);
+                output.textContent = '✅ Step 2/2 completed successfully!\n\n🎉 Auto-redirecting to key generation...';
+                btnContinue.style.display = 'none';
+                
+                // Save generate page access immediately
+                saveGenerateAccess();
+                
+                setTimeout(() => {
+                    window.location.href = `/generate-key-secure-xyz?token=${getToken()}`;
+                }, 2000);
+                return;
+            }
+            
+            if (!getToken()) {
+                showError('No token found. Complete Step 1/2 first.');
+                return;
+            }
+            
+            updateProgress(Math.max(getStepProgress(), 1));
+            updateStepIndicator(Math.max(getStepProgress(), 1));
+            btnContinue.textContent = '🛡️ Step 2/2 - Final Verification';
+            output.textContent = '📋 Step 2 of 2: Final Verification\n\n✅ Step 1/2: Completed\n\n🎯 Click below to complete final verification.';
+            
+            btnContinue.onclick = () => {
+                btnContinue.textContent = 'Redirecting...';
+                btnContinue.classList.add('loading');
+                btnContinue.disabled = true;
+                
+                const returnUrl = `${window.location.origin}/step2?completed=2`;
+                window.location.href = `https://link-target.net/1385845/05NfA4wGJcIe?return=${encodeURIComponent(returnUrl)}`;
+            };
+        }
+
+        function initGetKey() {
+            const token = getToken();
+            const currentStep = getStepProgress();
+            
+            if (!token || currentStep < 2) {
+                showError('Invalid access. Complete all steps first.');
+                return;
+            }
+            
+            updateProgress(2, 2);
+            updateStepIndicator(2, 2);
+            btnContinue.textContent = '🎉 Generate Your API Key';
+            btnContinue.classList.add('glow');
+            output.textContent = '🔓 Get Your Key\n\n✅ VALID ACCESS CONFIRMED\n\n🎯 You can now generate your API key!';
+            
+            btnContinue.onclick = () => {
+                btnContinue.textContent = 'Loading...';
+                btnContinue.classList.add('loading');
+                btnContinue.disabled = true;
+                
+                // Save generate page access time
+                saveGenerateAccess();
+                
+                setTimeout(() => {
+                    window.location.href = `/generate-key-secure-xyz?token=${token}`;
+                }, 800);
+            };
+        }
+
+        function initGenerate() {
+            const token = getToken();
+            const currentStep = getStepProgress();
+            
+            // First check if token and step are valid
+            if (!token || currentStep < 2) {
+                showError('Access denied. Complete verification first.');
+                return;
+            }
+
+            // Check if generate page access has expired (8 minutes)
+            if (isGeneratePageExpired()) {
+                showExpiredPage();
+                return;
+            }
+
+            // Initialize generate page
+            updateProgress(2, 2);
+            updateStepIndicator(2, 2);
+            
+            // Start countdown
+            startCountdown();
+            
+            // MODIFIED: Check for existing key before generating new one
+            const existingKey = getGeneratedKey();
+            if (existingKey) {
+                // Show existing key instead of generating new one
+                showExistingKey(existingKey);
+            } else {
+                // Auto-generate key only if no existing key
+                autoGenerateKey();
+            }
+        }
+
+        // NEW: Function to display existing key (prevents spam generation)
+        function showExistingKey(keyData) {
+            // Hide generation buttons
+            btnContinue.style.display = 'none';
+            btnCopy.style.display = 'block';
+            
+            // Show existing key message
+            stepIndicator.style.display = 'block';
+            stepIndicator.className = 'success-message';
+            stepIndicator.textContent = '✅ API Key Loaded';
+            
+            // Calculate remaining time for the key
+            const keyExpiresDate = new Date(keyData.expires);
+            const remainingKeyTime = Math.max(0, keyData.expires - Date.now());
+            const keyHours = Math.floor(remainingKeyTime / (1000 * 60 * 60));
+            const keyMinutes = Math.floor((remainingKeyTime % (1000 * 60 * 60)) / (1000 * 60));
+            
+            currentKey = keyData.key;
+            
+            output.textContent = `🔑 Your API Key: ${keyData.key}\n\n⏰ Expires: ${keyExpiresDate.toLocaleString()}\n\n⚡ Status: ACTIVE (${keyHours}h ${keyMinutes}m remaining)\n\n🛡️ Refresh Protection: Active`;
+            
+            // Copy button functionality
+            btnCopy.textContent = '📋 Copy Key';
+            
+            // Add visual indicator that this is an existing key
+            output.style.border = '2px solid #f59e0b';
+            setTimeout(() => {
+                output.style.border = '1px solid rgba(75, 85, 99, 0.4)';
+            }, 3000);
+        }
+
+        function showExpiredPage() {
+            // Show countdown section
+            countdownSection.style.display = 'block';
+            
+            // Hide main elements
+            btnContinue.style.display = 'none';
+            btnCopy.style.display = 'none';
+            
+            // Show expired message
+            stepIndicator.style.display = 'block';
+            stepIndicator.className = 'expired-message pulse';
+            stepIndicator.textContent = '⏰ Generate Page Access Expired';
+            
+            output.textContent = '🚫 Generate Key Access Expired\n\n⏰ The 8-minute access window has expired.\n\n🔄 Please complete verification steps again to generate a new key.';
+            
+            // Update progress to show completion but expired
+            updateProgress(2, 2);
+            progressStep.textContent = 'Step 2/2 - EXPIRED';
+            
+            // Show restart button
+            const restartBtn = document.createElement('button');
+            restartBtn.className = 'main-button';
+            restartBtn.style.background = 'linear-gradient(135deg, #f59e0b, #fbbf24)';
+            restartBtn.textContent = '🔄 Start Over';
+            restartBtn.onclick = () => {
+                clearToken();
+                window.location.href = '/';
+            };
+            
+            // Insert restart button after output
+            output.parentNode.insertBefore(restartBtn, output.nextSibling);
+        }
+
+        async function autoGenerateKey() {
+            // Hide all UI elements during background generation
+            btnContinue.style.display = 'none';
+            btnCopy.style.display = 'none';
+            stepIndicator.style.display = 'none';
+            
+            // Show minimal status without Generate URL frame
+            output.textContent = '🔐 Preparing your secure API key...\n\n⏱️ Please wait...';
+            
+            try {
+                const token = getToken();
+                
+                // Simulate secure key generation process
+                await new Promise(resolve => setTimeout(resolve, 3000));
+                
+                // For now, generate a mock key since backend is not available
+                // In production, this should call: const response = await fetch(`/getkey?token=${token}`);
+                
+                // MOCK KEY GENERATION (remove when backend is ready)
+                // Generate 10-character key like backend (A-Z, 0-9 only)
+                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+                let mockKey = '';
+                for (let i = 0; i < 10; i++) {
+                    mockKey += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                const mockExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+                
+                currentKey = mockKey;
+                
+                // MODIFIED: Save the generated key to prevent regeneration on refresh
+                const keyData = {
+                    key: mockKey,
+                    expires: mockExpires.getTime()
+                };
+                saveGeneratedKey(keyData);
+                
+                // Show success without explicit Generate URL frame
                 stepIndicator.style.display = 'block';
                 stepIndicator.className = 'success-message pulse';
-                stepIndicator.textContent = keyData.isExisting ? '✅ API Key Loaded!' : '✅ API Key Generated!';
+                stepIndicator.textContent = '✅ API Key Ready!';
                 
-                const expiresDate = new Date(keyData.expires);
-                const remainingTime = Math.max(0, expiresDate.getTime() - Date.now());
-                const hours = Math.floor(remainingTime / (1000 * 60 * 60));
-                const minutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
+                output.textContent = `🔑 Your API Key: ${mockKey}\n\n⏰ Expires: ${mockExpires.toLocaleString()}\n\n✅ Key validated successfully!\n\n⚠️ Important: This key is valid for 24 hours.\n\n🛡️ Refresh Protection: Active`;
                 
-                output.textContent = `🔑 Your API Key: ${keyData.key}\n\n⏰ Expires: ${expiresDate.toLocaleString()}\n\n✅ Key ${keyData.isExisting ? 'loaded' : 'generated'} successfully!\n\n⚡ Status: ACTIVE (${hours}h ${minutes}m remaining)\n\n🛡️ Refresh Protection: Active`;
-                
+                // Show copy button
                 btnCopy.style.display = 'block';
                 btnCopy.textContent = '📋 Copy API Key';
                 
+                // Flash effect for new key
                 output.style.border = '2px solid #10b981';
                 setTimeout(() => {
                     output.style.border = '1px solid rgba(75, 85, 99, 0.4)';
                 }, 2000);
                 
-                return;
+                /* 
+                // REAL BACKEND CALL (uncomment when backend is deployed)
+                const response = await fetch(`/getkey?token=${token}`);
+                
+                // Check if response is HTML (error page) instead of JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    throw new Error('Backend API not available. Please ensure server is running.');
+                }
+                
+                const data = await response.json();
+                
+                if (response.ok && data.key) {
+                    currentKey = data.key;
+                    const expiresDate = new Date(data.expires);
+                    
+                    // MODIFIED: Save the generated key to prevent regeneration on refresh
+                    const keyData = {
+                        key: data.key,
+                        expires: expiresDate.getTime()
+                    };
+                    saveGeneratedKey(keyData);
+                    
+                    // Show success
+                    stepIndicator.className = 'success-message pulse';
+                    stepIndicator.textContent = '✅ API Key Generated Successfully!';
+                    
+                    output.textContent = `🔑 Your API Key: ${data.key}\n\n⏰ Expires: ${expiresDate.toLocaleString()}\n\n✅ Key generated and validated successfully!\n\n⚠️ Important: This key is valid for 24 hours.\n\n🛡️ Refresh Protection: Key is cached to prevent spam generation.`;
+                    
+                    // Show copy button
+                    btnCopy.style.display = 'block';
+                    btnCopy.textContent = '📋 Copy API Key';
+                    
+                    // Also show the key in a more prominent way if it's new
+                    if (!data.isExisting) {
+                        // Flash effect for new key
+                        output.style.border = '2px solid #10b981';
+                        setTimeout(() => {
+                            output.style.border = '1px solid rgba(75, 85, 99, 0.4)';
+                        }, 2000);
+                    }
+                    
+                } else {
+                    throw new Error(data.error || 'Failed to generate key');
+                }
+                */
+                
+            } catch (error) {
+                console.error('Key generation error:', error);
+                
+                stepIndicator.className = 'error-message pulse';
+                stepIndicator.textContent = '❌ Key Generation Failed';
+                
+                output.textContent = `⚠️ Error: ${error.message}\n\n🔄 This might happen if:\n- Backend API is not deployed\n- Token has expired\n- Network connection issue\n- Server is temporarily unavailable\n\n💡 Please try starting the verification process again.`;
+                
+                // Show retry button
+                const retryBtn = document.createElement('button');
+                retryBtn.className = 'main-button';
+                retryBtn.style.background = 'linear-gradient(135deg, #f59e0b, #fbbf24)';
+                retryBtn.textContent = '🔄 Start Over';
+                retryBtn.onclick = () => {
+                    clearToken();
+                    window.location.href = '/';
+                };
+                
+                // Insert retry button after output
+                output.parentNode.insertBefore(retryBtn, output.nextSibling);
             }
-        } catch (serverError) {
-            console.log('Server not available, using fallback generation');
         }
-        
-        // Fallback: Generate mock key for demo
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-        let mockKey = '';
-        for (let i = 0; i < 10; i++) {
-            mockKey += chars.charAt(Math.floor(Math.random() * chars.length));
+
+        function showError(message) {
+            stepIndicator.style.display = 'block';
+            stepIndicator.className = 'error-message pulse';
+            stepIndicator.textContent = '❌ Error';
+            
+            output.textContent = `⚠️ Error: ${message}\n\n🔄 Click "Start Over" to begin verification.`;
+            btnContinue.textContent = '🔄 Start Over';
+            btnContinue.className = 'main-button';
+            btnContinue.onclick = () => {
+                clearToken();
+                window.location.href = '/';
+            };
         }
-        const mockExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
-        
-        currentKey = mockKey;
-        
-        const keyData = {
-            key: mockKey,
-            expires: mockExpires.getTime()
-        };
-        saveGeneratedKey(keyData);
-        
-        stepIndicator.style.display = 'block';
-        stepIndicator.className = 'success-message pulse';
-        stepIndicator.textContent = '✅ API Key Ready!';
-        
-        output.textContent = `🔑 Your API Key: ${mockKey}\n\n⏰ Expires: ${mockExpires.toLocaleString()}\n\n✅ Key validated successfully!\n\n⚠️ Important: This key is valid for 24 hours.\n\n🛡️ Refresh Protection: Active\n\n💡 Demo Mode: Server integration available for production.`;
-        
-        btnCopy.style.display = 'block';
-        btnCopy.textContent = '📋 Copy API Key';
-        
-        output.style.border = '2px solid #10b981';
-        setTimeout(() => {
-            output.style.border = '1px solid rgba(75, 85, 99, 0.4)';
-        }, 2000);
-        
-    } catch (error) {
-        console.error('Key generation error:', error);
-        
-        stepIndicator.style.display = 'block';
-        stepIndicator.className = 'error-message pulse';
-        stepIndicator.textContent = '❌ Key Generation Failed';
-        
-        output.textContent = `⚠️ Error: ${error.message}\n\n🔄 This might happen if:\n- Backend API is not deployed\n- Token has expired\n- Network connection issue\n- Server is temporarily unavailable\n\n💡 Please try starting the verification process again.`;
-        
-        const retryBtn = document.createElement('button');
-        retryBtn.className = 'main-button';
-        retryBtn.style.background = 'linear-gradient(135deg, #f59e0b, #fbbf24)';
-        retryBtn.textContent = '🔄 Start Over';
-        retryBtn.onclick = () => {
-            clearToken();
-            window.location.href = '/';
-        };
-        
-        output.parentNode.insertBefore(retryBtn, output.nextSibling);
-    }
-}
 
-function showError(message) {
-    stepIndicator.style.display = 'block';
-    stepIndicator.className = 'error-message pulse';
-    stepIndicator.textContent = '❌ Error';
-    
-    output.textContent = `⚠️ Error: ${message}\n\n🔄 Click "Start Over" to begin verification.`;
-    btnContinue.textContent = '🔄 Start Over';
-    btnContinue.className = 'main-button';
-    btnContinue.onclick = () => {
-        clearToken();
-        window.location.href = '/';
-    };
-}
-
-btnCopy.onclick = async () => {
-    if (!currentKey) return;
-    
-    try {
-        await navigator.clipboard.writeText(currentKey);
-        btnCopy.textContent = '✅ Copied!';
-        btnCopy.style.background = 'linear-gradient(135deg, #059669, #10b981)';
-        
-        const originalText = output.textContent;
-        output.textContent = originalText + '\n\n✅ API Key copied to clipboard!';
-        
-        setTimeout(() => {
-            output.textContent = originalText;
-        }, 3000);
-        
-    } catch (error) {
-        const textArea = document.createElement('textarea');
-        textArea.value = currentKey;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        textArea.style.top = '-999999px';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        
-        try {
-            document.execCommand('copy');
-            btnCopy.textContent = '✅ Copied!';
-            btnCopy.style.background = 'linear-gradient(135deg, #059669, #10b981)';
-        } catch (err) {
-            btnCopy.textContent = '❌ Copy Failed';
-            btnCopy.style.background = 'linear-gradient(135deg, #ef4444, #f87171)';
-        }
-        
-        document.body.removeChild(textArea);
-    }
-    
-    setTimeout(() => {
-        btnCopy.textContent = hasValidGeneratedKey() ? '📋 Copy Existing Key' : '📋 Copy API Key';
-        btnCopy.style.background = 'linear-gradient(135deg, #10b981, #34d399)';
-    }, 2000);
-};
-
-function preventGeneratePageManipulation() {
-    if (route === 'generate-key-secure-xyz') {
-        window.addEventListener('beforeunload', (e) => {
-            if (!generatePageMemory.isExpired && !hasValidGeneratedKey()) {
-                e.preventDefault();
-                e.returnValue = 'Refreshing this page will reset your key generation session.';
-                return e.returnValue;
+        // Copy functionality
+        btnCopy.onclick = async () => {
+            if (!currentKey) return;
+            
+            try {
+                await navigator.clipboard.writeText(currentKey);
+                btnCopy.textContent = '✅ Copied!';
+                btnCopy.style.background = 'linear-gradient(135deg, #059669, #10b981)';
+                
+                // Show success feedback in output
+                const originalText = output.textContent;
+                output.textContent = originalText + '\n\n✅ API Key copied to clipboard!';
+                
+                setTimeout(() => {
+                    output.textContent = originalText;
+                }, 3000);
+                
+            } catch (error) {
+                // Fallback for browsers that don't support clipboard API
+                const textArea = document.createElement('textarea');
+                textArea.value = currentKey;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                textArea.style.top = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                
+                try {
+                    document.execCommand('copy');
+                    btnCopy.textContent = '✅ Copied!';
+                    btnCopy.style.background = 'linear-gradient(135deg, #059669, #10b981)';
+                } catch (err) {
+                    btnCopy.textContent = '❌ Copy Failed';
+                    btnCopy.style.background = 'linear-gradient(135deg, #ef4444, #f87171)';
+                }
+                
+                document.body.removeChild(textArea);
             }
-        });
+            
+            setTimeout(() => {
+                btnCopy.textContent = hasValidGeneratedKey() ? '📋 Copy Existing Key' : '📋 Copy API Key';
+                btnCopy.style.background = 'linear-gradient(135deg, #10b981, #34d399)';
+            }, 2000);
+        };
 
-        window.addEventListener('popstate', (e) => {
-            if (!generatePageMemory.isExpired) {
+        // MODIFIED: Enhanced refresh protection - prevent navigation away from generate page
+        function preventGeneratePageManipulation() {
+            if (route === 'generate-key-secure-xyz') {
+                // Disable refresh warning only if we have a valid key cached
+                window.addEventListener('beforeunload', (e) => {
+                    if (!generatePageMemory.isExpired && !hasValidGeneratedKey()) {
+                        e.preventDefault();
+                        e.returnValue = 'Refreshing this page will reset your key generation session.';
+                        return e.returnValue;
+                    }
+                    // Allow refresh if key is cached - it will show existing key
+                });
+
+                // Handle back/forward navigation
+                window.addEventListener('popstate', (e) => {
+                    if (!generatePageMemory.isExpired) {
+                        // Push the same state back to prevent navigation
+                        history.pushState(null, null, window.location.href);
+                    }
+                });
+                
+                // Push initial state to history
                 history.pushState(null, null, window.location.href);
             }
-        });
-        
-        history.pushState(null, null, window.location.href);
-    }
-}
+        }
 
-function handleVisibilityChange() {
-    if (route === 'generate-key-secure-xyz') {
-        if (document.hidden) {
-            console.log('Page hidden, continuing background timer');
-        } else {
-            if (isGeneratePageExpired()) {
-                showExpiredPage();
+        // Detect page visibility changes (tab switching, minimize, etc.)
+        function handleVisibilityChange() {
+            if (route === 'generate-key-secure-xyz') {
+                if (document.hidden) {
+                    // Page is hidden, pause countdown but continue timing
+                    console.log('Page hidden, continuing background timer');
+                } else {
+                    // Page is visible again, check if expired
+                    if (isGeneratePageExpired()) {
+                        showExpiredPage();
+                    }
+                }
             }
         }
-    }
-}
 
-function initSecurityMeasures() {
-    if (route === 'generate-key-secure-xyz') {
-        document.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-        });
-        
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'F12' || 
-                (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) ||
-                (e.ctrlKey && e.key === 'u') ||
-                (e.ctrlKey && e.key === 'r') ||
-                e.key === 'F5') {
-                e.preventDefault();
-                return false;
+        // Enhanced security measures
+        function initSecurityMeasures() {
+            // Prevent right-click context menu on generate page
+            if (route === 'generate-key-secure-xyz') {
+                document.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                });
+                
+                // Prevent common keyboard shortcuts
+                document.addEventListener('keydown', (e) => {
+                    // Prevent F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U, Ctrl+R, F5
+                    if (e.key === 'F12' || 
+                        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) ||
+                        (e.ctrlKey && e.key === 'u') ||
+                        (e.ctrlKey && e.key === 'r') ||
+                        e.key === 'F5') {
+                        e.preventDefault();
+                        return false;
+                    }
+                });
             }
-        });
-    }
-}
+        }
 
-function cleanup() {
-    if (countdownInterval) {
-        clearInterval(countdownInterval);
-        countdownInterval = null;
-    }
-}
+        // Cleanup function
+        function cleanup() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+        }
 
-document.addEventListener('visibilitychange', handleVisibilityChange);
-window.addEventListener('beforeunload', cleanup);
+        // Event listeners
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('beforeunload', cleanup);
 
-init();
-preventGeneratePageManipulation();
-initSecurityMeasures();
+        // Initialize page
+        init();
+        preventGeneratePageManipulation();
+        initSecurityMeasures();
 
-setInterval(() => {
-    if (isGeneratePageExpired() && route === 'generate-key-secure-xyz') {
-        showExpiredPage();
-    }
-    
-    const existingKey = storage.get(GENERATED_KEY_STORAGE);
-    if (existingKey && Date.now() >= existingKey.expires) {
-        storage.remove(GENERATED_KEY_STORAGE);
-    }
-}, 60000);
-
-</script>
+        // Auto-cleanup expired data every minute
+        setInterval(() => {
+            if (isGeneratePageExpired() && route === 'generate-key-secure-xyz') {
+                showExpiredPage();
+            }
+            
+            // Clean up expired generated keys
+            const existingKey = storage.get(GENERATED_KEY_STORAGE);
+            if (existingKey && Date.now() >= existingKey.expires) {
+                storage.remove(GENERATED_KEY_STORAGE);
+            }
+        }, 60000); // Check every minute
+    </script>
 </body>
 </html>
