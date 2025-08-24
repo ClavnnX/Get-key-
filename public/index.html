@@ -1031,7 +1031,12 @@
                 // In production, this should call: const response = await fetch(`/getkey?token=${token}`);
                 
                 // MOCK KEY GENERATION (remove when backend is ready)
-                const mockKey = 'sk-' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+                // Generate 10-character key like backend (A-Z, 0-9 only)
+                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+                let mockKey = '';
+                for (let i = 0; i < 10; i++) {
+                    mockKey += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
                 const mockExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
                 
                 currentKey = mockKey;
@@ -1059,6 +1064,53 @@
                 setTimeout(() => {
                     output.style.border = '1px solid rgba(75, 85, 99, 0.4)';
                 }, 2000);
+                
+                /* 
+                // REAL BACKEND CALL (uncomment when backend is deployed)
+                const response = await fetch(`/getkey?token=${token}`);
+                
+                // Check if response is HTML (error page) instead of JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    throw new Error('Backend API not available. Please ensure server is running.');
+                }
+                
+                const data = await response.json();
+                
+                if (response.ok && data.key) {
+                    currentKey = data.key;
+                    const expiresDate = new Date(data.expires);
+                    
+                    // MODIFIED: Save the generated key to prevent regeneration on refresh
+                    const keyData = {
+                        key: data.key,
+                        expires: expiresDate.getTime()
+                    };
+                    saveGeneratedKey(keyData);
+                    
+                    // Show success
+                    stepIndicator.className = 'success-message pulse';
+                    stepIndicator.textContent = '✅ API Key Generated Successfully!';
+                    
+                    output.textContent = `🔑 Your API Key: ${data.key}\n\n⏰ Expires: ${expiresDate.toLocaleString()}\n\n✅ Key generated and validated successfully!\n\n⚠️ Important: This key is valid for 24 hours.\n\n🛡️ Refresh Protection: Key is cached to prevent spam generation.`;
+                    
+                    // Show copy button
+                    btnCopy.style.display = 'block';
+                    btnCopy.textContent = '📋 Copy API Key';
+                    
+                    // Also show the key in a more prominent way if it's new
+                    if (!data.isExisting) {
+                        // Flash effect for new key
+                        output.style.border = '2px solid #10b981';
+                        setTimeout(() => {
+                            output.style.border = '1px solid rgba(75, 85, 99, 0.4)';
+                        }, 2000);
+                    }
+                    
+                } else {
+                    throw new Error(data.error || 'Failed to generate key');
+                }
+                */
                 
             } catch (error) {
                 console.error('Key generation error:', error);
@@ -1238,4 +1290,4 @@
         }, 60000); // Check every minute
     </script>
 </body>
-    </html>
+</html>
