@@ -265,7 +265,6 @@
             background: linear-gradient(135deg, #0096ff, #00d4ff);
             color: white;
             box-shadow: 0 8px 25px rgba(0, 150, 255, 0.3);
-            display: none;
         }
 
         #btnCheckKey:hover:not(:disabled) {
@@ -654,21 +653,53 @@ function isValidKeyFormat(key) {
 // New function to validate key with server
 async function validateKeyWithServer(key) {
     try {
-        const response = await fetch(`/validate?key=${encodeURIComponent(key)}`);
+        // Try both relative and absolute URL
+        const baseUrl = window.location.origin;
+        const validateUrl = `${baseUrl}/validate?key=${encodeURIComponent(key)}`;
+        
+        console.log('Validating key with URL:', validateUrl);
+        
+        const response = await fetch(validateUrl, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        });
+        
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
         
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
         const data = await response.json();
+        console.log('Server response:', data);
         return data;
         
     } catch (error) {
         console.error('Error validating key with server:', error);
-        // Return fallback validation for demo purposes
+        
+        // Try fallback with different URL format
+        try {
+            const fallbackUrl = `/validate?key=${encodeURIComponent(key)}`;
+            console.log('Trying fallback URL:', fallbackUrl);
+            
+            const fallbackResponse = await fetch(fallbackUrl);
+            if (fallbackResponse.ok) {
+                const fallbackData = await fallbackResponse.json();
+                console.log('Fallback response:', fallbackData);
+                return fallbackData;
+            }
+        } catch (fallbackError) {
+            console.error('Fallback also failed:', fallbackError);
+        }
+        
+        // Return error status
         return {
             status: 'ERROR',
-            message: 'Unable to connect to validation server. Please try again later.'
+            message: `Connection failed: ${error.message}. Please check if server is running.`
         };
     }
 }
@@ -980,7 +1011,9 @@ function updateCurrentUrl() {
 function init() {
     updateCurrentUrl();
     
-    if (route === 'home' || route === '') {
+    // Show check key section on home page - FIXED VERSION
+    if (route === 'home' || route === '' || route === 'index' || window.location.pathname === '/' || window.location.pathname === '/index.html') {
+        checkKeySection.style.display = 'block';
         btnCheckKey.style.display = 'block';
         btnCheckKey.onclick = checkKeyExpiry;
     } else {
@@ -1012,6 +1045,10 @@ function initHome() {
     
     btnContinue.textContent = '🚀 Start Step 1/2';
     
+    // Make sure check key section is visible on homepage
+    checkKeySection.style.display = 'block';
+    btnCheckKey.style.display = 'block';
+    
     btnContinue.onclick = () => {
         btnContinue.textContent = 'Redirecting...';
         btnContinue.classList.add('loading');
@@ -1023,6 +1060,8 @@ function initHome() {
 }
 
 function initStep1() {
+    checkKeySection.style.display = 'none';
+    
     if (urlParams.get('completed') === '1') {
         const token = generateToken();
         saveToken(token);
@@ -1055,6 +1094,8 @@ function initStep1() {
 }
 
 function initStep2() {
+    checkKeySection.style.display = 'none';
+    
     if (urlParams.get('completed') === '2') {
         if (!getToken()) {
             showError('Token expired. Please start over.');
@@ -1096,6 +1137,8 @@ function initStep2() {
 }
 
 function initGetKey() {
+    checkKeySection.style.display = 'none';
+    
     const token = getToken();
     const currentStep = getStepProgress();
     
@@ -1124,6 +1167,8 @@ function initGetKey() {
 }
 
 function initGenerate() {
+    checkKeySection.style.display = 'none';
+    
     const token = getToken();
     const currentStep = getStepProgress();
     
@@ -1439,6 +1484,7 @@ setInterval(() => {
         storage.remove(GENERATED_KEY_STORAGE);
     }
 }, 60000);
-    </script>
+
+</script>
 </body>
 </html>
