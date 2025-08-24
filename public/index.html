@@ -874,9 +874,266 @@
             updateStepIndicator(Math.max(getStepProgress(), 1));
             btnContinue.textContent = '🛡️ Step 2/2 - Final Verification';
             output.textContent = '📋 Step 2 of 2: Final Verification\n\n✅ Step 1/2: Completed\n\n🎯 Click below to complete final verification.';
+            
+            btnContinue.onclick = () => {
+                btnContinue.textContent = 'Redirecting...';
+                btnContinue.classList.add('loading');
+                btnContinue.disabled = true;
+                
+                const returnUrl = `${window.location.origin}/step2?completed=2`;
+                window.location.href = `https://en.shrinke.me/scriptrblox2?return=${encodeURIComponent(returnUrl)}`;
+            };
         }
 
-        // ... rest of your JavaScript code would continue here
+        function initGetKey() {
+            if (!getToken()) {
+                showError('No token found. Complete all verification steps first.');
+                return;
+            }
+            
+            updateProgress(2);
+            updateStepIndicator(2);
+            btnContinue.style.display = 'none';
+            
+            // Show "Take Key" button instead
+            btnTakeKey.style.display = 'block';
+            output.textContent = '🎉 All steps completed successfully!\n\n✅ Both verification steps are done.\n\n🔑 Ready to generate your API key.';
+            
+            btnTakeKey.onclick = () => {
+                saveGenerateAccess();
+                window.location.href = `/generate-key-secure-xyz?token=${getToken()}`;
+            };
+        }
+
+        function initGenerate() {
+            const token = getToken();
+            if (!token) {
+                showError('🚫 Access denied. Complete all verification steps first.');
+                output.textContent = '❌ No valid token found.\n\n🔄 Please complete the verification steps first.';
+                
+                btnContinue.textContent = '🔄 Start Verification';
+                btnContinue.onclick = () => {
+                    clearToken();
+                    window.location.href = '/';
+                };
+                return;
+            }
+
+            // Check if already have a valid generated key
+            const existingKey = getGeneratedKey();
+            if (existingKey && existingKey.key) {
+                // Show existing key
+                currentKey = existingKey.key;
+                btnContinue.style.display = 'none';
+                btnTakeKey.style.display = 'none';
+                btnCopy.style.display = 'block';
+                
+                const expiryDate = new Date(existingKey.expires);
+                const formattedExpiry = expiryDate.toLocaleDateString() + ' ' + expiryDate.toLocaleTimeString();
+                
+                output.innerHTML = `<div class="success-message">🎉 Your API Key (Already Generated)</div>
+<div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 16px; border-radius: 12px; margin: 16px 0;">
+<div style="color: #10b981; font-weight: 600; margin-bottom: 8px;">✅ Active API Key:</div>
+<div style="background: rgba(0, 0, 0, 0.3); padding: 12px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 13px; color: #10b981; word-break: break-all; line-height: 1.4;">
+${currentKey}
+</div>
+<div style="margin-top: 12px; color: #9ca3af; font-size: 12px;">
+📅 Expires: ${formattedExpiry}
+</div>
+</div>
+
+<div style="color: #9ca3af; font-size: 13px; text-align: center; margin-top: 16px;">
+⚡ Key is ready for immediate use
+</div>`;
+
+                btnCopy.onclick = () => copyKey();
+                updateProgress(2);
+                updateStepIndicator(2);
+                return;
+            }
+
+            // Check if generate page access is expired
+            if (isGeneratePageExpired()) {
+                countdownSection.style.display = 'block';
+                btnContinue.style.display = 'none';
+                output.textContent = '⚠️ Generate page access expired.\n\n🔄 Please complete the verification steps again to generate a new key.';
+                
+                btnContinue.textContent = '🔄 Restart Verification';
+                btnContinue.onclick = () => {
+                    clearToken();
+                    window.location.href = '/';
+                };
+                return;
+            }
+
+            // Valid access - show generate interface
+            updateProgress(2);
+            updateStepIndicator(2);
+            btnContinue.style.display = 'none';
+            btnTakeKey.style.display = 'none';
+            
+            // Add Generate button
+            const btnGen = document.createElement('button');
+            btnGen.id = 'btnGen';
+            btnGen.className = 'main-button';
+            btnGen.textContent = '🔥 Generate API Key';
+            btnContinue.parentNode.insertBefore(btnGen, btnContinue.nextSibling);
+
+            output.innerHTML = `<div class="success-message pulse">🎉 Ready to Generate Your API Key!</div>
+<div style="background: rgba(0, 150, 255, 0.1); border: 1px solid rgba(0, 150, 255, 0.3); padding: 16px; border-radius: 12px; margin: 16px 0;">
+<div style="color: #0096ff; font-weight: 600; margin-bottom: 8px;">🔐 Secure Key Generation</div>
+<div style="color: #e5e7eb; font-size: 14px; line-height: 1.6;">
+✅ All verification steps completed<br>
+✅ Token validated successfully<br>
+✅ Generation access verified<br>
+✅ Ready for secure key creation
+</div>
+</div>
+
+<div style="color: #9ca3af; font-size: 13px; text-align: center; margin-top: 16px;">
+🎯 Click the button above to generate your unique API key
+</div>`;
+
+            btnGen.onclick = () => generateKey();
+            
+            // Start countdown for page expiry
+            startCountdown();
+        }
+
+        function generateKey() {
+            const btnGen = document.getElementById('btnGen');
+            if (!btnGen) return;
+            
+            btnGen.textContent = 'Generating...';
+            btnGen.classList.add('loading');
+            btnGen.disabled = true;
+            
+            output.innerHTML = `<div style="text-align: center; padding: 20px;">
+<div style="color: #0096ff; font-size: 16px; font-weight: 600; margin-bottom: 12px;">
+🔄 Generating Your API Key...
+</div>
+<div style="color: #9ca3af; font-size: 14px;">
+Please wait while we create your secure API key
+</div>
+</div>`;
+
+            setTimeout(() => {
+                // Generate the API key
+                const keyParts = [
+                    'ClavnnX',
+                    Math.random().toString(36).substring(2, 8).toUpperCase(),
+                    Math.random().toString(36).substring(2, 8).toUpperCase(),
+                    Math.random().toString(36).substring(2, 8).toUpperCase(),
+                    Date.now().toString(36).toUpperCase()
+                ];
+                
+                currentKey = keyParts.join('-');
+                
+                // Set expiry time (24 hours from now)
+                const expiryTime = Date.now() + (24 * 60 * 60 * 1000);
+                
+                // Save the generated key
+                saveGeneratedKey({
+                    key: currentKey,
+                    expires: expiryTime
+                });
+                
+                // Update UI
+                btnGen.style.display = 'none';
+                btnCopy.style.display = 'block';
+                
+                const expiryDate = new Date(expiryTime);
+                const formattedExpiry = expiryDate.toLocaleDateString() + ' ' + expiryDate.toLocaleTimeString();
+                
+                output.innerHTML = `<div class="success-message pulse">🎉 API Key Generated Successfully!</div>
+<div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 16px; border-radius: 12px; margin: 16px 0;">
+<div style="color: #10b981; font-weight: 600; margin-bottom: 8px;">✅ Your API Key:</div>
+<div style="background: rgba(0, 0, 0, 0.3); padding: 12px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 13px; color: #10b981; word-break: break-all; line-height: 1.4;">
+${currentKey}
+</div>
+<div style="margin-top: 12px; color: #9ca3af; font-size: 12px;">
+📅 Expires: ${formattedExpiry}
+</div>
+</div>
+
+<div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); padding: 12px; border-radius: 8px; margin: 16px 0;">
+<div style="color: #f59e0b; font-size: 13px; text-align: center;">
+⚠️ Save this key safely - it won't be shown again after you leave this page
+</div>
+</div>`;
+
+                btnCopy.onclick = () => copyKey();
+                
+            }, 2000);
+        }
+
+        function copyKey() {
+            if (!currentKey) return;
+            
+            navigator.clipboard.writeText(currentKey).then(() => {
+                const originalText = btnCopy.textContent;
+                btnCopy.textContent = '✅ Copied!';
+                btnCopy.style.background = 'linear-gradient(135deg, #059669, #10b981)';
+                
+                setTimeout(() => {
+                    btnCopy.textContent = originalText;
+                    btnCopy.style.background = 'linear-gradient(135deg, #10b981, #34d399)';
+                }, 2000);
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = currentKey;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                const originalText = btnCopy.textContent;
+                btnCopy.textContent = '✅ Copied!';
+                btnCopy.style.background = 'linear-gradient(135deg, #059669, #10b981)';
+                
+                setTimeout(() => {
+                    btnCopy.textContent = originalText;
+                    btnCopy.style.background = 'linear-gradient(135deg, #10b981, #34d399)';
+                }, 2000);
+            });
+        }
+
+        function showError(message) {
+            stepIndicator.style.display = 'block';
+            stepIndicator.className = 'error-message';
+            stepIndicator.textContent = message;
+            
+            btnContinue.textContent = '🔄 Try Again';
+            btnContinue.onclick = () => {
+                clearToken();
+                window.location.href = '/';
+            };
+        }
+
+        // Initialize the application
+        window.addEventListener('DOMContentLoaded', init);
+        window.addEventListener('load', init);
+        
+        // Handle page visibility changes to manage timers
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                if (countdownInterval) {
+                    clearInterval(countdownInterval);
+                }
+            } else {
+                if (route === 'generate-key-secure-xyz' && !isGeneratePageExpired()) {
+                    startCountdown();
+                }
+            }
+        });
+
+        // Cleanup intervals when page unloads
+        window.addEventListener('beforeunload', () => {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+        });
     </script>
 </body>
-    </html>
+</html>
