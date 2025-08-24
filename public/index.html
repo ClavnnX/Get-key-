@@ -650,61 +650,105 @@ function isValidKeyFormat(key) {
     return keyPattern.test(key.trim());
 }
 
-// New function to validate key with server
+// Enhanced server validation function with better error handling
 async function validateKeyWithServer(key) {
     try {
-        // Try both relative and absolute URL
-        const baseUrl = window.location.origin;
-        const validateUrl = `${baseUrl}/validate?key=${encodeURIComponent(key)}`;
+        // Try both relative and absolute URL approaches
+        const urls = [
+            `/validate?key=${encodeURIComponent(key)}`,
+            `${window.location.origin}/validate?key=${encodeURIComponent(key)}`,
+            `./validate?key=${encodeURIComponent(key)}`
+        ];
         
-        console.log('Validating key with URL:', validateUrl);
+        let lastError = null;
         
-        const response = await fetch(validateUrl, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
+        for (let i = 0; i < urls.length; i++) {
+            try {
+                console.log(`Attempting validation with URL ${i + 1}:`, urls[i]);
+                
+                const response = await fetch(urls[i], {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    timeout: 10000 // 10 second timeout
+                });
+                
+                console.log(`Response status for URL ${i + 1}:`, response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                // Check content type before parsing
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    console.warn('Response is not JSON, attempting to parse anyway');
+                }
+                
+                const text = await response.text();
+                console.log('Raw response text:', text);
+                
+                // Try to parse JSON, handle malformed responses
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (parseError) {
+                    console.error('JSON parse error:', parseError);
+                    console.log('Attempting to clean response text...');
+                    
+                    // Try to extract JSON from potentially malformed response
+                    const jsonMatch = text.match(/\{.*\}/s);
+                    if (jsonMatch) {
+                        data = JSON.parse(jsonMatch[0]);
+                    } else {
+                        throw new Error('Invalid JSON response: ' + text.substring(0, 100));
+                    }
+                }
+                
+                console.log('Parsed server response:', data);
+                
+                // Validate response structure
+                if (!data || typeof data !== 'object') {
+                    throw new Error('Invalid response format');
+                }
+                
+                // Ensure required fields exist
+                if (!data.status) {
+                    data.status = 'ERROR';
+                    data.message = 'Invalid server response format';
+                }
+                
+                return data;
+                
+            } catch (error) {
+                console.error(`Error with URL ${i + 1}:`, error);
+                lastError = error;
+                
+                // Continue to next URL if not the last one
+                if (i < urls.length - 1) {
+                    continue;
+                }
             }
-        });
-        
-        console.log('Response status:', response.status);
-        console.log('Response headers:', response.headers);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
-        const data = await response.json();
-        console.log('Server response:', data);
-        return data;
+        // If all URLs failed, return error status
+        throw lastError || new Error('All validation endpoints failed');
         
     } catch (error) {
-        console.error('Error validating key with server:', error);
+        console.error('Complete validation failure:', error);
         
-        // Try fallback with different URL format
-        try {
-            const fallbackUrl = `/validate?key=${encodeURIComponent(key)}`;
-            console.log('Trying fallback URL:', fallbackUrl);
-            
-            const fallbackResponse = await fetch(fallbackUrl);
-            if (fallbackResponse.ok) {
-                const fallbackData = await fallbackResponse.json();
-                console.log('Fallback response:', fallbackData);
-                return fallbackData;
-            }
-        } catch (fallbackError) {
-            console.error('Fallback also failed:', fallbackError);
-        }
-        
-        // Return error status
+        // Return a structured error response
         return {
             status: 'ERROR',
-            message: `Connection failed: ${error.message}. Please check if server is running.`
+            message: `Server validation failed: ${error.message}. Please check server status.`,
+            error_type: 'NETWORK_ERROR'
         };
     }
 }
 
-// Improved checkKeyExpiry function
+// Enhanced checkKeyExpiry function with better error handling
 async function checkKeyExpiry() {
     const inputKey = keyInput.value.trim().toUpperCase();
     
@@ -719,9 +763,9 @@ async function checkKeyExpiry() {
         return;
     }
 
-    // Validate key format
+    // Validate key format (removed the detailed format text as requested)
     if (!isValidKeyFormat(inputKey)) {
-        output.textContent = '❌ INVALID KEY FORMAT\n\n📝 Valid key format:\n- Exactly 10 characters\n- Only uppercase letters (A-Z) and numbers (0-9)\n- Example: ABC1234567\n\n⚠️ Please enter a valid ClavnnX API key.';
+        output.textContent = '❌ INVALID KEY FORMAT\n\n⚠️ Please enter a valid ClavnnX API key.';
         keyInput.classList.add('invalid');
         keyInput.style.borderColor = '#ef4444';
         output.style.border = '2px solid #ef4444';
@@ -749,8 +793,10 @@ async function checkKeyExpiry() {
         let borderColor = '';
         let inputClass = '';
         
-        switch (validationResult.status) {
+        // Handle different response statuses
+        switch (validationResult.status?.toUpperCase()) {
             case 'VALID':
+            case 'ACTIVE':
                 statusText = '✅ ACTIVE';
                 statusEmoji = '✅';
                 borderColor = '#10b981';
@@ -765,6 +811,7 @@ async function checkKeyExpiry() {
                 break;
                 
             case 'INVALID':
+            case 'NOT_FOUND':
                 statusText = '❌ NOT FOUND';
                 statusEmoji = '🚫';
                 borderColor = '#ef4444';
@@ -783,11 +830,11 @@ async function checkKeyExpiry() {
         // Update UI based on validation result
         const currentTime = new Date().toLocaleString();
         
-        if (validationResult.status === 'VALID') {
+        if (validationResult.status?.toUpperCase() === 'VALID' || validationResult.status?.toUpperCase() === 'ACTIVE') {
             output.textContent = `🔑 Key: ${inputKey}\n\n${statusEmoji} Status: ${statusText}\n\n✅ Key validation successful!\n\n🕐 Checked at: ${currentTime}\n\n💡 This key is currently active and can be used.`;
-        } else if (validationResult.status === 'EXPIRED') {
+        } else if (validationResult.status?.toUpperCase() === 'EXPIRED') {
             output.textContent = `🔑 Key: ${inputKey}\n\n${statusEmoji} Status: ${statusText}\n\n❌ This key has expired and cannot be used.\n\n🕐 Checked at: ${currentTime}\n\n💡 Please generate a new key to continue using the service.`;
-        } else if (validationResult.status === 'INVALID') {
+        } else if (validationResult.status?.toUpperCase() === 'INVALID' || validationResult.status?.toUpperCase() === 'NOT_FOUND') {
             output.textContent = `🔑 Key: ${inputKey}\n\n${statusEmoji} Status: ${statusText}\n\n❌ This key was not found in our system.\n\n🕐 Checked at: ${currentTime}\n\n💡 Please check if you entered the key correctly or generate a new one.`;
         } else {
             output.textContent = `🔑 Key: ${inputKey}\n\n${statusEmoji} Status: ${statusText}\n\n${validationResult.message || 'Unable to validate key at this time.'}\n\n🕐 Checked at: ${currentTime}\n\n🔄 Please try again in a few moments.`;
