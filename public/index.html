@@ -604,7 +604,10 @@
         </div>
     </div>
 
-    <script>
+    <!-- JavaScript akan dilanjutkan di bagian 2 dan 3 -->
+</body>
+</html>
+<script>
         // Cache DOM elements for better performance
         const btnContinue = document.getElementById('btnContinue');
         const btnTakeKey = document.getElementById('btnTakeKey');
@@ -635,7 +638,10 @@
             isExpired: false
         };
 
-        // Optimized storage operations (using variables instead of localStorage)
+        // Storage for checked keys to maintain consistency
+        const checkedKeysStorage = {};
+
+        // Optimized storage operations (using in-memory variables)
         const storage = {
             data: {},
             set: (key, value) => {
@@ -807,7 +813,7 @@
             }, 1000);
         }
 
-        // Check Key Functionality
+        // Check Key Functionality - FIXED VERSION
         function checkKeyExpiry() {
             const inputKey = keyInput.value.trim();
             
@@ -816,17 +822,67 @@
                 return;
             }
 
-            // For demo purposes, generate a mock expiry date
-            // In production, this should call your backend API
-            const mockExpiry = new Date(Date.now() + Math.random() * 24 * 60 * 60 * 1000); // Random time within 24 hours
+            // Check if this key has been checked before
+            let keyData = checkedKeysStorage[inputKey];
             
-            output.textContent = `🔑 Key: ${inputKey}\n\n⏰ Expired Key Date: ${mockExpiry.toLocaleString()}\n\n✅ Key status checked successfully!`;
+            if (!keyData) {
+                // First time checking this key, generate consistent expiry based on key
+                // Use key as seed for consistent random generation
+                let seed = 0;
+                for (let i = 0; i < inputKey.length; i++) {
+                    seed += inputKey.charCodeAt(i);
+                }
+                
+                // Generate consistent random number based on key
+                const random = (seed * 9301 + 49297) % 233280 / 233280.0;
+                const hoursToAdd = Math.floor(random * 24) + 1; // 1-24 hours
+                const minutesToAdd = Math.floor((random * 100) % 60); // 0-59 minutes
+                
+                const mockExpiry = new Date();
+                mockExpiry.setHours(mockExpiry.getHours() + hoursToAdd);
+                mockExpiry.setMinutes(mockExpiry.getMinutes() + minutesToAdd);
+                
+                // Store the key data for consistency
+                keyData = {
+                    key: inputKey,
+                    expiry: mockExpiry,
+                    firstChecked: new Date()
+                };
+                checkedKeysStorage[inputKey] = keyData;
+            }
             
-            // Visual feedback
-            keyInput.style.borderColor = '#10b981';
+            // Calculate remaining time
+            const now = new Date();
+            const timeLeft = keyData.expiry.getTime() - now.getTime();
+            const isExpired = timeLeft <= 0;
+            
+            let statusText = '';
+            if (isExpired) {
+                const expiredTime = Math.abs(timeLeft);
+                const expiredHours = Math.floor(expiredTime / (1000 * 60 * 60));
+                const expiredMinutes = Math.floor((expiredTime % (1000 * 60 * 60)) / (1000 * 60));
+                statusText = `❌ EXPIRED (${expiredHours}h ${expiredMinutes}m ago)`;
+            } else {
+                const remainingHours = Math.floor(timeLeft / (1000 * 60 * 60));
+                const remainingMinutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                statusText = `✅ ACTIVE (${remainingHours}h ${remainingMinutes}m remaining)`;
+            }
+            
+            output.textContent = `🔑 Key: ${inputKey}\n\n⏰ Expired Key Date: ${keyData.expiry.toLocaleString()}\n\n⚡ Status: ${statusText}\n\n✅ Key status checked successfully!`;
+            
+            // Visual feedback based on status
+            if (isExpired) {
+                keyInput.style.borderColor = '#ef4444';
+                output.style.border = '2px solid #ef4444';
+            } else {
+                keyInput.style.borderColor = '#10b981';
+                output.style.border = '2px solid #10b981';
+            }
+            
             setTimeout(() => {
                 keyInput.style.borderColor = 'rgba(75, 85, 99, 0.6)';
-            }, 2000);
+                output.style.border = '1px solid rgba(75, 85, 99, 0.4)';
+            }, 3000);
         }
 
         // Page routing - optimized
@@ -960,7 +1016,9 @@
             };
         }
 
-        function initGetKey() {
+        // Bagian ini akan dilanjutkan di Part 3
+            </script>
+            function initGetKey() {
             const token = getToken();
             const currentStep = getStepProgress();
             
@@ -1314,4 +1372,4 @@
         }, 60000); // Check every minute
     </script>
 </body>
-</html>
+                </html>
