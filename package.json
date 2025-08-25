@@ -1,34 +1,30 @@
 {
   "name": "clavnnx-key-system",
-  "version": "2.0.0",
-  "description": "ClavnnX Key System with Supabase Integration",
-  "main": "index.js",
+  "version": "1.0.0",
+  "description": "ClavnnX Key System with Supabase for Vercel",
+  "type": "module",
+  "main": "api/index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
-    "test": "node test.js"
+    "dev": "vercel dev",
+    "deploy": "vercel --prod",
+    "build": "echo 'No build step required for Vercel serverless'"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.38.0",
-    "express": "^4.18.2"
+    "@supabase/supabase-js": "^2.39.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "vercel": "^33.0.0"
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": "18.x"
   },
   "keywords": [
-    "api",
-    "key-system",
-    "roblox",
+    "vercel",
+    "serverless",
     "supabase",
-    "vercel"
+    "api",
+    "key-system"
   ],
   "author": "ClavnnX",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/ClavnnX/Get-key.git"
-  }
+  "license": "MIT"
 }
