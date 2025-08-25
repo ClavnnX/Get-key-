@@ -1,28 +1,72 @@
 {
+  "version": 2,
+  "builds": [
+    {
+      "src": "./index.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "public/**",
+      "use": "@vercel/static"
+    }
+  ],
   "routes": [
     {
-      "src": "/",
-      "dest": "/index.html"
+      "src": "/api/(.*)",
+      "dest": "/index.js"
+    },
+    {
+      "src": "/validate",
+      "dest": "/index.js"
+    },
+    {
+      "src": "/check",
+      "dest": "/index.js"
+    },
+    {
+      "src": "/getkey",
+      "dest": "/index.js"
+    },
+    {
+      "src": "/verify",
+      "dest": "/index.js"
+    },
+    {
+      "src": "/status",
+      "dest": "/index.js"
+    },
+    {
+      "src": "/stats",
+      "dest": "/index.js"
     },
     {
       "src": "/step1",
-      "dest": "/index.html"
+      "dest": "/index.js"
     },
     {
       "src": "/step2",
-      "dest": "/index.html"
+      "dest": "/index.js"
     },
     {
-      "src": "/get-your-key",
-      "dest": "/index.html"
+      "src": "/step3",
+      "dest": "/index.js"
     },
     {
       "src": "/generate-key-secure-xyz",
-      "dest": "/index.html"
+      "dest": "/index.js"
+    },
+    {
+      "src": "/",
+      "dest": "/index.js"
     },
     {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "/index.js"
     }
-  ]
+  ],
+  "functions": {
+    "index.js": {
+      "maxDuration": 30
+    }
+  }
 }
