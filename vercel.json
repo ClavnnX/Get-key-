@@ -12,16 +12,46 @@
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "/index.js"
+      "src": "/status",
+      "dest": "/index.js",
+      "headers": {
+        "Content-Type": "application/json"
+      }
+    },
+    {
+      "src": "/api/validate",
+      "dest": "/index.js",
+      "headers": {
+        "Content-Type": "application/json"
+      }
+    },
+    {
+      "src": "/api/key/(.*)",
+      "dest": "/index.js",
+      "headers": {
+        "Content-Type": "application/json"
+      }
+    },
+    {
+      "src": "/api",
+      "dest": "/index.js",
+      "headers": {
+        "Content-Type": "application/json"
+      }
     },
     {
       "src": "/validate",
-      "dest": "/index.js"
+      "dest": "/index.js",
+      "headers": {
+        "Content-Type": "application/json"
+      }
     },
     {
       "src": "/check",
-      "dest": "/index.js"
+      "dest": "/index.js",
+      "headers": {
+        "Content-Type": "application/json"
+      }
     },
     {
       "src": "/getkey",
@@ -32,12 +62,11 @@
       "dest": "/index.js"
     },
     {
-      "src": "/status",
-      "dest": "/index.js"
-    },
-    {
       "src": "/stats",
-      "dest": "/index.js"
+      "dest": "/index.js",
+      "headers": {
+        "Content-Type": "application/json"
+      }
     },
     {
       "src": "/step1",
