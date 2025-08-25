@@ -145,6 +145,217 @@ function isGeneratePageExpired(userIP) {
   return timePassed >= 5 * 60; // 5 minutes
 }
 
+// ========== NEW API ENDPOINTS FOR ROBLOX SCRIPT ==========
+
+// API endpoint: /api/validate - For Roblox script pattern 1
+app.get('/api/validate', (req, res) => {
+  try {
+    const { key } = req.query;
+    
+    console.log(`[API VALIDATE] Validating key: ${key}`);
+    
+    // Set proper JSON header
+    res.setHeader('Content-Type', 'application/json');
+    
+    if (!key) {
+      console.log('[API VALIDATE] No key provided');
+      return res.json({
+        status: 'INVALID',
+        message: 'Key parameter is required'
+      });
+    }
+    
+    // Find the key in storage
+    let foundKey = null;
+    let foundIP = null;
+    
+    Object.keys(keyStorage).forEach(ip => {
+      if (keyStorage[ip] && keyStorage[ip].key === key.toUpperCase()) {
+        foundKey = keyStorage[ip];
+        foundIP = ip;
+      }
+    });
+    
+    if (!foundKey) {
+      console.log(`[API VALIDATE] Key not found: ${key}`);
+      return res.json({
+        status: 'INVALID',
+        message: 'Invalid key provided'
+      });
+    }
+    
+    // Check if key is expired
+    if (isKeyExpired(foundKey)) {
+      // Remove expired key
+      delete keyStorage[foundIP];
+      console.log(`[API VALIDATE] Key expired: ${key}`);
+      return res.json({
+        status: 'EXPIRED',
+        message: 'Key has expired'
+      });
+    }
+    
+    // Key is valid
+    console.log(`[API VALIDATE] Key valid: ${key}`);
+    res.json({
+      status: 'VALID',
+      message: 'Key verified successfully',
+      validated_at: Math.floor(Date.now() / 1000),
+      expires_in: Math.floor((foundKey.expires - new Date()) / 1000)
+    });
+    
+  } catch (error) {
+    console.error('Error in /api/validate:', error);
+    res.status(500).json({
+      status: 'ERROR',
+      message: 'Internal server error'
+    });
+  }
+});
+
+// API endpoint: /api/key/:key - For Roblox script pattern 2
+app.get('/api/key/:key', (req, res) => {
+  try {
+    const { key } = req.params;
+    
+    console.log(`[API KEY] Validating key: ${key}`);
+    
+    // Set proper JSON header
+    res.setHeader('Content-Type', 'application/json');
+    
+    if (!key) {
+      return res.json({
+        valid: false,
+        reason: 'No key provided'
+      });
+    }
+    
+    // Find the key in storage
+    let foundKey = null;
+    
+    Object.keys(keyStorage).forEach(ip => {
+      if (keyStorage[ip] && keyStorage[ip].key === key.toUpperCase()) {
+        foundKey = keyStorage[ip];
+      }
+    });
+    
+    if (!foundKey || isKeyExpired(foundKey)) {
+      return res.json({
+        valid: false,
+        reason: foundKey ? 'Key expired' : 'Invalid key'
+      });
+    }
+    
+    // Key is valid
+    res.json({
+      valid: true,
+      timestamp: Math.floor(Date.now() / 1000),
+      expires_at: Math.floor(foundKey.expires.getTime() / 1000)
+    });
+    
+  } catch (error) {
+    console.error('Error in /api/key/:key:', error);
+    res.status(500).json({
+      valid: false,
+      reason: 'Internal server error'
+    });
+  }
+});
+
+// API endpoint: /api?action=validate&key=XXX - For Roblox script pattern 3
+app.get('/api', (req, res) => {
+  try {
+    const { action, key } = req.query;
+    
+    console.log(`[API] Action: ${action}, Key: ${key}`);
+    
+    // Set proper JSON header
+    res.setHeader('Content-Type', 'application/json');
+    
+    if (action === 'validate') {
+      if (!key) {
+        return res.json({
+          success: false,
+          error: 'Key parameter is required'
+        });
+      }
+      
+      // Find the key in storage
+      let foundKey = null;
+      
+      Object.keys(keyStorage).forEach(ip => {
+        if (keyStorage[ip] && keyStorage[ip].key === key.toUpperCase()) {
+          foundKey = keyStorage[ip];
+        }
+      });
+      
+      if (!foundKey || isKeyExpired(foundKey)) {
+        return res.json({
+          success: false,
+          error: foundKey ? 'Key expired' : 'Invalid key'
+        });
+      }
+      
+      // Key is valid
+      res.json({
+        success: true,
+        message: 'Key verified successfully',
+        validated_at: Math.floor(Date.now() / 1000)
+      });
+    } else {
+      res.json({
+        success: false,
+        error: 'Invalid action parameter'
+      });
+    }
+    
+  } catch (error) {
+    console.error('Error in /api:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
+// API endpoint: /check - For Roblox script pattern 4
+app.get('/check', (req, res) => {
+  try {
+    const { key } = req.query;
+    
+    console.log(`[CHECK] Validating key: ${key}`);
+    
+    // Set proper JSON header
+    res.setHeader('Content-Type', 'application/json');
+    
+    if (!key) {
+      return res.send('invalid');
+    }
+    
+    // Find the key in storage
+    let foundKey = null;
+    
+    Object.keys(keyStorage).forEach(ip => {
+      if (keyStorage[ip] && keyStorage[ip].key === key.toUpperCase()) {
+        foundKey = keyStorage[ip];
+      }
+    });
+    
+    if (!foundKey || isKeyExpired(foundKey)) {
+      return res.send('invalid');
+    }
+    
+    // Key is valid - return simple text response
+    res.send('valid');
+    
+  } catch (error) {
+    console.error('Error in /check:', error);
+    res.send('error');
+  }
+});
+
+// ========== EXISTING ENDPOINTS (UNCHANGED) ==========
+
 // Endpoint: /getkey (requires valid token and generate page access)
 app.get('/getkey', (req, res) => {
   try {
@@ -227,7 +438,7 @@ app.get('/getkey', (req, res) => {
   }
 });
 
-// Endpoint: /validate - FIXED VERSION
+// Endpoint: /validate - EXISTING VERSION (UNCHANGED)
 app.get('/validate', (req, res) => {
   try {
     const { key } = req.query;
@@ -458,7 +669,11 @@ app.get('/stats', (req, res) => {
 app.use('*', (req, res) => {
   res.status(404).json({
     error: 'Endpoint not found',
-    available_endpoints: ['/getkey', '/validate', '/verify', '/', '/step1', '/step2', '/step3', '/generate-key-secure-xyz', '/stats', '/status']
+    available_endpoints: [
+      '/getkey', '/validate', '/verify', '/', '/step1', '/step2', '/step3', 
+      '/generate-key-secure-xyz', '/stats', '/status',
+      '/api/validate', '/api/key/:key', '/api', '/check'
+    ]
   });
 });
 
