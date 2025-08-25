@@ -1,293 +1,170 @@
-const { createClient } = require('@supabase/supabase-js');
-const crypto = require('crypto');
+import { createClient } from '@supabase/supabase-js';
 
-// Supabase configuration
-const supabaseUrl = process.env.SUPABASE_URL;
+// Supabase configuration - menggunakan environment variables
+const supabaseUrl = process.env.SUPABASE_URL || 'https://vrjtcfvjqwzenvsdeixd.supabase.co';
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error('Supabase URL and ANON KEY must be set in environment variables');
+if (!supabaseKey) {
+  throw new Error('SUPABASE_ANON_KEY environment variable is required');
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-/**
- * Generate a unique 10-character API key
- * @returns {string} Generated key
- */
-function generateUniqueKey() {
+// Generate random key function
+function generateRandomKey() {
+  const prefix = 'RBX';
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let result = '';
+  let randomPart = '';
   
-  // Use crypto.randomBytes for better randomness
-  const randomBytes = crypto.randomBytes(10);
-  
-  for (let i = 0; i < 10; i++) {
-    result += chars[randomBytes[i] % chars.length];
+  for (let i = 0; i < 13; i++) {
+    randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   
-  return result;
+  return prefix + randomPart;
 }
 
-/**
- * Save a new key to Supabase
- * @param {string} userIP - User's IP address
- * @param {string} key - Generated key
- * @returns {Promise<{success: boolean, data?: any, error?: string}>}
- */
-async function saveKeyToSupabase(userIP, key) {
+// Generate unique key and save to Supabase
+async function generateKey() {
   try {
-    const now = new Date();
-    const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
+    let uniqueKey;
+    let isUnique = false;
     
+    // Generate unique key (check if already exists)
+    while (!isUnique) {
+      uniqueKey = generateRandomKey();
+      
+      const { data: existingKey, error: checkError } = await supabase
+        .from('keys')
+        .select('key')
+        .eq('key', uniqueKey)
+        .single();
+      
+      if (checkError && checkError.code === 'PGRST116') {
+        // No existing key found, this key is unique
+        isUnique = true;
+      } else if (checkError) {
+        throw checkError;
+      }
+    }
+    
+    // Set expiration to 24 hours from now
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 24);
+    
+    // Insert key into Supabase
     const { data, error } = await supabase
-      .from('api_keys')
+      .from('keys')
       .insert([
         {
-          key: key,
-          user_ip: userIP,
-          created_at: now.toISOString(),
+          key: uniqueKey,
           expires_at: expiresAt.toISOString(),
-          is_active: true
+          status: 'valid'
         }
       ])
-      .select();
-    
-    if (error) {
-      console.error('Supabase save error:', error);
-      return { success: false, error: error.message };
-    }
-    
-    return { success: true, data: data[0] };
-  } catch (error) {
-    console.error('Error saving key to Supabase:', error);
-    return { success: false, error: error.message };
-  }
-}
-
-/**
- * Validate a key from Supabase
- * @param {string} key - Key to validate
- * @returns {Promise<{status: 'VALID'|'EXPIRED'|'INVALID', data?: any}>}
- */
-async function validateKeyFromSupabase(key) {
-  try {
-    if (!key) {
-      return { status: 'INVALID' };
-    }
-    
-    // Query the key from Supabase
-    const { data, error } = await supabase
-      .from('api_keys')
-      .select('*')
-      .eq('key', key)
-      .eq('is_active', true)
+      .select()
       .single();
     
-    if (error || !data) {
-      console.log(`Key not found in database: ${key}`);
-      return { status: 'INVALID' };
+    if (error) {
+      throw error;
     }
     
-    // Check if key is expired
-    const now = new Date();
-    const expiresAt = new Date(data.expires_at);
-    
-    if (now > expiresAt) {
-      // Mark key as inactive in database
-      await supabase
-        .from('api_keys')
-        .update({ is_active: false })
-        .eq('key', key);
-      
-      console.log(`Key expired: ${key}`);
-      return { status: 'EXPIRED' };
-    }
-    
-    // Key is valid
-    console.log(`Key validated successfully: ${key}`);
-    return { status: 'VALID', data };
+    return {
+      success: true,
+      key: data.key,
+      expires_at: data.expires_at,
+      status: data.status
+    };
     
   } catch (error) {
-    console.error('Error validating key from Supabase:', error);
-    return { status: 'INVALID' };
+    console.error('Error generating key:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to generate key'
+    };
   }
 }
 
-/**
- * Check if user already has an active key
- * @param {string} userIP - User's IP address
- * @returns {Promise<{hasKey: boolean, key?: string, data?: any}>}
- */
-async function getUserActiveKey(userIP) {
+// Verify key validity and expiration
+async function verifyKey(key) {
   try {
-    const now = new Date();
-    
-    const { data, error } = await supabase
-      .from('api_keys')
-      .select('*')
-      .eq('user_ip', userIP)
-      .eq('is_active', true)
-      .gt('expires_at', now.toISOString())
-      .order('created_at', { ascending: false })
-      .limit(1);
-    
-    if (error || !data || data.length === 0) {
-      return { hasKey: false };
-    }
-    
-    return { hasKey: true, key: data[0].key, data: data[0] };
-    
-  } catch (error) {
-    console.error('Error getting user active key:', error);
-    return { hasKey: false };
-  }
-}
-
-/**
- * Generate a new key for user (with duplicate check)
- * @param {string} userIP - User's IP address
- * @returns {Promise<{success: boolean, key?: string, data?: any, error?: string, isExisting?: boolean}>}
- */
-async function generateKeyForUser(userIP) {
-  try {
-    // Check if user already has an active key
-    const existingKey = await getUserActiveKey(userIP);
-    
-    if (existingKey.hasKey) {
-      console.log(`Returning existing key for IP: ${userIP}`);
-      return { 
-        success: true, 
-        key: existingKey.key, 
-        data: existingKey.data,
-        isExisting: true 
+    if (!key) {
+      return {
+        success: false,
+        status: 'INVALID',
+        error: 'Key is required'
       };
     }
     
-    // Generate new unique key
-    let newKey;
-    let attempts = 0;
-    const maxAttempts = 10;
+    // Get key from Supabase
+    const { data: keyData, error } = await supabase
+      .from('keys')
+      .select('*')
+      .eq('key', key)
+      .single();
     
-    do {
-      newKey = generateUniqueKey();
-      attempts++;
-      
-      // Check if key already exists in database
-      const { data: existingData } = await supabase
-        .from('api_keys')
-        .select('key')
-        .eq('key', newKey)
-        .limit(1);
-      
-      if (!existingData || existingData.length === 0) {
-        break; // Key is unique
+    if (error && error.code === 'PGRST116') {
+      // Key not found
+      return {
+        success: false,
+        status: 'INVALID',
+        error: 'Key not found'
+      };
+    } else if (error) {
+      throw error;
+    }
+    
+    const now = new Date();
+    const expiresAt = new Date(keyData.expires_at);
+    
+    // Check if key is expired
+    if (expiresAt < now) {
+      // Update status to expired if not already
+      if (keyData.status !== 'expired') {
+        const { error: updateError } = await supabase
+          .from('keys')
+          .update({ status: 'expired' })
+          .eq('key', key);
+        
+        if (updateError) {
+          console.error('Error updating key status:', updateError);
+        }
       }
       
-      newKey = null; // Reset to try again
-    } while (attempts < maxAttempts);
-    
-    if (!newKey) {
-      return { success: false, error: 'Failed to generate unique key after multiple attempts' };
+      return {
+        success: false,
+        status: 'EXPIRED',
+        error: 'Key has expired'
+      };
     }
     
-    // Save the new key to Supabase
-    const saveResult = await saveKeyToSupabase(userIP, newKey);
-    
-    if (!saveResult.success) {
-      return { success: false, error: saveResult.error };
+    // Check if key status is valid
+    if (keyData.status !== 'valid') {
+      return {
+        success: false,
+        status: 'INVALID',
+        error: 'Key is not valid'
+      };
     }
     
-    console.log(`Generated new key: ${newKey} for IP: ${userIP}`);
-    
-    return { 
-      success: true, 
-      key: newKey, 
-      data: saveResult.data,
-      isExisting: false 
+    // Key is valid
+    return {
+      success: true,
+      status: 'VALID',
+      expires_at: keyData.expires_at,
+      created_at: keyData.created_at
     };
     
   } catch (error) {
-    console.error('Error generating key for user:', error);
-    return { success: false, error: error.message };
-  }
-}
-
-/**
- * Clean up expired keys from database (optional maintenance)
- * @returns {Promise<{success: boolean, cleaned?: number, error?: string}>}
- */
-async function cleanupExpiredKeys() {
-  try {
-    const now = new Date();
-    
-    const { data, error } = await supabase
-      .from('api_keys')
-      .update({ is_active: false })
-      .lt('expires_at', now.toISOString())
-      .eq('is_active', true)
-      .select();
-    
-    if (error) {
-      return { success: false, error: error.message };
-    }
-    
-    const cleanedCount = data ? data.length : 0;
-    console.log(`Cleaned up ${cleanedCount} expired keys`);
-    
-    return { success: true, cleaned: cleanedCount };
-    
-  } catch (error) {
-    console.error('Error cleaning up expired keys:', error);
-    return { success: false, error: error.message };
-  }
-}
-
-/**
- * Get key statistics (for debugging/monitoring)
- * @returns {Promise<{success: boolean, stats?: object, error?: string}>}
- */
-async function getKeyStats() {
-  try {
-    const now = new Date();
-    
-    // Get total active keys
-    const { data: activeKeys, error: activeError } = await supabase
-      .from('api_keys')
-      .select('id')
-      .eq('is_active', true)
-      .gt('expires_at', now.toISOString());
-    
-    // Get total expired keys
-    const { data: expiredKeys, error: expiredError } = await supabase
-      .from('api_keys')
-      .select('id')
-      .or('is_active.eq.false,expires_at.lt.' + now.toISOString());
-    
-    if (activeError || expiredError) {
-      return { success: false, error: 'Failed to fetch statistics' };
-    }
-    
-    const stats = {
-      active_keys: activeKeys ? activeKeys.length : 0,
-      expired_keys: expiredKeys ? expiredKeys.length : 0,
-      timestamp: now.toISOString()
+    console.error('Error verifying key:', error);
+    return {
+      success: false,
+      status: 'ERROR',
+      error: error.message || 'Internal server error'
     };
-    
-    return { success: true, stats };
-    
-  } catch (error) {
-    console.error('Error getting key stats:', error);
-    return { success: false, error: error.message };
   }
 }
 
-module.exports = {
-  generateUniqueKey,
-  saveKeyToSupabase,
-  validateKeyFromSupabase,
-  getUserActiveKey,
-  generateKeyForUser,
-  cleanupExpiredKeys,
-  getKeyStats
+export {
+  generateKey,
+  verifyKey
 };
