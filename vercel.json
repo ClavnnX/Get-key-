@@ -2,100 +2,14 @@
   "version": 2,
   "builds": [
     {
-      "src": "./index.js",
+      "src": "index.js",
       "use": "@vercel/node"
-    },
-    {
-      "src": "public/**",
-      "use": "@vercel/static"
     }
   ],
   "routes": [
     {
-      "src": "/status",
-      "dest": "/index.js",
-      "headers": {
-        "Content-Type": "application/json"
-      }
-    },
-    {
-      "src": "/api/validate",
-      "dest": "/index.js",
-      "headers": {
-        "Content-Type": "application/json"
-      }
-    },
-    {
-      "src": "/api/key/(.*)",
-      "dest": "/index.js",
-      "headers": {
-        "Content-Type": "application/json"
-      }
-    },
-    {
-      "src": "/api",
-      "dest": "/index.js",
-      "headers": {
-        "Content-Type": "application/json"
-      }
-    },
-    {
-      "src": "/validate",
-      "dest": "/index.js",
-      "headers": {
-        "Content-Type": "application/json"
-      }
-    },
-    {
-      "src": "/check",
-      "dest": "/index.js",
-      "headers": {
-        "Content-Type": "application/json"
-      }
-    },
-    {
-      "src": "/getkey",
-      "dest": "/index.js"
-    },
-    {
-      "src": "/verify",
-      "dest": "/index.js"
-    },
-    {
-      "src": "/stats",
-      "dest": "/index.js",
-      "headers": {
-        "Content-Type": "application/json"
-      }
-    },
-    {
-      "src": "/step1",
-      "dest": "/index.js"
-    },
-    {
-      "src": "/step2",
-      "dest": "/index.js"
-    },
-    {
-      "src": "/step3",
-      "dest": "/index.js"
-    },
-    {
-      "src": "/generate-key-secure-xyz",
-      "dest": "/index.js"
-    },
-    {
-      "src": "/",
-      "dest": "/index.js"
-    },
-    {
       "src": "/(.*)",
       "dest": "/index.js"
     }
-  ],
-  "functions": {
-    "index.js": {
-      "maxDuration": 30
-    }
-  }
+  ]
 }
