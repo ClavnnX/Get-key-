@@ -1,13 +1,20 @@
 const express = require('express');
-const crypto = require('crypto');
 const path = require('path');
+
+// Import key management functions from key.js
+const {
+  generateKeyForUser,
+  validateKeyFromSupabase,
+  cleanupExpiredKeys,
+  getKeyStats
+} = require('./key.js');
 
 const app = express();
 
 // Trust proxy for Vercel
 app.set('trust proxy', true);
 
-// ========== CORS MIDDLEWARE - TAMBAHAN BARU ==========
+// ========== CORS MIDDLEWARE ==========
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -20,7 +27,6 @@ app.use((req, res, next) => {
   }
 });
 
-// ========== EXISTING MIDDLEWARE ==========
 // Serve static files
 app.use(express.static('public'));
 
@@ -43,57 +49,21 @@ app.use((req, res, next) => {
   next();
 });
 
-// In-memory storage for keys
-// Structure: { ip: { key: string, expires: Date, created: Date } }
-const keyStorage = {};
-
-// In-memory storage for verification tokens
-// Structure: { ip: { token: string, expires: Date, created: Date, step: number } }
+// In-memory storage for verification tokens (unchanged)
 const tokenStorage = {};
 
-// In-memory storage for generate page access
-// Structure: { ip: { accessTime: Date } }
+// In-memory storage for generate page access (unchanged)
 const generatePageAccess = {};
 
-// Anti-bypass token from vertise (updated)
+// Anti-bypass token from vertise (unchanged)
 const ANTI_BYPASS_TOKEN = '1c3c210b0a6101cfb3b20619b480a70598dbca6e0b60567c73a6472557d077c7';
 
-// Helper function to generate random 10-character uppercase key
-function generateKey() {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let result = '';
-  
-  // Use crypto.randomBytes for better randomness
-  const randomBytes = crypto.randomBytes(10);
-  
-  for (let i = 0; i < 10; i++) {
-    result += chars[randomBytes[i] % chars.length];
-  }
-  
-  return result;
-}
-
-// Helper function to check if key is expired
-function isKeyExpired(keyData) {
-  return new Date() > keyData.expires;
-}
-
-// Helper function to clean up expired keys (optional cleanup)
-function cleanupExpiredKeys() {
-  const now = new Date();
-  Object.keys(keyStorage).forEach(ip => {
-    if (keyStorage[ip] && now > keyStorage[ip].expires) {
-      delete keyStorage[ip];
-    }
-  });
-}
-
-// Helper function to generate verification token
+// Helper functions for token management (unchanged)
 function generateToken() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let result = '';
   
-  // Use crypto.randomBytes for better randomness
+  const crypto = require('crypto');
   const randomBytes = crypto.randomBytes(32);
   
   for (let i = 0; i < 32; i++) {
@@ -103,12 +73,10 @@ function generateToken() {
   return result;
 }
 
-// Helper function to check if token is expired
 function isTokenExpired(tokenData) {
   return new Date() > tokenData.expires;
 }
 
-// Helper function to validate token for specific step
 function isValidToken(userIP, token, requiredStep = 3) {
   if (!tokenStorage[userIP]) {
     return false;
@@ -116,13 +84,11 @@ function isValidToken(userIP, token, requiredStep = 3) {
   
   const tokenData = tokenStorage[userIP];
   
-  // Check if token matches and is not expired and has completed required steps
   return tokenData.token === token && 
          !isTokenExpired(tokenData) && 
          tokenData.step >= requiredStep;
 }
 
-// Helper function to clean up expired tokens
 function cleanupExpiredTokens() {
   const now = new Date();
   Object.keys(tokenStorage).forEach(ip => {
@@ -132,7 +98,6 @@ function cleanupExpiredTokens() {
   });
 }
 
-// Helper function to check if generate page access is expired (5 minutes)
 function isGeneratePageExpired(userIP) {
   if (!generatePageAccess[userIP]) {
     return true;
@@ -142,222 +107,11 @@ function isGeneratePageExpired(userIP) {
   const accessTime = generatePageAccess[userIP].accessTime;
   const timePassed = (now - accessTime) / 1000; // seconds
   
-  return timePassed >= 5 * 60; // 5 minutes
+  return timePassed >= 8 * 60; // 8 minutes (sesuai dengan HTML)
 }
 
-// ========== NEW API ENDPOINTS FOR ROBLOX SCRIPT ==========
-
-// API endpoint: /api/validate - For Roblox script pattern 1
-app.get('/api/validate', (req, res) => {
-  try {
-    const { key } = req.query;
-    
-    console.log(`[API VALIDATE] Validating key: ${key}`);
-    
-    // Set proper JSON header
-    res.setHeader('Content-Type', 'application/json');
-    
-    if (!key) {
-      console.log('[API VALIDATE] No key provided');
-      return res.json({
-        status: 'INVALID',
-        message: 'Key parameter is required'
-      });
-    }
-    
-    // Find the key in storage
-    let foundKey = null;
-    let foundIP = null;
-    
-    Object.keys(keyStorage).forEach(ip => {
-      if (keyStorage[ip] && keyStorage[ip].key === key.toUpperCase()) {
-        foundKey = keyStorage[ip];
-        foundIP = ip;
-      }
-    });
-    
-    if (!foundKey) {
-      console.log(`[API VALIDATE] Key not found: ${key}`);
-      return res.json({
-        status: 'INVALID',
-        message: 'Invalid key provided'
-      });
-    }
-    
-    // Check if key is expired
-    if (isKeyExpired(foundKey)) {
-      // Remove expired key
-      delete keyStorage[foundIP];
-      console.log(`[API VALIDATE] Key expired: ${key}`);
-      return res.json({
-        status: 'EXPIRED',
-        message: 'Key has expired'
-      });
-    }
-    
-    // Key is valid
-    console.log(`[API VALIDATE] Key valid: ${key}`);
-    res.json({
-      status: 'VALID',
-      message: 'Key verified successfully',
-      validated_at: Math.floor(Date.now() / 1000),
-      expires_in: Math.floor((foundKey.expires - new Date()) / 1000)
-    });
-    
-  } catch (error) {
-    console.error('Error in /api/validate:', error);
-    res.status(500).json({
-      status: 'ERROR',
-      message: 'Internal server error'
-    });
-  }
-});
-
-// API endpoint: /api/key/:key - For Roblox script pattern 2
-app.get('/api/key/:key', (req, res) => {
-  try {
-    const { key } = req.params;
-    
-    console.log(`[API KEY] Validating key: ${key}`);
-    
-    // Set proper JSON header
-    res.setHeader('Content-Type', 'application/json');
-    
-    if (!key) {
-      return res.json({
-        valid: false,
-        reason: 'No key provided'
-      });
-    }
-    
-    // Find the key in storage
-    let foundKey = null;
-    
-    Object.keys(keyStorage).forEach(ip => {
-      if (keyStorage[ip] && keyStorage[ip].key === key.toUpperCase()) {
-        foundKey = keyStorage[ip];
-      }
-    });
-    
-    if (!foundKey || isKeyExpired(foundKey)) {
-      return res.json({
-        valid: false,
-        reason: foundKey ? 'Key expired' : 'Invalid key'
-      });
-    }
-    
-    // Key is valid
-    res.json({
-      valid: true,
-      timestamp: Math.floor(Date.now() / 1000),
-      expires_at: Math.floor(foundKey.expires.getTime() / 1000)
-    });
-    
-  } catch (error) {
-    console.error('Error in /api/key/:key:', error);
-    res.status(500).json({
-      valid: false,
-      reason: 'Internal server error'
-    });
-  }
-});
-
-// API endpoint: /api?action=validate&key=XXX - For Roblox script pattern 3
-app.get('/api', (req, res) => {
-  try {
-    const { action, key } = req.query;
-    
-    console.log(`[API] Action: ${action}, Key: ${key}`);
-    
-    // Set proper JSON header
-    res.setHeader('Content-Type', 'application/json');
-    
-    if (action === 'validate') {
-      if (!key) {
-        return res.json({
-          success: false,
-          error: 'Key parameter is required'
-        });
-      }
-      
-      // Find the key in storage
-      let foundKey = null;
-      
-      Object.keys(keyStorage).forEach(ip => {
-        if (keyStorage[ip] && keyStorage[ip].key === key.toUpperCase()) {
-          foundKey = keyStorage[ip];
-        }
-      });
-      
-      if (!foundKey || isKeyExpired(foundKey)) {
-        return res.json({
-          success: false,
-          error: foundKey ? 'Key expired' : 'Invalid key'
-        });
-      }
-      
-      // Key is valid
-      res.json({
-        success: true,
-        message: 'Key verified successfully',
-        validated_at: Math.floor(Date.now() / 1000)
-      });
-    } else {
-      res.json({
-        success: false,
-        error: 'Invalid action parameter'
-      });
-    }
-    
-  } catch (error) {
-    console.error('Error in /api:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Internal server error'
-    });
-  }
-});
-
-// API endpoint: /check - For Roblox script pattern 4
-app.get('/check', (req, res) => {
-  try {
-    const { key } = req.query;
-    
-    console.log(`[CHECK] Validating key: ${key}`);
-    
-    // Set proper JSON header
-    res.setHeader('Content-Type', 'application/json');
-    
-    if (!key) {
-      return res.send('invalid');
-    }
-    
-    // Find the key in storage
-    let foundKey = null;
-    
-    Object.keys(keyStorage).forEach(ip => {
-      if (keyStorage[ip] && keyStorage[ip].key === key.toUpperCase()) {
-        foundKey = keyStorage[ip];
-      }
-    });
-    
-    if (!foundKey || isKeyExpired(foundKey)) {
-      return res.send('invalid');
-    }
-    
-    // Key is valid - return simple text response
-    res.send('valid');
-    
-  } catch (error) {
-    console.error('Error in /check:', error);
-    res.send('error');
-  }
-});
-
-// ========== EXISTING ENDPOINTS (UNCHANGED) ==========
-
-// Endpoint: /getkey (requires valid token and generate page access)
-app.get('/getkey', (req, res) => {
+// ========== MODIFIED: /getkey endpoint - now uses Supabase ==========
+app.get('/getkey', async (req, res) => {
   try {
     const userIP = req.realIP;
     const { token } = req.query;
@@ -383,51 +137,30 @@ app.get('/getkey', (req, res) => {
       });
     }
 
-    // Check if generate page access has expired (5 minutes)
+    // Check if generate page access has expired (8 minutes)
     if (isGeneratePageExpired(userIP)) {
       return res.status(403).json({
         error: 'Generate key access has expired. Please complete verification steps again.'
       });
     }
 
-    const now = new Date();
-    const expirationTime = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
+    // ========== NEW: Use Supabase for key generation ==========
+    const keyResult = await generateKeyForUser(userIP);
     
-    // Check if user already has a key
-    if (keyStorage[userIP]) {
-      const existingKey = keyStorage[userIP];
-      
-      // If key is still valid, return it (anti-refresh protection)
-      if (!isKeyExpired(existingKey)) {
-        console.log(`[GET KEY] Returning existing key for IP: ${userIP}`);
-        return res.json({
-          key: existingKey.key,
-          expires: existingKey.expires.toISOString(),
-          isExisting: true
-        });
-      } else {
-        // Key expired, remove it
-        delete keyStorage[userIP];
-      }
+    if (!keyResult.success) {
+      console.error(`[GET KEY] Failed to generate key for IP: ${userIP}`, keyResult.error);
+      return res.status(500).json({
+        error: 'Failed to generate API key. Please try again.'
+      });
     }
     
-    // Generate new key
-    const newKey = generateKey();
+    console.log(`[GET KEY] ${keyResult.isExisting ? 'Returned existing' : 'Generated new'} key for IP: ${userIP}`);
     
-    // Store the new key
-    keyStorage[userIP] = {
-      key: newKey,
-      expires: expirationTime,
-      created: now
-    };
-    
-    console.log(`[GET KEY] Generated new key: ${newKey} for IP: ${userIP}`);
-    
-    // Return the new key
+    // Return the key with expiration info
     res.json({
-      key: newKey,
-      expires: expirationTime.toISOString(),
-      isExisting: false
+      key: keyResult.key,
+      expires: keyResult.data.expires_at,
+      isExisting: keyResult.isExisting || false
     });
     
   } catch (error) {
@@ -438,8 +171,8 @@ app.get('/getkey', (req, res) => {
   }
 });
 
-// Endpoint: /validate - EXISTING VERSION (UNCHANGED)
-app.get('/validate', (req, res) => {
+// ========== MODIFIED: /validate endpoint - now uses Supabase ==========
+app.get('/validate', async (req, res) => {
   try {
     const { key } = req.query;
     
@@ -455,69 +188,41 @@ app.get('/validate', (req, res) => {
       });
     }
     
-    // Find the key in storage
-    let foundKey = null;
-    let foundIP = null;
+    // ========== NEW: Use Supabase for key validation ==========
+    const validationResult = await validateKeyFromSupabase(key);
     
-    Object.keys(keyStorage).forEach(ip => {
-      if (keyStorage[ip] && keyStorage[ip].key === key) {
-        foundKey = keyStorage[ip];
-        foundIP = ip;
-      }
-    });
+    console.log(`[VALIDATE] Key ${key}: ${validationResult.status}`);
     
-    if (!foundKey) {
-      console.log(`[VALIDATE] Key not found: ${key}`);
-      return res.json({
-        status: 'INVALID'
-      });
-    }
-    
-    // Check if key is expired
-    if (isKeyExpired(foundKey)) {
-      // Remove expired key
-      delete keyStorage[foundIP];
-      console.log(`[VALIDATE] Key expired: ${key}`);
-      return res.json({
-        status: 'EXPIRED'
-      });
-    }
-    
-    // Key is valid
-    console.log(`[VALIDATE] Key valid: ${key}`);
     res.json({
-      status: 'VALID'
+      status: validationResult.status
     });
     
   } catch (error) {
     console.error('Error in /validate:', error);
     res.status(500).json({
-      error: 'Internal server error'
+      error: 'Internal server error',
+      status: 'INVALID'
     });
   }
 });
 
-// Homepage - serve HTML UI
+// ========== UNCHANGED: Static pages ==========
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
-// Step1 page
 app.get('/step1', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
-// Step2 page  
 app.get('/step2', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
-// Step3 page
 app.get('/step3', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
-// Generate key page
 app.get('/generate-key-secure-xyz', (req, res) => {
   const userIP = req.realIP;
   
@@ -525,7 +230,7 @@ app.get('/generate-key-secure-xyz', (req, res) => {
     return res.status(400).send('Unable to identify user IP address');
   }
 
-  // Set generate page access time (5 minute timer starts)
+  // Set generate page access time (8 minute timer starts)
   const now = new Date();
   generatePageAccess[userIP] = {
     accessTime: now
@@ -534,7 +239,7 @@ app.get('/generate-key-secure-xyz', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
-// Verify endpoint - handles token validation and step progression
+// ========== UNCHANGED: Verify endpoint ==========
 app.get('/verify', (req, res) => {
   try {
     const userIP = req.realIP;
@@ -549,11 +254,9 @@ app.get('/verify', (req, res) => {
     const now = new Date();
     const tokenExpirationTime = new Date(now.getTime() + 60 * 60 * 1000); // 60 minutes
 
-    // If no token provided, this means user is starting fresh
     if (!token) {
       const newToken = generateToken();
       
-      // Store the new token with step 0
       tokenStorage[userIP] = {
         token: newToken,
         expires: tokenExpirationTime,
@@ -561,15 +264,12 @@ app.get('/verify', (req, res) => {
         step: 0
       };
       
-      // Redirect to step1 with token
       return res.redirect(`/step1?token=${newToken}`);
     }
     
-    // If step parameter is provided, this means user completed a vertise step
     if (step) {
       const stepNumber = parseInt(step);
       
-      // Anti-bypass validation: check if bypass token is provided and valid
       if (!bypass || bypass !== ANTI_BYPASS_TOKEN) {
         return res.status(403).json({
           error: 'Invalid bypass token. Please complete the verification step properly.'
@@ -577,7 +277,6 @@ app.get('/verify', (req, res) => {
       }
       
       if (tokenStorage[userIP] && tokenStorage[userIP].token === token) {
-        // Additional validation: user can only advance one step at a time
         const currentStep = tokenStorage[userIP].step;
         if (stepNumber !== currentStep + 1) {
           return res.status(403).json({
@@ -585,11 +284,9 @@ app.get('/verify', (req, res) => {
           });
         }
         
-        // Update step progress
         tokenStorage[userIP].step = stepNumber;
-        tokenStorage[userIP].expires = new Date(now.getTime() + 60 * 60 * 1000); // Extend expiry
+        tokenStorage[userIP].expires = new Date(now.getTime() + 60 * 60 * 1000);
         
-        // Redirect based on completed step
         if (stepNumber === 1) {
           return res.redirect(`/step2?token=${token}`);
         } else if (stepNumber === 2) {
@@ -606,7 +303,6 @@ app.get('/verify', (req, res) => {
       }
     }
     
-    // If token is provided for validation, check current step
     if (tokenStorage[userIP] && tokenStorage[userIP].token === token && !isTokenExpired(tokenStorage[userIP])) {
       return res.json({
         valid: true,
@@ -629,34 +325,91 @@ app.get('/verify', (req, res) => {
   }
 });
 
-// Status endpoint for healthcheck - MODIFIED
-app.get('/status', (req, res) => {
-  res.setHeader('Content-Type', 'application/json');
-  console.log('[STATUS] Health check requested');
-  res.json({
-    status: 'online',
-    timestamp: new Date().toISOString(),
-    service: 'ClavnnX Key System',
-    version: '1.0.0'
-  });
+// ========== MODIFIED: Status endpoint with Supabase info ==========
+app.get('/status', async (req, res) => {
+  try {
+    res.setHeader('Content-Type', 'application/json');
+    console.log('[STATUS] Health check requested');
+    
+    // Get key statistics from Supabase
+    const statsResult = await getKeyStats();
+    
+    const response = {
+      status: 'online',
+      timestamp: new Date().toISOString(),
+      service: 'ClavnnX Key System',
+      version: '2.0.0',
+      storage: 'Supabase'
+    };
+    
+    if (statsResult.success) {
+      response.key_stats = statsResult.stats;
+    }
+    
+    res.json(response);
+  } catch (error) {
+    console.error('Error in /status:', error);
+    res.json({
+      status: 'online',
+      timestamp: new Date().toISOString(),
+      service: 'ClavnnX Key System',
+      version: '2.0.0',
+      storage: 'Supabase',
+      error: 'Stats unavailable'
+    });
+  }
 });
 
-// Endpoint for getting system stats (optional, for debugging)
-app.get('/stats', (req, res) => {
+// ========== NEW: Cleanup endpoint for maintenance ==========
+app.get('/cleanup', async (req, res) => {
   try {
-    // Clean up expired keys before showing stats
-    cleanupExpiredKeys();
+    // Clean up expired tokens (in-memory)
+    cleanupExpiredTokens();
     
-    const activeKeys = Object.keys(keyStorage).length;
-    const activeTokens = Object.keys(tokenStorage).length;
-    const now = new Date();
+    // Clean up expired keys (in Supabase)
+    const cleanupResult = await cleanupExpiredKeys();
     
-    res.json({
-      active_keys: activeKeys,
-      active_tokens: activeTokens,
-      server_time: now.toISOString(),
-      uptime: process.uptime()
+    if (cleanupResult.success) {
+      res.json({
+        success: true,
+        message: 'Cleanup completed',
+        expired_keys_cleaned: cleanupResult.cleaned || 0
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: cleanupResult.error
+      });
+    }
+  } catch (error) {
+    console.error('Error in /cleanup:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Cleanup failed'
     });
+  }
+});
+
+// ========== MODIFIED: Stats endpoint with Supabase data ==========
+app.get('/stats', async (req, res) => {
+  try {
+    // Get stats from Supabase
+    const statsResult = await getKeyStats();
+    
+    const response = {
+      active_tokens: Object.keys(tokenStorage).length,
+      server_time: new Date().toISOString(),
+      uptime: process.uptime(),
+      storage: 'Supabase'
+    };
+    
+    if (statsResult.success) {
+      response.key_stats = statsResult.stats;
+    } else {
+      response.key_stats_error = statsResult.error;
+    }
+    
+    res.json(response);
   } catch (error) {
     console.error('Error in /stats:', error);
     res.status(500).json({
@@ -669,11 +422,7 @@ app.get('/stats', (req, res) => {
 app.use('*', (req, res) => {
   res.status(404).json({
     error: 'Endpoint not found',
-    available_endpoints: [
-      '/getkey', '/validate', '/verify', '/', '/step1', '/step2', '/step3', 
-      '/generate-key-secure-xyz', '/stats', '/status',
-      '/api/validate', '/api/key/:key', '/api', '/check'
-    ]
+    available_endpoints: ['/getkey', '/validate', '/verify', '/', '/step1', '/step2', '/step3', '/generate-key-secure-xyz', '/stats', '/status', '/cleanup']
   });
 });
 
@@ -685,12 +434,23 @@ app.use((error, req, res, next) => {
   });
 });
 
-// Periodic cleanup of expired keys and tokens (every hour)
+// Periodic cleanup of expired tokens (every hour)
 setInterval(() => {
-  cleanupExpiredKeys();
   cleanupExpiredTokens();
-  console.log('Cleaned up expired keys and tokens');
+  console.log('Cleaned up expired tokens');
 }, 60 * 60 * 1000);
+
+// Periodic cleanup of expired keys from Supabase (every 6 hours)
+setInterval(async () => {
+  try {
+    const cleanupResult = await cleanupExpiredKeys();
+    if (cleanupResult.success) {
+      console.log(`Cleaned up ${cleanupResult.cleaned} expired keys from Supabase`);
+    }
+  } catch (error) {
+    console.error('Error during periodic cleanup:', error);
+  }
+}, 6 * 60 * 60 * 1000);
 
 // For local development (Replit)
 if (require.main === module) {
@@ -698,6 +458,7 @@ if (require.main === module) {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`ClavnnX Key System API server running on port ${PORT}`);
     console.log(`Access at: http://localhost:${PORT}`);
+    console.log('Using Supabase for key storage');
   });
 }
 
