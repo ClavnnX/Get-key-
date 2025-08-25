@@ -35,8 +35,8 @@ async function generateKey() {
       
       const { data: existingKey, error: checkError } = await supabase
         .from('keys')
-        .select('key')
-        .eq('key', uniqueKey)
+        .select('key_value')
+        .eq('key_value', uniqueKey)
         .single();
       
       if (checkError && checkError.code === 'PGRST116') {
@@ -56,7 +56,7 @@ async function generateKey() {
       .from('keys')
       .insert([
         {
-          key: uniqueKey,
+          key_value: uniqueKey,
           expires_at: expiresAt.toISOString(),
           status: 'valid'
         }
@@ -70,7 +70,7 @@ async function generateKey() {
     
     return {
       success: true,
-      key: data.key,
+      key: data.key_value,
       expires_at: data.expires_at,
       status: data.status
     };
@@ -99,7 +99,7 @@ async function verifyKey(key) {
     const { data: keyData, error } = await supabase
       .from('keys')
       .select('*')
-      .eq('key', key)
+      .eq('key_value', key)
       .single();
     
     if (error && error.code === 'PGRST116') {
@@ -123,7 +123,7 @@ async function verifyKey(key) {
         const { error: updateError } = await supabase
           .from('keys')
           .update({ status: 'expired' })
-          .eq('key', key);
+          .eq('key_value', key);
         
         if (updateError) {
           console.error('Error updating key status:', updateError);
